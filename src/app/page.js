@@ -2,7 +2,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Finger_Paint } from "next/font/google";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 import InputRectangle from "@/components/begin/InputRectangle";
 import MovingBall from "@/components/begin/MovingBall";
@@ -26,16 +27,64 @@ export const INPUT_APPEAR_DELAY = TRANSFORM_DELAY + TRANSFORM_DURATION * 0.5;
 export default function Page() {
   // All hooks must be at the top level
   const { mounted } = useTheme();
+  const router = useRouter();
+
   const [inputText, setInputText] = useState("");
   const [animatingLetters, setAnimatingLetters] = useState([]);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showButton, setShowButton] = useState(false);
   const [age, setAge] = useState(25);
+  const [checked, isChecked] = useState(false);
   const [gender, setGender] = useState(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
 
   // Configurable rectangle dimensions
   const RECTANGLE_WIDTH = 400;
   const RECTANGLE_HEIGHT = 80;
+
+  // Check localStorage on mount and redirect if user data exists
+  useEffect(() => {
+    if (mounted && !hasCheckedStorage) {
+      // Make sure to only check once
+      setHasCheckedStorage(true);
+
+      try {
+        const savedUserData = localStorage.getItem("userData");
+
+        if (savedUserData) {
+          const userData = JSON.parse(savedUserData);
+
+          // If we have both username and age, prepare for redirect
+          if (userData.username && userData.age) {
+            // Set the state from saved data for smooth transition
+            setInputText(userData.username);
+            setAge(userData.age);
+            if (userData.gender) {
+              setGender(userData.gender);
+            }
+            if (userData.isChecked) {
+              isChecked(userData.checked);
+            }
+            // Mark as confirmed to show welcome screen
+            setIsConfirmed(true);
+
+            // Start redirecting animation after a short delay
+            setTimeout(() => {
+              setIsRedirecting(true);
+
+              // Actually redirect after transition animation completes
+              setTimeout(() => {
+                router.push("/tests");
+              }, 1000); // Matches the transition duration
+            }, 1500); // Give some time to see the welcome screen
+          }
+        }
+      } catch (error) {
+        console.error("Error reading from localStorage:", error);
+      }
+    }
+  }, [mounted, router, hasCheckedStorage]);
 
   // Watch for input text changes to show/hide button
   useEffect(() => {
@@ -127,11 +176,13 @@ export default function Page() {
   }
 
   return (
-    <div
+    <motion.div
       className={`relative h-screen w-full overflow-hidden ${fingerPaint.className} transition-all duration-1000 bg-white dark:bg-gray-900`}
+      animate={
+        isRedirecting ? { opacity: 0, scale: 1.1 } : { opacity: 1, scale: 1 }
+      }
+      transition={{ duration: 1, ease: "easeInOut" }}
     >
-      {/* Theme toggle button is now removed from here, it will be in WelcomeMessage */}
-
       {/* Input rectangle */}
       <AnimatePresence>
         {!isConfirmed && (
@@ -172,9 +223,10 @@ export default function Page() {
             gender={gender}
             setGender={setGender}
             triggerSparkles={triggerSparkles}
+            checked={checked}
           />
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
