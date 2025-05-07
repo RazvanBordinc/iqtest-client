@@ -2,11 +2,14 @@
 
 import React, { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 // Using memo to prevent unnecessary re-renders
-const StartButton = memo(function StartButton({ showButton }) {
+const StartButton = memo(function StartButton({
+  showButton,
+  genderSelected = true,
+}) {
   return (
     <AnimatePresence>
       {showButton && (
@@ -20,13 +23,16 @@ const StartButton = memo(function StartButton({ showButton }) {
             damping: 20,
             delay: 0.2,
           }}
-          className="mt-10"
+          className="mt-6"
         >
           <Link href="/start" passHref>
             <motion.button
-              className="relative bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-700 dark:to-indigo-700 
-                         text-white px-8 py-4 rounded-lg text-xl font-bold 
-                         shadow-[0_0_15px_rgba(138,43,226,0.4)] overflow-hidden"
+              className={`relative ${
+                genderSelected
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-700 dark:to-indigo-700"
+                  : "bg-gradient-to-r from-purple-500/70 to-indigo-500/70 dark:from-purple-600/70 dark:to-indigo-600/70"
+              } text-white px-8 py-4 rounded-lg text-xl font-bold 
+              shadow-[0_0_15px_rgba(138,43,226,0.4)] overflow-hidden`}
               whileHover={{
                 scale: 1.05,
                 boxShadow: "0 0 25px rgba(138, 43, 226, 0.6)",
@@ -50,17 +56,30 @@ const StartButton = memo(function StartButton({ showButton }) {
               {/* Button content */}
               <span className="relative z-10 flex items-center justify-center gap-3">
                 Start IQ Test
-                <motion.span
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{
-                    duration: 1,
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    ease: "easeInOut",
-                  }}
-                >
-                  <ArrowRight className="w-5 h-5" />
-                </motion.span>
+                {!genderSelected ? (
+                  <motion.span
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <AlertCircle className="w-5 h-5 text-yellow-300" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <ArrowRight className="w-5 h-5" />
+                  </motion.span>
+                )}
               </span>
             </motion.button>
           </Link>

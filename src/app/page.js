@@ -8,8 +8,7 @@ import InputRectangle from "@/components/begin/InputRectangle";
 import MovingBall from "@/components/begin/MovingBall";
 import AnimatedLetter from "@/components/begin/AnimatedLetter";
 import WelcomeMessage from "@/components/begin/WelcomeMessage";
-import BackgroundParticles from "@/components/shared/BackgroundParticles";
-import ThemeToggle from "@/components/shared/ThemeToggle";
+
 import { useTheme } from "@/components/shared/ThemeProvider";
 
 const fingerPaint = Finger_Paint({
@@ -131,11 +130,7 @@ export default function Page() {
     <div
       className={`relative h-screen w-full overflow-hidden ${fingerPaint.className} transition-all duration-1000 bg-white dark:bg-gray-900`}
     >
-      {/* Theme toggle button */}
-      <ThemeToggle />
-
-      {/* Background particles */}
-      {isConfirmed && <BackgroundParticles />}
+      {/* Theme toggle button is now removed from here, it will be in WelcomeMessage */}
 
       {/* Input rectangle */}
       <AnimatePresence>

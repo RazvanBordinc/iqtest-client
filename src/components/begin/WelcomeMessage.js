@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import AgeSelector from "./AgeSelector";
 import GenderSelector from "./GenderSelector";
 import StartButton from "../shared/StartButton";
+import ThemeToggle from "../shared/ThemeToggle";
 
 export default function WelcomeMessage({
   inputText,
@@ -14,11 +15,6 @@ export default function WelcomeMessage({
   setGender,
   triggerSparkles,
 }) {
-  // Only show the start button if both gender and age are selected
-  const showStartButton = useMemo(() => {
-    return gender !== null && age > 0;
-  }, [gender, age]);
-
   return (
     <motion.div
       className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center w-full max-w-md px-4"
@@ -35,7 +31,7 @@ export default function WelcomeMessage({
         Welcome, {inputText}!
       </motion.h1>
       <motion.p
-        className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 mb-12  transition-colors duration-75"
+        className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 mb-12 transition-colors duration-75"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.8, duration: 0.8 }}
@@ -50,7 +46,8 @@ export default function WelcomeMessage({
         triggerSparkles={triggerSparkles}
       />
 
-      <StartButton showButton={showStartButton} />
+      {/* Always display the StartButton */}
+      <StartButton showButton={true} genderSelected={gender !== null} />
     </motion.div>
   );
 }

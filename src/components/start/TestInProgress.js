@@ -79,7 +79,7 @@ const TestInProgress = memo(function TestInProgress({
         </motion.div>
       </AnimatePresence>
 
-      <div className="flex justify-between mt-8">
+      <div className="flex justify-between mt-8 space-x-2">
         <NavigationButton
           key="prev-button"
           direction="prev"

@@ -1,15 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import BackgroundParticles from "../shared/BackgroundParticles";
+
 import TestInProgress from "./TestInProgress";
 import TimeUpMessage from "./TimeUpMessage";
 import TestResults from "./TestResults";
-import { BrainCircuit } from "lucide-react";
-import Timer from "./Timer";
-import ThemeToggle from "../shared/ThemeToggle";
 import { useTheme } from "../shared/ThemeProvider";
+import Header from "./Header";
 
 export default function ClientWrapper({ questions }) {
   const { mounted } = useTheme();
@@ -86,28 +83,7 @@ export default function ClientWrapper({ questions }) {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-black text-black dark:text-white">
-      <BackgroundParticles count={30} />
-      <ThemeToggle />
-
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-4 px-4 sm:px-6 lg:px-8 mb-6 border-b border-gray-200 dark:border-gray-800 shadow-lg">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <BrainCircuit className="w-7 h-7 text-purple-500 mr-3" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-              IQ Assessment
-            </h1>
-          </div>
-          {!testComplete && (
-            <Timer
-              totalSeconds={totalTimeInSeconds}
-              onTimeFinish={handleTimeUp}
-            />
-          )}
-        </div>
-      </header>
-
-      <main className="flex-1 flex flex-col items-center px-4 sm:px-6 lg:px-8 pb-12">
+      <main className="flex-1 flex flex-col items-center px-4 sm:px-6 lg:px-8 py-8">
         <div className="w-full max-w-4xl">
           {/* Test in progress UI */}
           {!testComplete && !timeUp && (
