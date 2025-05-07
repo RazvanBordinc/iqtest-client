@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
@@ -8,10 +8,10 @@ import TestProgressBar from "../TestPorgressBar";
 import NavigationControls from "../NavigationControls";
 import TestCompletionWrapper from "../TestCompletionWrapper";
 
-const NumericalTest = ({ onComplete }) => {
+// Create a container component to handle test logic
+const TestContent = ({ onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [testComplete, setTestComplete] = useState(false);
 
   // Sample questions data - In a real app this would come from an API or props
   const questions = [
@@ -64,36 +64,6 @@ const NumericalTest = ({ onComplete }) => {
     });
   };
 
-  // Handle navigation - Modified to support completion animation
-  const handleNext = ({ isCompletion } = {}) => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      // Test completed - calculate score and proceed
-      const score = calculateScore();
-
-      // If normal navigation (no animation), complete immediately
-      if (!isCompletion) {
-        setTestComplete(true);
-        if (onComplete) {
-          onComplete(score);
-        }
-      } else {
-        // With isCompletion flag, animation will be handled by wrapper
-        // The score is passed through to the animation completion handler
-        if (onComplete) {
-          onComplete({ score });
-        }
-      }
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
-  };
-
   // Calculate score
   const calculateScore = () => {
     let correct = 0;
@@ -125,6 +95,31 @@ const NumericalTest = ({ onComplete }) => {
     return Math.round((correct / totalAnswered) * 100);
   };
 
+  // Handle navigation - Modified to support completion animation
+  const handleNext = ({ isCompletion } = {}) => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      // Test completed - calculate score and proceed
+      const score = calculateScore();
+
+      // For completion with animation, pass the score to the handler
+      if (isCompletion && onComplete) {
+        onComplete({ score });
+      }
+      // For completion without animation, directly call completion handler
+      else if (onComplete) {
+        onComplete(score);
+      }
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    }
+  };
+
   // Get current answer based on question type
   const getCurrentAnswer = () => {
     const answerData = answers[currentQuestion];
@@ -147,74 +142,76 @@ const NumericalTest = ({ onComplete }) => {
   };
 
   return (
-    <TestCompletionWrapper
-      onComplete={onComplete}
-      testType="numerical"
-      score={calculateScore()}
-    >
-      <div className="w-full max-w-3xl mx-auto">
-        <motion.div
-          className="mb-8 text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Numerical Reasoning Test
-          </h2>
-          <p className="text-gray-600 dark:text-gray-300">
-            Test your ability to analyze numerical patterns and solve
-            mathematical puzzles
-          </p>
-        </motion.div>
+    <div className="w-full max-w-3xl mx-auto">
+      <motion.div
+        className="mb-8 text-center"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Numerical Reasoning Test
+        </h2>
+        <p className="text-gray-600 dark:text-gray-300">
+          Test your ability to analyze numerical patterns and solve mathematical
+          puzzles
+        </p>
+      </motion.div>
 
-        <TestProgressBar
-          current={currentQuestion} // For numerical/verbal tests
-          total={questions.length}
-          type="numerical" // "verbal", "memory", "mixed"
+      <TestProgressBar
+        current={currentQuestion}
+        total={questions.length}
+        type="numerical"
+      />
+
+      {/* Question content */}
+      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-lg backdrop-blur-sm">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`question-${currentQuestion}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {currentQuestionData.type === "multiple-choice" ? (
+              <MultipleChoiceQuestion
+                question={currentQuestionData.text}
+                options={currentQuestionData.options}
+                selectedOption={getCurrentAnswer()}
+                onSelectOption={handleOptionSelect}
+                questionNumber={currentQuestion}
+              />
+            ) : (
+              <FillInGapQuestion
+                question={currentQuestionData.text}
+                currentAnswer={getCurrentAnswer()}
+                onAnswerChange={handleTextInput}
+                questionNumber={currentQuestion}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Updated navigation controls */}
+        <NavigationControls
+          onPrevious={handlePrevious}
+          onNext={handleNext}
+          isPreviousDisabled={currentQuestion === 0}
+          isNextDisabled={!isNextEnabled()}
+          isLastQuestion={currentQuestion === questions.length - 1}
+          testType="numerical"
         />
-
-        {/* Question content */}
-        <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-lg backdrop-blur-sm">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`question-${currentQuestion}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              {currentQuestionData.type === "multiple-choice" ? (
-                <MultipleChoiceQuestion
-                  question={currentQuestionData.text}
-                  options={currentQuestionData.options}
-                  selectedOption={getCurrentAnswer()}
-                  onSelectOption={handleOptionSelect}
-                  questionNumber={currentQuestion}
-                />
-              ) : (
-                <FillInGapQuestion
-                  question={currentQuestionData.text}
-                  currentAnswer={getCurrentAnswer()}
-                  onAnswerChange={handleTextInput}
-                  questionNumber={currentQuestion}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Updated navigation controls */}
-          <NavigationControls
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            isPreviousDisabled={currentQuestion === 0}
-            isNextDisabled={!isNextEnabled()}
-            isLastQuestion={currentQuestion === questions.length - 1}
-            testType="numerical"
-            onAnimationComplete={onComplete}
-          />
-        </div>
       </div>
+    </div>
+  );
+};
+
+// Main component that wraps the test content
+const NumericalTest = ({ onComplete }) => {
+  return (
+    <TestCompletionWrapper onComplete={onComplete} testType="numerical">
+      <TestContent />
     </TestCompletionWrapper>
   );
 };

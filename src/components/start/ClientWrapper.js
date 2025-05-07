@@ -29,7 +29,13 @@ export default function ClientWrapper({ questions }) {
 
   // Handle test completion
   const handleTestComplete = (score) => {
-    setTestScore(score);
+    // Extract score value if it was passed as an object
+    const scoreValue =
+      score && typeof score === "object" && "score" in score
+        ? score.score
+        : score;
+
+    setTestScore(scoreValue);
 
     // Here you could also save the score to localStorage or your backend
     try {
@@ -39,12 +45,12 @@ export default function ClientWrapper({ questions }) {
       const categoryHistory = testHistory[category] || [];
 
       categoryHistory.push({
-        score,
+        score: scoreValue,
         date: new Date().toISOString(),
         duration: "15:30", // In a real app, you'd calculate this
-        percentile: Math.round(score * 0.9), // Example calculation
+        percentile: Math.round(scoreValue * 0.9), // Example calculation
         completed: questions?.length || 20,
-        accuracy: `${Math.round(score)}%`,
+        accuracy: `${Math.round(scoreValue)}%`,
       });
 
       testHistory[category] = categoryHistory;
