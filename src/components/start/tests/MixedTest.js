@@ -6,8 +6,8 @@ import { Sparkles } from "lucide-react";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
 import MemoryPairQuestion from "../questions/MemoryPairQuestion";
-import TestProgressBar from "./TestProgressBar";
-import NavigationControls from "./NavigationControls";
+import TestProgressBar from "../TestPorgressBar";
+import NavigationControls from "../NavigationControls";
 
 const MixedTest = ({ onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -526,8 +526,9 @@ const MixedTest = ({ onComplete }) => {
 
       {/* Progress bar */}
       <TestProgressBar
-        currentQuestion={currentQuestion + 1}
-        totalQuestions={questions.length}
+        current={currentQuestion} // For numerical/verbal tests
+        total={questions.length}
+        type="mixed" // "verbal", "memory", "mixed"
       />
 
       {/* Question */}

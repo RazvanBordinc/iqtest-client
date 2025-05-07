@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Eye, EyeOff } from "lucide-react";
+import { Brain, Eye } from "lucide-react";
 import MemoryPairQuestion from "../questions/MemoryPairQuestion";
-import TestProgressBar from "./TestProgressBar";
-import NavigationControls from "./NavigationControls";
+import NavigationControls from "../NavigationControls";
+import TestProgressBar from "../TestPorgressBar";
 
 const MemoryTest = ({ onComplete }) => {
   // Test state
@@ -163,42 +163,10 @@ const MemoryTest = ({ onComplete }) => {
         </p>
       </motion.div>
 
-      {/* Phase indicator */}
-      <div className="mb-6 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {isMemorizationPhase ? "Memorization Phase" : "Recall Phase"}
-          </span>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-            Set {currentSet + 1} of {memorySets.length}
-          </span>
-        </div>
-
-        {isMemorizationPhase && (
-          <motion.div
-            className="flex items-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Eye className="w-5 h-5 text-purple-500 mr-1.5" />
-            <motion.div
-              className="text-lg font-bold text-purple-600 dark:text-purple-400"
-              key={timer}
-              initial={{ scale: 1.2 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              {timer}s
-            </motion.div>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Progress */}
+      {/* Use our new TestProgressBar component */}
       <TestProgressBar
-        currentQuestion={currentSet + 1}
-        totalQuestions={memorySets.length}
+        total={questions.length}
+        type="memory" // "verbal", "memory", "mixed"
       />
 
       {/* Main content */}
@@ -265,6 +233,20 @@ const MemoryTest = ({ onComplete }) => {
                     </div>
                   </motion.div>
                 ))}
+              </div>
+
+              {/* Timer display */}
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Eye className="w-5 h-5 text-purple-500" />
+                <motion.div
+                  className="text-xl font-bold text-purple-600 dark:text-purple-400"
+                  key={timer}
+                  initial={{ scale: 1.2 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {timer}s
+                </motion.div>
               </div>
 
               <p className="text-sm text-gray-500 dark:text-gray-400 italic">

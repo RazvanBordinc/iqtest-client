@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
-import TestProgressBar from "./TestProgressBar";
-import NavigationControls from "./NavigationControls";
+import TestProgressBar from "../TestPorgressBar";
+import NavigationControls from "../NavigationControls";
 
 const VerbalTest = ({ onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -166,11 +166,10 @@ const VerbalTest = ({ onComplete }) => {
           comprehension
         </p>
       </motion.div>
-
-      {/* Progress bar */}
       <TestProgressBar
-        currentQuestion={currentQuestion + 1}
-        totalQuestions={questions.length}
+        current={currentQuestion} // For numerical/verbal tests
+        total={questions.length}
+        type="verbal" // "verbal", "memory", "mixed"
       />
 
       {/* Question */}

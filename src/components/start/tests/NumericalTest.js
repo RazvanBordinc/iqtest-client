@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
-import TestProgressBar from "./TestProgressBar";
-import NavigationControls from "./NavigationControls";
+import TestProgressBar from "../TestPorgressBar";
+import NavigationControls from "../NavigationControls";
+import TestCompletionWrapper from "../TestCompletionWrapper";
 
 const NumericalTest = ({ onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -63,15 +64,26 @@ const NumericalTest = ({ onComplete }) => {
     });
   };
 
-  // Handle navigation
-  const handleNext = () => {
+  // Handle navigation - Modified to support completion animation
+  const handleNext = ({ isCompletion } = {}) => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Test completed
-      setTestComplete(true);
-      if (onComplete) {
-        onComplete(calculateScore());
+      // Test completed - calculate score and proceed
+      const score = calculateScore();
+
+      // If normal navigation (no animation), complete immediately
+      if (!isCompletion) {
+        setTestComplete(true);
+        if (onComplete) {
+          onComplete(score);
+        }
+      } else {
+        // With isCompletion flag, animation will be handled by wrapper
+        // The score is passed through to the animation completion handler
+        if (onComplete) {
+          onComplete({ score });
+        }
       }
     }
   };
@@ -85,11 +97,13 @@ const NumericalTest = ({ onComplete }) => {
   // Calculate score
   const calculateScore = () => {
     let correct = 0;
+    let totalAnswered = 0;
 
     questions.forEach((question, index) => {
       const userAnswer = answers[index];
 
       if (!userAnswer) return;
+      totalAnswered++;
 
       if (question.type === "multiple-choice") {
         if (question.options[userAnswer.value] === question.correctAnswer) {
@@ -105,7 +119,10 @@ const NumericalTest = ({ onComplete }) => {
       }
     });
 
-    return Math.round((correct / questions.length) * 100);
+    // If no answers, return 0 to avoid NaN
+    if (totalAnswered === 0) return 0;
+
+    return Math.round((correct / totalAnswered) * 100);
   };
 
   // Get current answer based on question type
@@ -130,57 +147,75 @@ const NumericalTest = ({ onComplete }) => {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <motion.div
-        className="mb-8 text-center"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Numerical Reasoning Test
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300">
-          Test your ability to analyze numerical patterns and solve mathematical
-          puzzles
-        </p>
-      </motion.div>
+    <TestCompletionWrapper
+      onComplete={onComplete}
+      testType="numerical"
+      score={calculateScore()}
+    >
+      <div className="w-full max-w-3xl mx-auto">
+        <motion.div
+          className="mb-8 text-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Numerical Reasoning Test
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300">
+            Test your ability to analyze numerical patterns and solve
+            mathematical puzzles
+          </p>
+        </motion.div>
 
-      {/* Progress bar */}
-      <TestProgressBar
-        currentQuestion={currentQuestion + 1}
-        totalQuestions={questions.length}
-      />
-
-      {/* Question */}
-      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-lg backdrop-blur-sm">
-        {currentQuestionData.type === "multiple-choice" ? (
-          <MultipleChoiceQuestion
-            question={currentQuestionData.text}
-            options={currentQuestionData.options}
-            selectedOption={getCurrentAnswer()}
-            onSelectOption={handleOptionSelect}
-            questionNumber={currentQuestion}
-          />
-        ) : (
-          <FillInGapQuestion
-            question={currentQuestionData.text}
-            currentAnswer={getCurrentAnswer()}
-            onAnswerChange={handleTextInput}
-            questionNumber={currentQuestion}
-          />
-        )}
-
-        {/* Navigation */}
-        <NavigationControls
-          onPrevious={handlePrevious}
-          onNext={handleNext}
-          isPreviousDisabled={currentQuestion === 0}
-          isNextDisabled={!isNextEnabled()}
-          isLastQuestion={currentQuestion === questions.length - 1}
+        <TestProgressBar
+          current={currentQuestion} // For numerical/verbal tests
+          total={questions.length}
+          type="numerical" // "verbal", "memory", "mixed"
         />
+
+        {/* Question content */}
+        <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-lg backdrop-blur-sm">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`question-${currentQuestion}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              {currentQuestionData.type === "multiple-choice" ? (
+                <MultipleChoiceQuestion
+                  question={currentQuestionData.text}
+                  options={currentQuestionData.options}
+                  selectedOption={getCurrentAnswer()}
+                  onSelectOption={handleOptionSelect}
+                  questionNumber={currentQuestion}
+                />
+              ) : (
+                <FillInGapQuestion
+                  question={currentQuestionData.text}
+                  currentAnswer={getCurrentAnswer()}
+                  onAnswerChange={handleTextInput}
+                  questionNumber={currentQuestion}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Updated navigation controls */}
+          <NavigationControls
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+            isPreviousDisabled={currentQuestion === 0}
+            isNextDisabled={!isNextEnabled()}
+            isLastQuestion={currentQuestion === questions.length - 1}
+            testType="numerical"
+            onAnimationComplete={onComplete}
+          />
+        </div>
       </div>
-    </div>
+    </TestCompletionWrapper>
   );
 };
 

@@ -2,7 +2,7 @@
 
 import React, { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import OptionButton from "../start/OptionButton";
+import OptionButton from "../OptionButton";
 
 // Reusable component for multiple choice questions
 const MultipleChoiceQuestion = memo(function MultipleChoiceQuestion({
