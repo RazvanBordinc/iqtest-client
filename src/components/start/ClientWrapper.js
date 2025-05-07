@@ -83,6 +83,12 @@ export default function ClientWrapper({ questions }) {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-black text-black dark:text-white">
+      <Header
+        totalSeconds={totalTimeInSeconds}
+        onTimeFinish={handleTimeUp}
+        showTimer={!testComplete && !timeUp}
+      />
+
       <main className="flex-1 flex flex-col items-center px-4 sm:px-6 lg:px-8 py-8">
         <div className="w-full max-w-4xl">
           {/* Test in progress UI */}
