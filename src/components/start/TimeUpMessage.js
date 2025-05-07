@@ -40,7 +40,7 @@ export default function TimeUpMessage({ setTestComplete }) {
         </div>
       </motion.div>
 
-      <h2 className="text-3xl font-bold text-white mb-4">Time's Up!</h2>
+      <h2 className="text-3xl font-bold text-white mb-4">Time"s Up!</h2>
       <p className="text-gray-300 mb-8 text-lg">
         Your answers have been automatically submitted for evaluation.
       </p>

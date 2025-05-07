@@ -19,10 +19,10 @@ const NavigationButton = memo(function NavigationButton({
     }
 
     if (direction === "next") {
-      return "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-700 dark:to-indigo-700 text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] overflow-hidden";
+      return "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-700 dark:to-indigo-700 text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] overflow-hidden cursor-pointer";
     }
 
-    return "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]";
+    return "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] cursor-pointer";
   };
 
   return (

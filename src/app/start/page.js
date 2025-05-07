@@ -11,8 +11,7 @@ const questions = [
   },
   {
     id: 2,
-    question:
-      "If you rearrange the letters 'LNGEDNA', you would have the name of a:",
+    question: "If you rearrange the letters d, you would have the name of a:",
     options: ["Country", "Animal", "City", "Ocean"],
     correctAnswer: "Country",
   },

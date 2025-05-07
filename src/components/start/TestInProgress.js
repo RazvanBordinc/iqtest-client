@@ -38,10 +38,10 @@ const TestInProgress = memo(function TestInProgress({
       <AnimatePresence mode="wait">
         <motion.div
           key={`question-${currentQuestion}`}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
           className="relative"
         >
           <div className="mb-8">
@@ -52,8 +52,8 @@ const TestInProgress = memo(function TestInProgress({
             {questionData.imageSrc && (
               <motion.div
                 className="flex justify-center mb-8 bg-gray-100/50 dark:bg-gray-800/50 p-6 rounded-lg"
-                initial={{ scale: 0.95, opacity: 0.5 }}
-                animate={{ scale: 1, opacity: 1 }}
+                initial={{ opacity: 0.5 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
               >
                 <img
@@ -93,9 +93,7 @@ const TestInProgress = memo(function TestInProgress({
           direction="next"
           onClick={handleNext}
           disabled={false}
-          text={
-            currentQuestion === totalQuestions ? "Finish Test" : "Next Question"
-          }
+          text={currentQuestion === totalQuestions ? "Finish" : "Next"}
         />
       </div>
     </div>

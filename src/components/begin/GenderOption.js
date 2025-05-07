@@ -7,27 +7,21 @@ import { Heart, Sparkles } from "lucide-react";
 // Using memo to prevent unnecessary re-renders
 const GenderOption = memo(function GenderOption({ type, selected, onSelect }) {
   const isSelected = selected === type;
-
-  // Track if we're on mobile to adjust animations
   const [isMobile, setIsMobile] = useState(false);
 
+  // Detect mobile device on mount
   useEffect(() => {
-    // Detect if we're on a mobile device
     const checkMobile = () => {
       setIsMobile(
-        window.innerWidth < 768 ||
-          "ontouchstart" in window ||
-          navigator.maxTouchPoints > 0
+        "ontouchstart" in window ||
+          navigator.maxTouchPoints > 0 ||
+          window.innerWidth < 768
       );
     };
 
-    // Initial check
     checkMobile();
-
-    // Add resize listener
     window.addEventListener("resize", checkMobile);
 
-    // Cleanup
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
@@ -60,66 +54,80 @@ const GenderOption = memo(function GenderOption({ type, selected, onSelect }) {
       ? "text-blue-500 dark:text-blue-300"
       : "text-pink-500 dark:text-pink-300";
 
-  // Different animation variants for mobile vs desktop
-  const hoverAnimation = isMobile ? {} : { scale: 1.05 };
-  const tapAnimation = { scale: 0.95 };
-
-  // Event handlers with mobile optimization
-  const handleClick = () => {
-    // For mobile, add a small delay to avoid animation conflicts
-    if (isMobile) {
-      setTimeout(() => {
-        onSelect(type);
-      }, 50);
-    } else {
-      onSelect(type);
-    }
-  };
-
-  return (
-    <motion.div
-      className="relative cursor-pointer group"
-      onClick={handleClick}
-      whileHover={hoverAnimation}
-      whileTap={tapAnimation}
-      transition={{
-        type: "spring",
-        duration: 0.3,
-        stiffness: 300,
-        damping: 20,
-      }}
-    >
-      <motion.div
-        className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center bg-gradient-to-br ${gradientClass} ${
-          isSelected ? `ring-4 ${ringClass}` : ""
-        } transition-all duration-300`}
-        layout
-      >
-        <Heart
-          fill={isSelected ? "white" : "none"}
-          className="text-white w-12 h-12 sm:w-16 sm:h-16"
-        />
-
-        {isSelected && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 15,
-            }}
-            className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1"
+  // Conditional rendering based on device type
+  if (isMobile) {
+    // Mobile version - no animations
+    return (
+      <div className="relative">
+        <div
+          onClick={() => onSelect(type)}
+          className="cursor-pointer"
+          style={{ touchAction: "manipulation" }}
+        >
+          <div
+            className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center bg-gradient-to-br ${gradientClass} ${
+              isSelected ? `ring-4 ${ringClass}` : ""
+            } transition-colors duration-300`}
           >
-            <Sparkles size={24} className={sparkleClass} />
-          </motion.div>
-        )}
+            <Heart
+              fill={isSelected ? "white" : "none"}
+              className="text-white w-12 h-12 sm:w-16 sm:h-16"
+            />
+
+            {isSelected && (
+              <div className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1">
+                <Sparkles size={24} className={sparkleClass} />
+              </div>
+            )}
+          </div>
+          <p className={`mt-2 text-center font-semibold ${textClass}`}>
+            {type === "male" ? "Male" : "Female"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop version - with animations
+  return (
+    <div className="relative">
+      <motion.div
+        onClick={() => onSelect(type)}
+        className="cursor-pointer group"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.97 }}
+        transition={{ duration: 0.2 }}
+      >
+        <div
+          className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center bg-gradient-to-br ${gradientClass} ${
+            isSelected ? `ring-4 ${ringClass}` : ""
+          } transition-all duration-300`}
+        >
+          <Heart
+            fill={isSelected ? "white" : "none"}
+            className="text-white w-12 h-12 sm:w-16 sm:h-16"
+          />
+
+          {isSelected && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 15,
+              }}
+              className="absolute -top-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1"
+            >
+              <Sparkles size={24} className={sparkleClass} />
+            </motion.div>
+          )}
+        </div>
+        <p className={`mt-2 text-center font-semibold ${textClass}`}>
+          {type === "male" ? "Male" : "Female"}
+        </p>
       </motion.div>
-      <p className={`mt-2 text-center font-semibold ${textClass}`}>
-        {type === "male" ? "Male" : "Female"}
-      </p>
-    </motion.div>
+    </div>
   );
 });
 

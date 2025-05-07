@@ -7,7 +7,7 @@ import { Clock, AlertTriangle } from "lucide-react";
 export default function Timer({ totalSeconds, onTimeFinish }) {
   const [seconds, setSeconds] = useState(totalSeconds);
   const [isWarning, setIsWarning] = useState(false);
-  const [isPulse, setIsPulse] = useState(false);
+  const [isCritical, setIsCritical] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if we're on a mobile device for responsive sizing
@@ -15,25 +15,12 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
     };
-
-    // Initial check
     checkMobile();
-
-    // Add resize listener
     window.addEventListener("resize", checkMobile);
-
-    // Clean up
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Add pulse effect every minute
-  useEffect(() => {
-    if (seconds % 60 === 0 && seconds > 0) {
-      setIsPulse(true);
-      setTimeout(() => setIsPulse(false), 1000);
-    }
-  }, [seconds]);
-
+  // Set up timer and warning states
   useEffect(() => {
     if (seconds <= 0) {
       onTimeFinish();
@@ -44,12 +31,15 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
       setSeconds((prev) => prev - 1);
     }, 1000);
 
-    if (seconds < 180 && !isWarning) {
+    // Set warning thresholds
+    if (seconds < 60 && !isCritical) {
+      setIsCritical(true);
+    } else if (seconds < 180 && !isWarning) {
       setIsWarning(true);
     }
 
     return () => clearInterval(timer);
-  }, [seconds, onTimeFinish, isWarning]);
+  }, [seconds, onTimeFinish, isWarning, isCritical]);
 
   const formatTime = useCallback(() => {
     const minutes = Math.floor(seconds / 60);
@@ -63,148 +53,143 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
     return (seconds / totalSeconds) * 100;
   }, [seconds, totalSeconds]);
 
-  // Calculate time color based on remaining time percentage
-  const timeColor = useCallback(() => {
-    const percentage = progress();
-    if (percentage <= 25) return "#ff4d4f"; // Red for < 25%
-    if (percentage <= 50) return "#faad14"; // Yellow for 25-50%
-    return "#8A2BE2"; // Purple for > 50%
-  }, [progress]);
-
   // Set dimensions based on device size
-  const width = isMobile ? "w-24" : "w-36";
-  const height = isMobile ? "h-9" : "h-10";
+  const width = isMobile ? "w-20" : "w-28";
+  const height = isMobile ? "h-8" : "h-10";
   const fontSize = isMobile ? "text-sm" : "text-base";
-  const iconSize = isMobile ? "w-3 h-3" : "w-4 h-4";
+  const iconSize = isMobile ? 16 : 18;
+
+  // Dynamic colors based on time remaining
+  const getColors = () => {
+    if (isCritical) {
+      return {
+        text: "text-red-500 dark:text-red-400",
+        bg: "from-red-500 to-red-600 dark:from-red-600 dark:to-red-700",
+        glow: "0 0 15px rgba(239, 68, 68, 0.4)",
+        ring: "ring-red-400 dark:ring-red-500",
+      };
+    }
+    if (isWarning) {
+      return {
+        text: "text-yellow-500 dark:text-yellow-400",
+        bg: "from-yellow-500 to-amber-600 dark:from-yellow-600 dark:to-amber-700",
+        glow: "0 0 15px rgba(245, 158, 11, 0.3)",
+        ring: "ring-yellow-400 dark:ring-yellow-500",
+      };
+    }
+    return {
+      text: "text-purple-500 dark:text-purple-400",
+      bg: "from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700",
+      glow: "0 0 15px rgba(139, 92, 246, 0.3)",
+      ring: "ring-purple-400 dark:ring-purple-500",
+    };
+  };
+
+  const colors = getColors();
+
+  // Animation variants
+  const pulseVariants = {
+    normal: { scale: 1 },
+    pulse: {
+      scale: [1, 1.05, 1],
+      transition: {
+        duration: 1.2,
+        repeat: Infinity,
+        repeatType: "loop",
+      },
+    },
+  };
 
   return (
     <motion.div
       className="flex items-center justify-center"
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.4,
-        ease: "easeOut",
-      }}
+      transition={{ duration: 0.4 }}
     >
       <motion.div
-        className={`relative ${width} ${height} rounded-md overflow-hidden bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700`}
-        whileHover={{
-          scale: 1.03,
-          boxShadow: isWarning
-            ? "0 0 12px rgba(255, 77, 79, 0.35)"
-            : "0 0 12px rgba(138, 43, 226, 0.25)",
-        }}
-        animate={{
-          boxShadow: isPulse
-            ? [
-                "0 0 0px rgba(138, 43, 226, 0.2)",
-                "0 0 12px rgba(138, 43, 226, 0.6)",
-                "0 0 0px rgba(138, 43, 226, 0.2)",
-              ]
-            : isWarning
-            ? [
-                "0 0 5px rgba(255, 77, 79, 0.2)",
-                "0 0 8px rgba(255, 77, 79, 0.4)",
-                "0 0 5px rgba(255, 77, 79, 0.2)",
-              ]
-            : "0 0 5px rgba(138, 43, 226, 0.2)",
-        }}
-        transition={{
-          scale: { duration: 0.2 },
-          boxShadow: {
-            duration: isWarning ? 1.5 : 1,
-            repeat: isWarning || isPulse ? Infinity : 0,
-            repeatType: "reverse",
-          },
+        className={`relative ${width} ${height} rounded-full overflow-hidden
+                    bg-white/10 dark:bg-gray-900/50 backdrop-blur-sm
+                    shadow-lg border border-gray-200/30 dark:border-gray-700/30
+                    flex items-center justify-center
+                    ${isCritical || isWarning ? "ring-2" : ""}
+                    ${colors.ring}`}
+        variants={pulseVariants}
+        initial="normal"
+        animate={isCritical ? "pulse" : "normal"}
+        whileHover={{ scale: 1.03 }}
+        style={{
+          boxShadow: colors.glow,
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       >
-        {/* Progress background */}
+        {/* Progress background with gradient */}
         <motion.div
-          className="absolute left-0 top-0 bottom-0 h-full bg-gradient-to-r"
-          style={{
-            width: `${progress()}%`,
-            background: `linear-gradient(to right, ${timeColor()}40, ${timeColor()}80)`,
-          }}
+          className={`absolute left-0 top-0 bottom-0 h-full bg-gradient-to-r ${colors.bg}`}
+          style={{ width: `${progress()}%` }}
           initial={{ width: "100%" }}
           animate={{ width: `${progress()}%` }}
-          transition={{
-            duration: 0.6,
-            ease: "easeOut",
-          }}
-        />
+          transition={{ duration: 0.5 }}
+        >
+          {/* Glass overlay effect */}
+          <div className="absolute inset-0 bg-white/20 dark:bg-black/10"></div>
+        </motion.div>
 
-        {/* Shimmer effect */}
+        {/* Subtle shimmer effect */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 dark:opacity-10"
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
           initial={{ x: "-100%" }}
           animate={{ x: "100%" }}
           transition={{
-            duration: 1.8,
+            duration: 2.5,
             repeat: Infinity,
-            repeatDelay: 1.2,
-            ease: "easeInOut",
+            repeatDelay: 1.5,
           }}
         />
 
-        {/* Content container */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <motion.div
-            className="flex items-center space-x-2 z-10"
-            animate={
-              isPulse
-                ? { scale: [1, 1.08, 1] }
-                : isWarning
-                ? { scale: [1, 1.03, 1] }
-                : {}
-            }
-            transition={{
-              duration: isPulse ? 0.4 : 1,
-              ease: "easeInOut",
-              repeat: isWarning && !isPulse ? Infinity : 0,
-              repeatDelay: 1,
-            }}
-          >
-            <AnimatePresence mode="wait">
-              {isWarning ? (
-                <motion.div
-                  key="warning-icon"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <AlertTriangle
-                    className={`${iconSize} text-red-500`}
-                    strokeWidth={2.5}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="clock-icon"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Clock
-                    className={`${iconSize} text-purple-500 dark:text-purple-400`}
-                    strokeWidth={2}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {/* Icon and timer display */}
+        <div className="relative z-10 flex items-center justify-center space-x-1.5">
+          <AnimatePresence mode="wait">
+            {isCritical ? (
+              <motion.div
+                key="critical-icon"
+                initial={{ rotate: -10, scale: 0 }}
+                animate={{ rotate: 0, scale: 1 }}
+                exit={{ rotate: 10, scale: 0 }}
+                transition={{ duration: 0.3 }}
+                className={colors.text}
+              >
+                <AlertTriangle size={iconSize} strokeWidth={2.5} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="clock-icon"
+                initial={{ rotate: 10, scale: 0 }}
+                animate={{ rotate: 0, scale: 1 }}
+                exit={{ rotate: -10, scale: 0 }}
+                transition={{ duration: 0.3 }}
+                className={colors.text}
+              >
+                <Clock
+                  className="stroke-white rounded-full"
+                  size={iconSize}
+                  strokeWidth={2}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            <motion.span
-              className={`font-semibold ${fontSize} text-gray-900 dark:text-white`}
-              style={{
-                color: isWarning ? "#ff4d4f" : undefined,
-              }}
-              layout
-            >
-              {formatTime()}
-            </motion.span>
-          </motion.div>
+          <motion.span
+            className={`font-semibold ${fontSize} text-white`}
+            layout
+            key={seconds}
+            initial={{ opacity: 0.8, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {formatTime()}
+          </motion.span>
         </div>
       </motion.div>
     </motion.div>
