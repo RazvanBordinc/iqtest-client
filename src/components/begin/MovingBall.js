@@ -1,14 +1,16 @@
-// components/MovingBall.js
-import React from "react";
+"use client";
+
+import React, { memo } from "react";
 import { motion } from "framer-motion";
 import { TRAVEL_DURATION } from "../../app/page";
 
-export default function MovingBall({ position, isConfirmed }) {
+// Using memo to prevent unnecessary re-renders
+const MovingBall = memo(function MovingBall({ position, isConfirmed }) {
   const { initial, animate } = position;
 
   return (
     <motion.div
-      className="bg-white absolute size-10 rounded-full"
+      className="bg-white dark:bg-gray-300 absolute size-10 rounded-full"
       initial={{ ...initial }}
       animate={{
         ...animate,
@@ -38,4 +40,6 @@ export default function MovingBall({ position, isConfirmed }) {
       }}
     />
   );
-}
+});
+
+export default MovingBall;

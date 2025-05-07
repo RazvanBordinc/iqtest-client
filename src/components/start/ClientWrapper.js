@@ -1,16 +1,20 @@
-// app/start/components/ClientWrapper.js
 "use client";
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import BackgroundParticles from "./BackgroundParticles";
+import BackgroundParticles from "../shared/BackgroundParticles";
 import TestInProgress from "./TestInProgress";
 import TimeUpMessage from "./TimeUpMessage";
 import TestResults from "./TestResults";
 import { BrainCircuit } from "lucide-react";
 import Timer from "./Timer";
+import ThemeToggle from "../shared/ThemeToggle";
+import { useTheme } from "../shared/ThemeProvider";
 
 export default function ClientWrapper({ questions }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [answers, setAnswers] = useState({});
   const [selectedOption, setSelectedOption] = useState(null);
@@ -79,15 +83,30 @@ export default function ClientWrapper({ questions }) {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <BackgroundParticles />
+    <div
+      className={`min-h-screen ${isDark ? "bg-black" : "bg-gray-100"} text-${
+        isDark ? "white" : "black"
+      }`}
+    >
+      <BackgroundParticles color="purple" isDark={isDark} count={30} />
+      <ThemeToggle />
 
       {/* Header */}
-      <header className="bg-gray-900/80 backdrop-blur-md py-4 px-4 sm:px-6 lg:px-8 mb-6 border-b border-gray-800 shadow-lg">
+      <header
+        className={`${
+          isDark ? "bg-gray-900/80" : "bg-white/80"
+        } backdrop-blur-md py-4 px-4 sm:px-6 lg:px-8 mb-6 border-b ${
+          isDark ? "border-gray-800" : "border-gray-200"
+        } shadow-lg`}
+      >
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div className="flex items-center">
             <BrainCircuit className="w-7 h-7 text-purple-500 mr-3" />
-            <h1 className="text-xl sm:text-2xl font-bold text-white">
+            <h1
+              className={`text-xl sm:text-2xl font-bold ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
               IQ Assessment
             </h1>
           </div>
@@ -95,6 +114,7 @@ export default function ClientWrapper({ questions }) {
             <Timer
               totalSeconds={totalTimeInSeconds}
               onTimeFinish={handleTimeUp}
+              isDark={isDark}
             />
           )}
         </div>
@@ -112,12 +132,13 @@ export default function ClientWrapper({ questions }) {
               handleOptionSelect={handleOptionSelect}
               handlePrevious={handlePrevious}
               handleNext={handleNext}
+              isDark={isDark}
             />
           )}
 
           {/* Time's up message */}
           {timeUp && !testComplete && (
-            <TimeUpMessage setTestComplete={setTestComplete} />
+            <TimeUpMessage setTestComplete={setTestComplete} isDark={isDark} />
           )}
 
           {/* Test completed results */}
@@ -126,6 +147,7 @@ export default function ClientWrapper({ questions }) {
               answers={answers}
               totalQuestions={totalQuestions}
               calculateScore={calculateScore}
+              isDark={isDark}
             />
           )}
         </div>

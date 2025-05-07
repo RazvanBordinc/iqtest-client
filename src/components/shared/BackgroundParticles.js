@@ -1,10 +1,10 @@
-// app/start/components/BackgroundParticles.js
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-export default function BackgroundParticles() {
+// Using memo for better performance
+const BackgroundParticles = memo(function BackgroundParticles({ count = 20 }) {
   // Use a fixed array with deterministic values to avoid hydration errors
   const particles = [
     { id: 1, size: 4, left: 13, top: 27, opacity: 0.3 },
@@ -39,25 +39,47 @@ export default function BackgroundParticles() {
     { id: 30, size: 5, left: 68, top: 86, opacity: 0.4 },
   ];
 
+  // Limit to the requested count
+  const visibleParticles = particles.slice(0, count);
+
   return (
     <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-      {particles.map((particle) => (
-        <motion.div
-          key={`bg-particle-${particle.id}`}
-          className="absolute rounded-full bg-purple-800"
-          style={{
-            width: `${particle.size}px`,
-            height: `${particle.size}px`,
-            left: `${particle.left}%`,
-            top: `${particle.top}%`,
-            opacity: particle.opacity,
-          }}
-          // Initial animation only, won't re-animate on state changes
-          initial={{ opacity: 0 }}
-          animate={{ opacity: particle.opacity }}
-          transition={{ duration: 1 }}
-        />
-      ))}
+      <AnimatePresence>
+        {visibleParticles.map((particle) => (
+          <motion.div
+            key={`bg-particle-${particle.id}`}
+            className="absolute rounded-full bg-gray-200 dark:bg-gray-700"
+            style={{
+              width: `${particle.size}px`,
+              height: `${particle.size}px`,
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
+              opacity: particle.opacity,
+            }}
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: particle.opacity,
+              y: [0, -8, 0, 8, 0],
+              x: [0, 5, 0, -5, 0],
+            }}
+            transition={{
+              opacity: { duration: 1 },
+              y: {
+                repeat: Infinity,
+                duration: 10 + (particle.id % 10),
+                ease: "easeInOut",
+              },
+              x: {
+                repeat: Infinity,
+                duration: 15 + (particle.id % 8),
+                ease: "easeInOut",
+              },
+            }}
+          />
+        ))}
+      </AnimatePresence>
     </div>
   );
-}
+});
+
+export default BackgroundParticles;

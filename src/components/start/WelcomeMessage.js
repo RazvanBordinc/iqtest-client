@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import AgeSelector from "./AgeSelector";
 import GenderSelector from "./GenderSelector";
-import StartButton from "./StartButton";
+import StartButton from "../shared/StartButton";
 
 export default function WelcomeMessage({
   inputText,

@@ -1,16 +1,17 @@
-// components/AnimatedLetter.js
-import React from "react";
+"use client";
+
+import React, { memo } from "react";
 import { motion } from "framer-motion";
 
-export default function AnimatedLetter({ item, isConfirmed }) {
+// Using memo to prevent unnecessary re-renders
+const AnimatedLetter = memo(function AnimatedLetter({ item, isConfirmed }) {
   return (
     <motion.div
-      className="absolute text-white font-bold pointer-events-none"
+      className="absolute font-bold pointer-events-none text-text-primary"
       style={{
         left: item.x,
         top: item.y,
         fontSize: `${item.scale * 2}rem`,
-        color: isConfirmed ? "black" : "white",
       }}
       initial={{ opacity: 0, scale: 0, filter: "blur(10px)" }}
       animate={{
@@ -24,4 +25,6 @@ export default function AnimatedLetter({ item, isConfirmed }) {
       {item.char}
     </motion.div>
   );
-}
+});
+
+export default AnimatedLetter;

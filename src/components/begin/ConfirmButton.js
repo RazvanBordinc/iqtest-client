@@ -1,14 +1,19 @@
-// components/ConfirmButton.js
-import React from "react";
+"use client";
+
+import React, { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function ConfirmButton({ showButton, handleConfirm }) {
+// Using memo to prevent unnecessary re-renders
+const ConfirmButton = memo(function ConfirmButton({
+  showButton,
+  handleConfirm,
+}) {
   return (
     <AnimatePresence>
       {showButton && (
         <motion.button
           onClick={handleConfirm}
-          className="absolute right-2 bottom-1/2 translate-y-1/2 bg-black text-white rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
+          className="absolute right-2 bottom-1/2 translate-y-1/2 bg-black dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
           initial={{ width: 0, height: 0, opacity: 0 }}
           animate={{
             width: "2.5rem",
@@ -39,7 +44,7 @@ export default function ConfirmButton({ showButton, handleConfirm }) {
               repeat: Infinity,
               ease: "linear",
             }}
-            className="absolute inset-0 rounded-full border-2 border-dashed border-gray-400 opacity-50"
+            className="absolute inset-0 rounded-full border-2 border-dashed border-gray-400 dark:border-gray-600 opacity-50"
           />
           <motion.div
             className="z-10 text-sm"
@@ -53,5 +58,6 @@ export default function ConfirmButton({ showButton, handleConfirm }) {
       )}
     </AnimatePresence>
   );
-}
-// components/ConfirmButton.js
+});
+
+export default ConfirmButton;

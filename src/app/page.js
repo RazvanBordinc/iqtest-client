@@ -8,7 +8,9 @@ import InputRectangle from "@/components/begin/InputRectangle";
 import MovingBall from "@/components/begin/MovingBall";
 import AnimatedLetter from "@/components/begin/AnimatedLetter";
 import WelcomeMessage from "@/components/begin/WelcomeMessage";
-import BackgroundParticles from "@/components/begin/BackgroundParticles";
+import BackgroundParticles from "@/components/shared/BackgroundParticles";
+import ThemeToggle from "@/components/shared/ThemeToggle";
+import { useTheme } from "@/components/shared/ThemeProvider";
 
 const fingerPaint = Finger_Paint({
   subsets: ["latin"],
@@ -23,6 +25,8 @@ export const TRANSFORM_DURATION = 0.3;
 export const INPUT_APPEAR_DELAY = TRANSFORM_DELAY + TRANSFORM_DURATION * 0.5;
 
 export default function Page() {
+  const { theme } = useTheme();
+
   // Configurable rectangle dimensions
   const RECTANGLE_WIDTH = 400;
   const RECTANGLE_HEIGHT = 80;
@@ -119,11 +123,11 @@ export default function Page() {
 
   return (
     <div
-      className={`relative h-screen w-full overflow-hidden ${fingerPaint.className} transition-all duration-1000`}
-      style={{
-        backgroundColor: isConfirmed ? "white" : "black",
-      }}
+      className={`relative h-screen w-full overflow-hidden ${fingerPaint.className} transition-all duration-1000 bg-bg-primary`}
     >
+      {/* Theme toggle button */}
+      <ThemeToggle />
+
       {/* Background particles */}
       {isConfirmed && <BackgroundParticles />}
 

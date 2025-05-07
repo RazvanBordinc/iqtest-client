@@ -1,4 +1,3 @@
-// app/start/components/NavigationButton.js
 "use client";
 
 import React, { memo } from "react";
@@ -11,19 +10,32 @@ const NavigationButton = memo(function NavigationButton({
   onClick,
   disabled,
   text,
+  isDark,
 }) {
   const Icon = direction === "next" ? ArrowRight : ArrowLeft;
 
-  // Fixed styles to prevent glitching
-  const buttonClass = disabled
-    ? "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-800 text-gray-500 cursor-not-allowed"
-    : direction === "next"
-    ? "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-700 to-indigo-700 text-white"
-    : "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-800 text-white";
+  // Define button styles based on theme, direction and disabled state
+  const getButtonClass = () => {
+    if (disabled) {
+      return isDark
+        ? "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-800 text-gray-500 cursor-not-allowed"
+        : "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 text-gray-400 cursor-not-allowed";
+    }
+
+    if (direction === "next") {
+      return isDark
+        ? "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-700 to-indigo-700 text-white"
+        : "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-600 to-indigo-600 text-white";
+    }
+
+    return isDark
+      ? "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-800 text-white"
+      : "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 text-gray-700";
+  };
 
   return (
     <motion.button
-      className={buttonClass}
+      className={getButtonClass()}
       onClick={disabled ? undefined : onClick}
       initial={{ scale: 1 }}
       whileHover={disabled ? {} : { scale: 1.05 }}
