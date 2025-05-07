@@ -10,9 +10,24 @@ const StartButton = memo(function StartButton({
   showButton,
   genderSelected = true,
   dataComplete = false,
-  isChecked,
+  setIsChecked, // This is the setter function for the isChecked state
 }) {
   const router = useRouter();
+
+  // Handle the button click
+  const handleButtonClick = () => {
+    // First set the checked state to true
+    if (setIsChecked) {
+      setIsChecked(true);
+    }
+
+    // Then navigate to the tests page after a small delay
+    // The delay allows the state change to be reflected in the UI
+    setTimeout(() => {
+      router.push("/tests");
+    }, 100);
+  };
+
   return (
     <AnimatePresence>
       {showButton && (
@@ -43,10 +58,7 @@ const StartButton = memo(function StartButton({
             }}
             whileTap={{ scale: dataComplete ? 0.95 : 0.98 }}
             transition={{ duration: 0.2 }}
-            onClick={() => {
-              isChecked(true);
-              router.push("/tests");
-            }}
+            onClick={handleButtonClick}
           >
             {/* Light shimmer effect */}
             <motion.div

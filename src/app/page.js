@@ -9,6 +9,7 @@ import InputRectangle from "@/components/begin/InputRectangle";
 import MovingBall from "@/components/begin/MovingBall";
 import AnimatedLetter from "@/components/begin/AnimatedLetter";
 import WelcomeMessage from "@/components/begin/WelcomeMessage";
+import SimpleWelcome from "@/components/begin/SimpleWelcome"; // We'll create this new component
 
 import { useTheme } from "@/components/shared/ThemeProvider";
 
@@ -34,10 +35,11 @@ export default function Page() {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showButton, setShowButton] = useState(false);
   const [age, setAge] = useState(25);
-  const [checked, isChecked] = useState(false);
   const [gender, setGender] = useState(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
+  const [hasCompletedRegistration, setHasCompletedRegistration] =
+    useState(false);
 
   // Configurable rectangle dimensions
   const RECTANGLE_WIDTH = 400;
@@ -60,14 +62,17 @@ export default function Page() {
             // Set the state from saved data for smooth transition
             setInputText(userData.username);
             setAge(userData.age);
+
             if (userData.gender) {
               setGender(userData.gender);
             }
-            if (userData.isChecked) {
-              isChecked(userData.checked);
-            }
+
             // Mark as confirmed to show welcome screen
             setIsConfirmed(true);
+
+            // Set this to true to indicate we have a returning user
+            // who has already completed registration
+            setHasCompletedRegistration(true);
 
             // Start redirecting animation after a short delay
             setTimeout(() => {
@@ -77,7 +82,7 @@ export default function Page() {
               setTimeout(() => {
                 router.push("/tests");
               }, 1000); // Matches the transition duration
-            }, 1500); // Give some time to see the welcome screen
+            }, 2000); // Give more time to see the welcome screen
           }
         }
       } catch (error) {
@@ -154,6 +159,14 @@ export default function Page() {
     }, 2000);
   };
 
+  // Handle continue button click (for returning users)
+  const handleContinue = () => {
+    setIsRedirecting(true);
+    setTimeout(() => {
+      router.push("/tests");
+    }, 1000);
+  };
+
   // Ball positions configuration
   const ballPositions = [
     {
@@ -213,9 +226,16 @@ export default function Page() {
         ))}
       </AnimatePresence>
 
-      {/* Welcome message and forms after confirmation */}
+      {/* For returning users who have already completed registration */}
       <AnimatePresence>
-        {isConfirmed && (
+        {isConfirmed && hasCompletedRegistration && (
+          <SimpleWelcome username={inputText} onContinue={handleContinue} />
+        )}
+      </AnimatePresence>
+
+      {/* Welcome message and forms for new users */}
+      <AnimatePresence>
+        {isConfirmed && !hasCompletedRegistration && (
           <WelcomeMessage
             inputText={inputText}
             age={age}
@@ -223,7 +243,6 @@ export default function Page() {
             gender={gender}
             setGender={setGender}
             triggerSparkles={triggerSparkles}
-            checked={checked}
           />
         )}
       </AnimatePresence>

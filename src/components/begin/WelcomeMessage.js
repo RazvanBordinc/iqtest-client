@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import AgeSelector from "./AgeSelector";
 import GenderSelector from "./GenderSelector";
 import StartButton from "../shared/StartButton";
+import ThemeToggle from "../shared/ThemeToggle";
 
 export default function WelcomeMessage({
   inputText,
@@ -13,9 +14,10 @@ export default function WelcomeMessage({
   gender,
   setGender,
   triggerSparkles,
-  checked,
 }) {
-  const [isChecked, setIsChecked] = React.useState(false);
+  // Local state for the checked status (rather than receiving it as a prop)
+  const [isChecked, setIsChecked] = useState(false);
+
   // Store user data in localStorage whenever it changes
   useEffect(() => {
     // Only store data if username exists
@@ -26,18 +28,19 @@ export default function WelcomeMessage({
           username: inputText,
           age: age || 25, // Default to 25 if not set
           gender: gender || null,
+          isChecked: isChecked, // Save checked status
           // Add timestamp for session management if needed
           lastUpdated: new Date().toISOString(),
-          checked: isChecked,
         })
       );
     }
-  }, [inputText, age, gender]);
+  }, [inputText, age, gender, isChecked]);
 
   // Check if both username and age are set to determine if Continue button should be fully enabled
-  const isDataComplete =
-    inputText && inputText.trim() !== "" && age > 0 && checked;
-  if (isDataComplete) {
+  const isDataComplete = inputText && inputText.trim() !== "" && age > 0;
+
+  // If checked and data is complete, show only the welcome message
+  if (isChecked && isDataComplete) {
     return (
       <motion.div
         className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center w-full max-w-md px-4"
@@ -56,6 +59,8 @@ export default function WelcomeMessage({
       </motion.div>
     );
   }
+
+  // Otherwise show the full form
   return (
     <motion.div
       className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center w-full max-w-md px-4"
@@ -87,12 +92,12 @@ export default function WelcomeMessage({
         triggerSparkles={triggerSparkles}
       />
 
-      {/* Always display the StartButton but pass dataComplete flag */}
+      {/* Pass setIsChecked to StartButton to enable it to update the checked state */}
       <StartButton
-        isChecked={setIsChecked}
         showButton={true}
         genderSelected={gender !== null}
         dataComplete={isDataComplete}
+        setIsChecked={setIsChecked}
       />
     </motion.div>
   );
