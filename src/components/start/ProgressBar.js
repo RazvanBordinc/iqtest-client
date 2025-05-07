@@ -7,15 +7,12 @@ import { motion } from "framer-motion";
 const ProgressBar = memo(function ProgressBar({
   currentQuestion,
   totalQuestions,
-  isDark,
 }) {
   const progress = (currentQuestion / totalQuestions) * 100;
 
-  const backgroundClass = isDark ? "bg-gray-800" : "bg-gray-200";
-
   return (
     <motion.div
-      className={`w-full h-3 ${backgroundClass} rounded-full mb-6 overflow-hidden relative`}
+      className="w-full h-3 bg-gray-200 dark:bg-gray-800 rounded-full mb-6 overflow-hidden relative"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}

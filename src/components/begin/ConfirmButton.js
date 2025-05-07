@@ -13,7 +13,7 @@ const ConfirmButton = memo(function ConfirmButton({
       {showButton && (
         <motion.button
           onClick={handleConfirm}
-          className="absolute right-2 bottom-1/2 translate-y-1/2 bg-black dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
+          className="absolute right-2 bottom-1/2 translate-y-1/2 bg-black dark:bg-white text-white dark:text-white rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
           initial={{ width: 0, height: 0, opacity: 0 }}
           animate={{
             width: "2.5rem",
@@ -32,7 +32,6 @@ const ConfirmButton = memo(function ConfirmButton({
           }}
           whileHover={{
             scale: 1.1,
-            backgroundColor: "#333",
           }}
           whileTap={{ scale: 0.9 }}
         >
@@ -47,7 +46,7 @@ const ConfirmButton = memo(function ConfirmButton({
             className="absolute inset-0 rounded-full border-2 border-dashed border-gray-400 dark:border-gray-600 opacity-50"
           />
           <motion.div
-            className="z-10 text-sm"
+            className="z-10 text-sm text-white dark:text-black font-black"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}

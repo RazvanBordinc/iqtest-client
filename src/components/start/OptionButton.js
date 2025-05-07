@@ -9,35 +9,24 @@ const OptionButton = memo(function OptionButton({
   index,
   isSelected,
   onSelect,
-  isDark,
 }) {
   // Define dynamic styles based on theme and selection state
-  const baseClasses = isDark
-    ? isSelected
-      ? "border-purple-500 bg-gradient-to-b from-purple-900/30 to-purple-800/10 ring-1 ring-purple-500"
-      : "border-gray-700 hover:border-purple-500/50 bg-gray-900/60"
-    : isSelected
-    ? "border-purple-500 bg-gradient-to-b from-purple-200 to-purple-50 ring-1 ring-purple-500"
-    : "border-gray-300 hover:border-purple-500/50 bg-white/80";
+  const baseClasses = isSelected
+    ? "border-purple-500 bg-gradient-to-b from-purple-200 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/10 ring-1 ring-purple-500"
+    : "border-gray-300 hover:border-purple-500/50 bg-white/80 dark:border-gray-700 dark:bg-gray-900/60";
 
-  const circleClasses = isDark
-    ? isSelected
-      ? "bg-purple-500 border-purple-300"
-      : "border-gray-600"
-    : isSelected
+  const circleClasses = isSelected
     ? "bg-purple-500 border-purple-300"
-    : "border-gray-400";
+    : "border-gray-400 dark:border-gray-600";
 
-  const textClasses = isDark ? "text-gray-100" : "text-gray-800";
+  const textClasses = "text-gray-800 dark:text-gray-100";
 
   return (
     <motion.div
       layout
       whileHover={{
         scale: 1.02,
-        boxShadow: isDark
-          ? "0 0 15px rgba(138, 43, 226, 0.3)"
-          : "0 0 15px rgba(138, 43, 226, 0.2)",
+        boxShadow: "0 0 15px rgba(138, 43, 226, 0.3)",
       }}
       whileTap={{ scale: 0.98 }}
       className={`p-5 border rounded-lg cursor-pointer transition-all ${baseClasses}`}
@@ -68,7 +57,7 @@ const OptionButton = memo(function OptionButton({
       {/* Selected state highlight */}
       {isSelected && (
         <motion.div
-          className={`absolute inset-0 rounded-lg ring-1 ring-purple-500 overflow-hidden z-[-1]`}
+          className="absolute inset-0 rounded-lg ring-1 ring-purple-500 overflow-hidden z-[-1]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}

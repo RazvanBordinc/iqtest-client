@@ -22,7 +22,7 @@ const InputRectangle = memo(function InputRectangle({
 }) {
   return (
     <motion.div
-      className="absolute rounded-full size-10 bg-white dark:bg-gray-800"
+      className="absolute rounded-full size-10 bg-slate-900 dark:bg-white"
       initial={{ top: 0, left: 0 }}
       animate={{
         top: "50%",
@@ -63,7 +63,7 @@ const InputRectangle = memo(function InputRectangle({
         placeholder="write your name"
         value={inputText}
         onChange={handleInputChange}
-        className="w-full h-full bg-transparent text-center focus:outline-none font-bold text-base sm:text-xl px-3 text-black dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+        className="w-full h-full bg-transparent text-center focus:outline-none font-bold text-base sm:text-xl px-3 text-white  dark:text-black placeholder:text-white dark:placeholder:text-black"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: INPUT_APPEAR_DELAY, duration: 0.3 }}

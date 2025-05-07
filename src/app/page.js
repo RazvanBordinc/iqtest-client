@@ -25,13 +25,8 @@ export const TRANSFORM_DURATION = 0.3;
 export const INPUT_APPEAR_DELAY = TRANSFORM_DELAY + TRANSFORM_DURATION * 0.5;
 
 export default function Page() {
-  const { theme } = useTheme();
-
-  // Configurable rectangle dimensions
-  const RECTANGLE_WIDTH = 400;
-  const RECTANGLE_HEIGHT = 80;
-
-  // State for tracking user input and application state
+  // All hooks must be at the top level
+  const { mounted } = useTheme();
   const [inputText, setInputText] = useState("");
   const [animatingLetters, setAnimatingLetters] = useState([]);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -39,10 +34,16 @@ export default function Page() {
   const [age, setAge] = useState(25);
   const [gender, setGender] = useState(null);
 
+  // Configurable rectangle dimensions
+  const RECTANGLE_WIDTH = 400;
+  const RECTANGLE_HEIGHT = 80;
+
   // Watch for input text changes to show/hide button
   useEffect(() => {
-    setShowButton(inputText.length > 0);
-  }, [inputText]);
+    if (mounted) {
+      setShowButton(inputText.length > 0);
+    }
+  }, [inputText, mounted]);
 
   // Handle input changes and trigger letter animations
   const handleInputChange = (e) => {
@@ -121,9 +122,14 @@ export default function Page() {
     },
   ];
 
+  // Early return for SSR/non-mounted state
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div
-      className={`relative h-screen w-full overflow-hidden ${fingerPaint.className} transition-all duration-1000 bg-bg-primary`}
+      className={`relative h-screen w-full overflow-hidden ${fingerPaint.className} transition-all duration-1000 bg-white dark:bg-gray-900`}
     >
       {/* Theme toggle button */}
       <ThemeToggle />

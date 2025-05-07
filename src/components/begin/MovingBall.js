@@ -10,7 +10,7 @@ const MovingBall = memo(function MovingBall({ position, isConfirmed }) {
 
   return (
     <motion.div
-      className="bg-white dark:bg-gray-300 absolute size-10 rounded-full"
+      className="bg-black dark:bg-gray-300 absolute size-10 rounded-full"
       initial={{ ...initial }}
       animate={{
         ...animate,

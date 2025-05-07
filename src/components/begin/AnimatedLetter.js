@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 const AnimatedLetter = memo(function AnimatedLetter({ item, isConfirmed }) {
   return (
     <motion.div
-      className="absolute font-bold pointer-events-none text-text-primary"
+      className="absolute font-bold pointer-events-none text-black dark:text-white"
       style={{
         left: item.x,
         top: item.y,

@@ -10,27 +10,20 @@ const NavigationButton = memo(function NavigationButton({
   onClick,
   disabled,
   text,
-  isDark,
 }) {
   const Icon = direction === "next" ? ArrowRight : ArrowLeft;
 
   // Define button styles based on theme, direction and disabled state
   const getButtonClass = () => {
     if (disabled) {
-      return isDark
-        ? "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-800 text-gray-500 cursor-not-allowed"
-        : "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 text-gray-400 cursor-not-allowed";
+      return "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed";
     }
 
     if (direction === "next") {
-      return isDark
-        ? "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-700 to-indigo-700 text-white"
-        : "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-600 to-indigo-600 text-white";
+      return "px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-700 dark:to-indigo-700 text-white";
     }
 
-    return isDark
-      ? "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-800 text-white"
-      : "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 text-gray-700";
+    return "px-6 py-3 rounded-lg flex items-center gap-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-white";
   };
 
   return (

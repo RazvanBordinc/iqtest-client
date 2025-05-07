@@ -2,9 +2,15 @@
 
 import React, { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "./ThemeProvider";
 
 // Using memo for better performance
 const BackgroundParticles = memo(function BackgroundParticles({ count = 20 }) {
+  const { mounted } = useTheme();
+
+  // Don't render until mounted on client
+  if (!mounted) return null;
+
   // Use a fixed array with deterministic values to avoid hydration errors
   const particles = [
     { id: 1, size: 4, left: 13, top: 27, opacity: 0.3 },
@@ -48,7 +54,7 @@ const BackgroundParticles = memo(function BackgroundParticles({ count = 20 }) {
         {visibleParticles.map((particle) => (
           <motion.div
             key={`bg-particle-${particle.id}`}
-            className="absolute rounded-full bg-gray-200 dark:bg-gray-700"
+            className="absolute rounded-full bg-red-600 dark:bg-blue-700"
             style={{
               width: `${particle.size}px`,
               height: `${particle.size}px`,

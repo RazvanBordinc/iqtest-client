@@ -62,7 +62,7 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
         <div className="relative w-[120px] h-[120px]">
           {/* Background layer */}
           <motion.div
-            className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_20px_rgba(138,43,226,0.25)]"
+            className="absolute inset-0 rounded-full bg-gray-900 dark:bg-gray-800 shadow-[0_0_20px_rgba(138,43,226,0.25)]"
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5 }}
@@ -167,7 +167,7 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
               return (
                 <div
                   key={`tick-${i}`}
-                  className="absolute bg-gray-600"
+                  className="absolute bg-gray-600 dark:bg-gray-500"
                   style={{
                     width: `${width}px`,
                     height: `${height}px`,
@@ -200,7 +200,9 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
               ) : (
                 <Clock className="w-4 h-4 mr-1 text-gray-400" />
               )}
-              <span className="text-xs text-gray-400">Remaining</span>
+              <span className="text-xs text-gray-400 dark:text-gray-300">
+                Remaining
+              </span>
             </div>
           </div>
         </div>

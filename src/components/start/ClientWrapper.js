@@ -12,8 +12,7 @@ import ThemeToggle from "../shared/ThemeToggle";
 import { useTheme } from "../shared/ThemeProvider";
 
 export default function ClientWrapper({ questions }) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const { mounted } = useTheme();
 
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [answers, setAnswers] = useState({});
@@ -82,31 +81,20 @@ export default function ClientWrapper({ questions }) {
     return Math.round((correct / totalQuestions) * 100);
   };
 
+  // Don't render until client-side mounted to prevent hydration issues
+  if (!mounted) return null;
+
   return (
-    <div
-      className={`min-h-screen ${isDark ? "bg-black" : "bg-gray-100"} text-${
-        isDark ? "white" : "black"
-      }`}
-    >
-      <BackgroundParticles color="purple" isDark={isDark} count={30} />
+    <div className="min-h-screen bg-gray-100 dark:bg-black text-black dark:text-white">
+      <BackgroundParticles count={30} />
       <ThemeToggle />
 
       {/* Header */}
-      <header
-        className={`${
-          isDark ? "bg-gray-900/80" : "bg-white/80"
-        } backdrop-blur-md py-4 px-4 sm:px-6 lg:px-8 mb-6 border-b ${
-          isDark ? "border-gray-800" : "border-gray-200"
-        } shadow-lg`}
-      >
+      <header className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-4 px-4 sm:px-6 lg:px-8 mb-6 border-b border-gray-200 dark:border-gray-800 shadow-lg">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div className="flex items-center">
             <BrainCircuit className="w-7 h-7 text-purple-500 mr-3" />
-            <h1
-              className={`text-xl sm:text-2xl font-bold ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}
-            >
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               IQ Assessment
             </h1>
           </div>
@@ -114,7 +102,6 @@ export default function ClientWrapper({ questions }) {
             <Timer
               totalSeconds={totalTimeInSeconds}
               onTimeFinish={handleTimeUp}
-              isDark={isDark}
             />
           )}
         </div>
@@ -132,13 +119,12 @@ export default function ClientWrapper({ questions }) {
               handleOptionSelect={handleOptionSelect}
               handlePrevious={handlePrevious}
               handleNext={handleNext}
-              isDark={isDark}
             />
           )}
 
           {/* Time's up message */}
           {timeUp && !testComplete && (
-            <TimeUpMessage setTestComplete={setTestComplete} isDark={isDark} />
+            <TimeUpMessage setTestComplete={setTestComplete} />
           )}
 
           {/* Test completed results */}
@@ -147,7 +133,6 @@ export default function ClientWrapper({ questions }) {
               answers={answers}
               totalQuestions={totalQuestions}
               calculateScore={calculateScore}
-              isDark={isDark}
             />
           )}
         </div>

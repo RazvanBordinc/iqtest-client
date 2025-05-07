@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useCallback } from "react";
+import React, { memo, useCallback, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GenderOption from "./GenderOption";
 
@@ -10,16 +10,34 @@ const GenderSelector = memo(function GenderSelector({
   setGender,
   triggerSparkles,
 }) {
-  // Handle gender selection and trigger sparkle effects
-  // Only trigger effects when actually changing gender
+  // Add state to track the last time sparkles were triggered
+  const lastSparkleTime = useRef(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Handle gender selection and trigger sparkle effects with debounce
+  // Only trigger effects when actually changing gender and not too frequently
   const handleSelectGender = useCallback(
     (selected) => {
       if (gender !== selected) {
-        setGender(selected);
-        triggerSparkles();
+        const now = Date.now();
+        // Prevent triggering sparkles more than once per second
+        if (!isAnimating && now - lastSparkleTime.current > 1000) {
+          setGender(selected);
+          setIsAnimating(true);
+          triggerSparkles();
+          lastSparkleTime.current = now;
+
+          // Reset the animation lock after animation completes
+          setTimeout(() => {
+            setIsAnimating(false);
+          }, 1000);
+        } else {
+          // Still update gender even if we don't trigger sparkles
+          setGender(selected);
+        }
       }
     },
-    [gender, setGender, triggerSparkles]
+    [gender, setGender, triggerSparkles, isAnimating]
   );
 
   return (
@@ -29,9 +47,6 @@ const GenderSelector = memo(function GenderSelector({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 2.6, duration: 0.8 }}
     >
-      <h2 className="text-xl font-semibold mb-4 text-text-primary">
-        How do you identify?
-      </h2>
       <div className="flex items-center justify-center gap-6 sm:gap-12">
         <AnimatePresence mode="wait">
           <GenderOption

@@ -27,7 +27,7 @@ export default function WelcomeMessage({
       transition={{ delay: 0.8, duration: 1 }}
     >
       <motion.h1
-        className="text-3xl sm:text-5xl md:text-6xl font-bold text-text-primary mb-4"
+        className="text-3xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 transition-colors duration-75"
         initial={{ letterSpacing: "0px" }}
         animate={{ letterSpacing: "2px" }}
         transition={{ delay: 1.2, duration: 1 }}
@@ -35,7 +35,7 @@ export default function WelcomeMessage({
         Welcome, {inputText}!
       </motion.h1>
       <motion.p
-        className="text-lg sm:text-xl text-text-secondary mb-12"
+        className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 mb-12  transition-colors duration-75"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.8, duration: 0.8 }}

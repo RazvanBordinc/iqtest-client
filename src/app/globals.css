@@ -2,28 +2,3 @@
 
 /* Configure dark mode to use class strategy instead of media query */
 @custom-variant dark (&:where(.dark, .dark *));
-
-/* Theme variables for both light and dark mode */
-@theme {
-  /* Light mode variables (default) */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9f9f9;
-  --text-primary: #000000;
-  --text-secondary: #4b5563;
-  --accent-primary: #8a2be2;
-  --accent-secondary: #6d28d9;
-  --border-color: #e5e7eb;
-}
-
-/* Dark mode theme variables */
-@layer base {
-  @variant dark {
-    --bg-primary: #121212;
-    --bg-secondary: #1f1f1f;
-    --text-primary: #ffffff;
-    --text-secondary: #9ca3af;
-    --accent-primary: #a855f7;
-    --accent-secondary: #8b5cf6;
-    --border-color: #374151;
-  }
-}
