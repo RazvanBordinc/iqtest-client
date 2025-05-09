@@ -1,6 +1,19 @@
-// src/app/tests/page.js
-import ClientWrapper from "@/components/tests/ClientWrapper";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import TestSelectionPage from "@/components/tests/TestSelectionPage";
+import { TEST_TYPES } from "@/components/constants/testTypes";
 
-export default function PickATestPage() {
-  return <ClientWrapper />;
+// This is a Server Component
+export default async function TestsPage() {
+  // Check for authentication token
+  const cookieStore = cookies();
+  const token = cookieStore.get("token");
+
+  // If not authenticated, redirect to login
+  if (!token) {
+    redirect("/auth");
+  }
+
+  // No need to fetch tests - they're defined in constants
+  return <TestSelectionPage initialTests={TEST_TYPES} />;
 }

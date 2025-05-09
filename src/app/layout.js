@@ -1,5 +1,6 @@
-import "./globals.css";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import ErrorModal from "@/components/shared/ErrorModal";
+import "./globals.css";
 
 export const metadata = {
   title: "IQ Test App",
@@ -10,7 +11,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <ErrorModal />
+        </ThemeProvider>
       </body>
     </html>
   );

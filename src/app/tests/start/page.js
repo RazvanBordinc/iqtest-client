@@ -1,38 +1,52 @@
-// app/start/page.js
-import ClientWrapper from "@/components/start/ClientWrapper";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import TestStartPage from "@/components/tests/TestStartPage";
+import { getQuestionsByTestType } from "@/fetch/questions";
+import { getTestById } from "@/fetch/tests";
 
-// Sample IQ questions - this would be replaced with your data source
-const questions = [
-  {
-    id: 1,
-    question: "What number comes next in the sequence: 2, 4, 8, 16, ?",
-    options: ["24", "32", "28", "30"],
-    correctAnswer: "32",
-  },
-  {
-    id: 2,
-    question: "If you rearrange the letters d, you would have the name of a:",
-    options: ["Country", "Animal", "City", "Ocean"],
-    correctAnswer: "Country",
-  },
-  {
-    id: 3,
-    question: "Which figure completes the pattern?",
-    imageSrc: "/patterns/pattern3.svg",
-    options: ["A", "B", "C", "D"],
-    correctAnswer: "C",
-  },
-];
+// This is a Server Component
+export default async function StartPage({ searchParams }) {
+  // Check for authentication token
+  const cookieStore = cookies();
+  const token = cookieStore.get("token");
 
-// Create exactly 20 questions with fixed ids
-const fullQuestions = [];
-for (let i = 0; i < 20; i++) {
-  fullQuestions.push({
-    ...questions[i % questions.length],
-    id: i + 1,
-  });
-}
+  // If not authenticated, redirect to login
+  if (!token) {
+    redirect("/auth");
+  }
 
-export default function StartPage() {
-  return <ClientWrapper questions={fullQuestions} />;
+  const { category } = searchParams;
+
+  // If no category selected, redirect to tests selection page
+  if (!category) {
+    redirect("/tests");
+  }
+
+  try {
+    // Get test type from constants and questions from API
+    const testData = getTestById(category);
+
+    // Redirect if invalid test type
+    if (!testData) {
+      redirect("/tests");
+    }
+
+    // Get questions from API
+    const questionsData = await getQuestionsByTestType(category);
+
+    // Pass the data to the client component
+    return (
+      <TestStartPage testType={testData} initialQuestions={questionsData} />
+    );
+  } catch (error) {
+    // Handle error while still allowing page to render
+    console.error("Failed to fetch test questions:", error);
+    return (
+      <TestStartPage
+        testType={getTestById(category)}
+        initialQuestions={[]}
+        error={error.message}
+      />
+    );
+  }
 }

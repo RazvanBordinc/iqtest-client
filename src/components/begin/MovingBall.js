@@ -2,7 +2,7 @@
 
 import React, { memo } from "react";
 import { motion } from "framer-motion";
-import { TRAVEL_DURATION } from "../../app/page";
+import { TRAVEL_DURATION } from "../home/HomePage";
 
 // Using memo to prevent unnecessary re-renders
 const MovingBall = memo(function MovingBall({ position, isConfirmed }) {

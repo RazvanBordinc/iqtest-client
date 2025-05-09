@@ -1,14 +1,14 @@
 "use client";
 
 import React, { memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import ConfirmButton from "./ConfirmButton";
 import {
   TRAVEL_DURATION,
   TRANSFORM_DELAY,
   TRANSFORM_DURATION,
   INPUT_APPEAR_DELAY,
-} from "../../app/page";
+} from "../home/HomePage";
 
 // Using memo to prevent unnecessary re-renders
 const InputRectangle = memo(function InputRectangle({

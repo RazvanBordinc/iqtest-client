@@ -3,12 +3,44 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Trophy, Calculator, BookText, Brain, Sparkles } from "lucide-react";
+import { TEST_TYPES } from "../constants/testTypes";
 
-export default function LeaderboardTabs({ options, activeTab, setActiveTab }) {
+export default function LeaderboardTabs({ activeTab, setActiveTab }) {
   const [indicatorWidth, setIndicatorWidth] = useState(0);
   const [indicatorLeft, setIndicatorLeft] = useState(0);
   const [activeTabEl, setActiveTabEl] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Create tab options from test types plus global
+  const options = [
+    { id: "global", label: "Global Rankings", icon: Trophy },
+    ...TEST_TYPES.map((type) => {
+      let icon;
+      switch (type.icon) {
+        case "Calculator":
+          icon = Calculator;
+          break;
+        case "BookText":
+          icon = BookText;
+          break;
+        case "Brain":
+          icon = Brain;
+          break;
+        case "Sparkles":
+          icon = Sparkles;
+          break;
+        default:
+          icon = Trophy;
+          break;
+      }
+
+      return {
+        id: type.id,
+        label: type.title,
+        icon: icon,
+      };
+    }),
+  ];
 
   // Detect mobile devices for responsive design
   useEffect(() => {
@@ -30,24 +62,6 @@ export default function LeaderboardTabs({ options, activeTab, setActiveTab }) {
     }
   }, [activeTabEl, activeTab]);
 
-  // Get icon based on tab id
-  const getTabIcon = (id) => {
-    switch (id) {
-      case "global":
-        return <Trophy className="w-4 h-4 mr-2" />;
-      case "number-logic":
-        return <Calculator className="w-4 h-4 mr-2" />;
-      case "word-logic":
-        return <BookText className="w-4 h-4 mr-2" />;
-      case "memory":
-        return <Brain className="w-4 h-4 mr-2" />;
-      case "mixed":
-        return <Sparkles className="w-4 h-4 mr-2" />;
-      default:
-        return <Trophy className="w-4 h-4 mr-2" />;
-    }
-  };
-
   // Handle tab change
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -55,38 +69,43 @@ export default function LeaderboardTabs({ options, activeTab, setActiveTab }) {
 
   // Custom styles based on which tab is active
   const getActiveStyles = (tabId) => {
-    switch (tabId) {
-      case "global":
-        return "text-amber-600 dark:text-amber-400";
-      case "number-logic":
-        return "text-blue-600 dark:text-blue-400";
-      case "word-logic":
-        return "text-emerald-600 dark:text-emerald-400";
-      case "memory":
-        return "text-amber-600 dark:text-amber-400";
-      case "mixed":
-        return "text-purple-600 dark:text-purple-400";
-      default:
-        return "text-purple-600 dark:text-purple-400";
+    // Find the corresponding test type
+    const testType = TEST_TYPES.find((type) => type.id === tabId);
+
+    if (tabId === "global") {
+      return "text-amber-600 dark:text-amber-400";
     }
+
+    if (!testType) {
+      return "text-purple-600 dark:text-purple-400";
+    }
+
+    // Extract color from test type gradient classes
+    if (testType.id === "number-logic") {
+      return "text-blue-600 dark:text-blue-400";
+    } else if (testType.id === "word-logic") {
+      return "text-emerald-600 dark:text-emerald-400";
+    } else if (testType.id === "memory") {
+      return "text-amber-600 dark:text-amber-400";
+    } else if (testType.id === "mixed") {
+      return "text-purple-600 dark:text-purple-400";
+    }
+
+    return "text-purple-600 dark:text-purple-400";
   };
 
   // Indicator color based on active tab
   const getIndicatorColor = () => {
-    switch (activeTab) {
-      case "global":
-        return "bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600";
-      case "number-logic":
-        return "bg-gradient-to-r from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600";
-      case "word-logic":
-        return "bg-gradient-to-r from-emerald-500 to-green-500 dark:from-emerald-600 dark:to-green-600";
-      case "memory":
-        return "bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600";
-      case "mixed":
-        return "bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600";
-      default:
-        return "bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600";
+    const testType = TEST_TYPES.find((type) => type.id === activeTab);
+
+    if (activeTab === "global") {
+      return "bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600";
     }
+
+    return (
+      testType?.color ||
+      "bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600"
+    );
   };
 
   // For mobile devices, show a dropdown instead of tabs
@@ -144,8 +163,8 @@ export default function LeaderboardTabs({ options, activeTab, setActiveTab }) {
                 : "hover:text-gray-900 dark:hover:text-white"
             }`}
           >
-            {getTabIcon(option.id)}
-            {option.label}
+            <option.icon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-1.5" />
+            <span className="hidden sm:inline">{option.label}</span>
 
             {/* Tab glow effect when active */}
             {activeTab === option.id && (

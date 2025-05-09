@@ -114,16 +114,16 @@ export default function GlobalRankTable({ userData }) {
     },
     // Add your user to the list for comparison
     {
-      id: userData.userId,
-      rank: userData.globalRank,
-      username: userData.username,
-      iqScore: userData.iqScore,
+      id: userData?.userId,
+      rank: userData?.globalRank,
+      username: userData?.username,
+      iqScore: userData?.iqScore,
       testsCompleted: Object.values(userData.testResults).reduce(
         (sum, test) => sum + test.totalTests,
         0
       ),
       percentile: userData.globalPercentile,
-      country: "Romania", // Example country
+      country: "Romania",
       isCurrentUser: true,
     },
   ];
