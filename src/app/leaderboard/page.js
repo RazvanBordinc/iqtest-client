@@ -7,7 +7,7 @@ import { TEST_TYPES } from "@/components/constants/testTypes";
 // This is a Server Component
 export default async function Page() {
   // Check for authentication token
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
   // If not authenticated, redirect to login

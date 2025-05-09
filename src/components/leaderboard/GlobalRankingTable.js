@@ -118,11 +118,13 @@ export default function GlobalRankTable({ userData }) {
       rank: userData?.globalRank,
       username: userData?.username,
       iqScore: userData?.iqScore,
-      testsCompleted: Object.values(userData.testResults).reduce(
-        (sum, test) => sum + test.totalTests,
-        0
-      ),
-      percentile: userData.globalPercentile,
+      testsCompleted: userData
+        ? Object.values(userData.testResults).reduce(
+            (sum, test) => sum + test.totalTests,
+            0
+          )
+        : null,
+      percentile: userData?.globalPercentile,
       country: "Romania",
       isCurrentUser: true,
     },

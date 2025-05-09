@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { login, register } from "@/fetch/auth";
+import { login, register, isAuthenticated } from "@/fetch/auth";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
 
@@ -21,6 +21,13 @@ export default function AuthPage() {
   const [emailError, setEmailError] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.push("/tests");
+    }
+  }, [router]);
 
   // Handle form submission
   const handleSubmit = async (e) => {

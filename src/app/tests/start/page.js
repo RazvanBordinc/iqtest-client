@@ -7,7 +7,7 @@ import { getTestById } from "@/fetch/tests";
 // This is a Server Component
 export default async function StartPage({ searchParams }) {
   // Check for authentication token
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
   // If not authenticated, redirect to login

@@ -8,19 +8,34 @@ import LoadingAnimation from "@/components/shared/LoadingAnimation";
 import TestCategoryGrid from "./TestCategoryGrid";
 import Header from "@/components/start/Header";
 import { TEST_TYPES } from "../constants/testTypes";
+import { isAuthenticated, getCurrentUser } from "@/fetch/auth";
 
 export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   const router = useRouter();
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+  const [username, setUsername] = useState("");
 
-  // Simulate a short loading state for smooth animation
+  // Get user data from cookie
   useEffect(() => {
+    // Check if user is authenticated
+    if (!isAuthenticated()) {
+      router.push("/auth");
+      return;
+    }
+
+    // Get user data if available
+    const userData = getCurrentUser();
+    if (userData?.username) {
+      setUsername(userData.username);
+    }
+
+    // Simulate a short loading state for smooth animation
     const timer = setTimeout(() => {
       setIsAnimationComplete(true);
     }, 800);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   // Handle category selection
   const handleCategorySelect = (category) => {
@@ -106,8 +121,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
               animate={{ letterSpacing: "1px" }}
               transition={{ duration: 1 }}
             >
-              {/* This could be dynamically set based on user data */}
-              Welcome to TestIQ
+              {username ? `Welcome, ${username}!` : "Welcome to TestIQ"}
             </motion.h1>
 
             <motion.div

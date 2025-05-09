@@ -1,4 +1,6 @@
 // Base API configuration
+import { getCookie } from "@/utils/cookies";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5164";
 
 // Server-side API fetch (for use in Server Components)
@@ -13,6 +15,9 @@ export const serverFetch = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
+  // For server components, the token should be passed via the cookies header
+  // The Next.js middleware or getServerSideProps should handle this
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -20,6 +25,7 @@ export const serverFetch = async (endpoint, options = {}) => {
       // Make sure to honor any caching directives, but default to no-cache
       // to ensure fresh data by default
       cache: options.cache || "no-store",
+      credentials: "include", // Include cookies in the request
     });
 
     if (!response.ok) {
@@ -67,13 +73,9 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
-// Function to get auth token from local storage or cookies
+// Function to get auth token from cookies
 const getToken = () => {
-  // Use window only in browser environment
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
-  }
-  return null;
+  return getCookie("token");
 };
 
 // Create headers with auth token if available
@@ -100,6 +102,7 @@ export const clientFetch = async (endpoint, options = {}) => {
   const fetchOptions = {
     ...options,
     headers: createHeaders(options.headers),
+    credentials: "include", // Include cookies in the request
   };
 
   try {
