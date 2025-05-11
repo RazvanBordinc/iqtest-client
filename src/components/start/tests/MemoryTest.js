@@ -7,61 +7,65 @@ import MemoryPairQuestion from "../questions/MemoryPairQuestion";
 import NavigationControls from "../NavigationControls";
 import TestProgressBar from "../TestPorgressBar";
 
-const MemoryTest = ({ onComplete }) => {
+const MemoryTest = ({ onComplete, questions = [] }) => {
   // Test state
   const [phase, setPhase] = useState("memorization"); // memorization, recall
   const [currentSet, setCurrentSet] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timer, setTimer] = useState(20); // Countdown timer for memorization phase
-  const [testComplete, setTestComplete] = useState(false);
 
-  // Sample memory sets - In a real app this would come from an API or props
-  const memorySets = [
-    {
-      type: "pairs",
-      pairs: [
-        ["boat", "apple"],
-        ["mountain", "coffee"],
-        ["laptop", "forest"],
-        ["bicycle", "ocean"],
-      ],
-      missingIndices: [
-        [1], // "apple" is missing from first pair
-        [0], // "mountain" is missing from second pair
-        [1], // "forest" is missing from third pair
-        [0], // "bicycle" is missing from fourth pair
-      ],
-      questionText: "Complete each pair by entering the missing word",
-    },
-    {
-      type: "triplets",
-      pairs: [
-        ["goat", "steel", "house"],
-        ["river", "pencil", "cloud"],
-        ["candle", "guitar", "diamond"],
-      ],
-      missingIndices: [
-        [1, 2], // "steel" and "house" are missing from first triplet
-        [0, 2], // "river" and "cloud" are missing from second triplet
-        [0, 1], // "candle" and "guitar" are missing from third triplet
-      ],
-      questionText: "Complete each triplet by entering the missing words",
-    },
-  ];
+  // If no questions are provided, show error
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          No questions available for this test.
+        </p>
+        <button
+          onClick={() => onComplete([])}
+          className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+        >
+          Return
+        </button>
+      </div>
+    );
+  }
+
+  // Extract memory sets from questions
+  const memorySets = questions.filter((q) => q.type === "memory-pair");
+
+  // Get current memory set
+  const currentSetData = memorySets[currentSet];
 
   // Start timer for memorization phase
   useEffect(() => {
-    if (phase === "memorization" && timer > 0) {
+    if (phase === "memorization" && timer > 0 && currentSetData) {
+      // Use the memorization time from the question
+      if (timer === 20 && currentSetData.memorizationTime) {
+        setTimer(currentSetData.memorizationTime);
+      }
+
       const countdown = setInterval(() => {
-        setTimer((prev) => prev - 1);
+        setTimer((prev) => {
+          if (prev <= 1) {
+            // Move to recall phase when timer reaches 0
+            setPhase("recall");
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
 
       return () => clearInterval(countdown);
-    } else if (phase === "memorization" && timer === 0) {
-      // Automatically switch to recall phase when timer reaches 0
-      setPhase("recall");
     }
-  }, [phase, timer]);
+  }, [phase, timer, currentSetData]);
+
+  // Reset timer when moving to new set
+  useEffect(() => {
+    if (currentSetData && currentSetData.memorizationTime) {
+      setTimer(currentSetData.memorizationTime);
+    }
+  }, [currentSet]);
 
   // Handle answer change for memory questions
   const handleAnswerChange = (inputId, value) => {
@@ -84,12 +88,11 @@ const MemoryTest = ({ onComplete }) => {
         // Move to next memory set
         setCurrentSet(currentSet + 1);
         setPhase("memorization");
-        setTimer(memorySets[currentSet + 1].type === "pairs" ? 15 : 25); // More time for triplets
+        setTimer(memorySets[currentSet + 1].memorizationTime || 20);
       } else {
-        // Test completed
-        setTestComplete(true);
+        // Test completed - send answers to parent
         if (onComplete) {
-          onComplete(calculateScore());
+          onComplete(answers);
         }
       }
     }
@@ -105,9 +108,8 @@ const MemoryTest = ({ onComplete }) => {
 
   // Check if all required answers are filled for current set
   const areAllAnswersFilled = () => {
-    if (!answers[currentSet]) return false;
+    if (!answers[currentSet] || !currentSetData) return false;
 
-    const currentSetData = memorySets[currentSet];
     let allFilled = true;
 
     currentSetData.pairs.forEach((pair, pairIndex) => {
@@ -122,30 +124,24 @@ const MemoryTest = ({ onComplete }) => {
     return allFilled;
   };
 
-  // Calculate score
-  const calculateScore = () => {
-    let correctCount = 0;
-    let totalQuestions = 0;
-
-    memorySets.forEach((set, setIndex) => {
-      set.pairs.forEach((pair, pairIndex) => {
-        set.missingIndices[pairIndex].forEach((wordIndex) => {
-          totalQuestions++;
-          const inputId = `pair-${pairIndex}-word-${wordIndex}`;
-          const userAnswer = answers[setIndex]?.[inputId]?.trim().toLowerCase();
-
-          if (userAnswer === pair[wordIndex].toLowerCase()) {
-            correctCount++;
-          }
-        });
-      });
-    });
-
-    return Math.round((correctCount / totalQuestions) * 100);
-  };
-
-  const currentSetData = memorySets[currentSet];
   const isMemorizationPhase = phase === "memorization";
+
+  // If no valid current set data, show error
+  if (!currentSetData) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          No memory questions available.
+        </p>
+        <button
+          onClick={() => onComplete([])}
+          className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+        >
+          Return
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -163,10 +159,12 @@ const MemoryTest = ({ onComplete }) => {
         </p>
       </motion.div>
 
-      {/* Use our new TestProgressBar component */}
+      {/* Progress bar for memory tests */}
       <TestProgressBar
-        total={questions.length}
-        type="memory" // "verbal", "memory", "mixed"
+        current={currentSet}
+        total={memorySets.length}
+        type="memory"
+        phase={phase}
       />
 
       {/* Main content */}
@@ -191,14 +189,14 @@ const MemoryTest = ({ onComplete }) => {
 
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 Memorize{" "}
-                {currentSetData.type === "pairs"
+                {currentSetData.pairs[0]?.length === 2
                   ? "These Pairs"
                   : "These Triplets"}
               </h3>
 
               <p className="text-gray-600 dark:text-gray-300 mb-8">
                 You&apos;ll need to recall the missing{" "}
-                {currentSetData.type === "pairs"
+                {currentSetData.pairs[0]?.length === 2
                   ? "word from each pair"
                   : "words from each triplet"}{" "}
                 afterward
@@ -263,7 +261,7 @@ const MemoryTest = ({ onComplete }) => {
               transition={{ duration: 0.3 }}
             >
               <MemoryPairQuestion
-                questionText={currentSetData.questionText}
+                questionText={currentSetData.text}
                 pairs={currentSetData.pairs}
                 missingIndices={currentSetData.missingIndices}
                 userAnswers={answers[currentSet] || {}}
@@ -291,6 +289,7 @@ const MemoryTest = ({ onComplete }) => {
               ? "Next Set"
               : "Finish"
           }
+          testType="memory"
         />
       </div>
     </div>

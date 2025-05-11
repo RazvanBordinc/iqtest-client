@@ -1,69 +1,32 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
 import TestProgressBar from "../TestPorgressBar";
 import NavigationControls from "../NavigationControls";
 
-const VerbalTest = ({ onComplete }) => {
+const VerbalTest = ({ onComplete, questions = [] }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [testComplete, setTestComplete] = useState(false);
 
-  // Sample questions data - In a real app this would come from an API or props
-  const questions = [
-    {
-      type: "multiple-choice",
-      text: "Which word is closest in meaning to 'ephemeral'?",
-      options: [
-        "Permanent",
-        "Temporary",
-        "Important",
-        "Colorful",
-        "Spiritual",
-        "Dramatic",
-      ],
-      correctAnswer: "Temporary",
-    },
-    {
-      type: "fill-in-gap",
-      text: "Complete the analogy: Book is to Reading as Fork is to _____",
-      correctAnswer: "Eating",
-    },
-    {
-      type: "multiple-choice",
-      text: "Which word is an antonym of 'benevolent'?",
-      options: [
-        "Malicious",
-        "Charitable",
-        "Friendly",
-        "Generous",
-        "Considerate",
-        "Sympathetic",
-      ],
-      correctAnswer: "Malicious",
-    },
-    {
-      type: "fill-in-gap",
-      text: "Complete the word: Psy_____ogy",
-      correctAnswer: "chol",
-    },
-    {
-      type: "multiple-choice",
-      text: "Identify the correct sentence:",
-      options: [
-        "Their going to the store later.",
-        "They're going too the store later.",
-        "Their going too the store later.",
-        "They're going to the store later.",
-        "There going to the store later.",
-        "There going too the store later.",
-      ],
-      correctAnswer: "They're going to the store later.",
-    },
-  ];
+  // If no questions are provided, show error
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          No questions available for this test.
+        </p>
+        <button
+          onClick={() => onComplete([])}
+          className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+        >
+          Return
+        </button>
+      </div>
+    );
+  }
 
   // Get current question data
   const currentQuestionData = questions[currentQuestion];
@@ -89,10 +52,9 @@ const VerbalTest = ({ onComplete }) => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Test completed
-      setTestComplete(true);
+      // Test completed - send answers to parent
       if (onComplete) {
-        onComplete(calculateScore());
+        onComplete(answers);
       }
     }
   };
@@ -101,32 +63,6 @@ const VerbalTest = ({ onComplete }) => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
     }
-  };
-
-  // Calculate score
-  const calculateScore = () => {
-    let correct = 0;
-
-    questions.forEach((question, index) => {
-      const userAnswer = answers[index];
-
-      if (!userAnswer) return;
-
-      if (question.type === "multiple-choice") {
-        if (question.options[userAnswer.value] === question.correctAnswer) {
-          correct++;
-        }
-      } else if (question.type === "fill-in-gap") {
-        if (
-          userAnswer.value.trim().toLowerCase() ===
-          question.correctAnswer.toLowerCase()
-        ) {
-          correct++;
-        }
-      }
-    });
-
-    return Math.round((correct / questions.length) * 100);
   };
 
   // Get current answer based on question type
@@ -167,9 +103,9 @@ const VerbalTest = ({ onComplete }) => {
         </p>
       </motion.div>
       <TestProgressBar
-        current={currentQuestion} // For numerical/verbal tests
+        current={currentQuestion}
         total={questions.length}
-        type="verbal" // "verbal", "memory", "mixed"
+        type="verbal"
       />
 
       {/* Question */}
@@ -198,6 +134,7 @@ const VerbalTest = ({ onComplete }) => {
           isPreviousDisabled={currentQuestion === 0}
           isNextDisabled={!isNextEnabled()}
           isLastQuestion={currentQuestion === questions.length - 1}
+          testType="verbal"
         />
       </div>
     </div>

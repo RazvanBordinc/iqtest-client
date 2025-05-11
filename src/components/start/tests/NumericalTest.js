@@ -9,41 +9,26 @@ import NavigationControls from "../NavigationControls";
 import TestCompletionWrapper from "../TestCompletionWrapper";
 
 // Create a container component to handle test logic
-const TestContent = ({ onComplete }) => {
+const TestContent = ({ onComplete, questions = [] }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
 
-  // Sample questions data - In a real app this would come from an API or props
-  const questions = [
-    {
-      type: "multiple-choice",
-      text: "What number comes next in the sequence: 2, 4, 8, 16, ?",
-      options: ["24", "32", "28", "30", "36", "40"],
-      correctAnswer: "32",
-    },
-    {
-      type: "fill-in-gap",
-      text: "Fill in the missing number: 1, 3, _, 7, 9",
-      correctAnswer: "5",
-    },
-    {
-      type: "multiple-choice",
-      text: "If 8 + 2x = 24, what is the value of x?",
-      options: ["6", "8", "10", "12", "16", "18"],
-      correctAnswer: "8",
-    },
-    {
-      type: "fill-in-gap",
-      text: "Complete the pattern: 3, 6, 12, 24, _",
-      correctAnswer: "48",
-    },
-    {
-      type: "multiple-choice",
-      text: "What is the prime factorization of 36?",
-      options: ["2² × 3²", "2² × 3³", "2³ × 3", "2 × 3³", "2³ × 3²", "6²"],
-      correctAnswer: "2² × 3²",
-    },
-  ];
+  // If no questions are provided, show error
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          No questions available for this test.
+        </p>
+        <button
+          onClick={() => onComplete([])}
+          className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        >
+          Return
+        </button>
+      </div>
+    );
+  }
 
   // Get current question data
   const currentQuestionData = questions[currentQuestion];
@@ -75,41 +60,25 @@ const TestContent = ({ onComplete }) => {
       if (!userAnswer) return;
       totalAnswered++;
 
-      if (question.type === "multiple-choice") {
-        if (question.options[userAnswer.value] === question.correctAnswer) {
-          correct++;
-        }
-      } else if (question.type === "fill-in-gap") {
-        if (
-          userAnswer.value.trim().toLowerCase() ===
-          question.correctAnswer.toLowerCase()
-        ) {
-          correct++;
-        }
-      }
+      // Note: We can't actually check correctness on frontend
+      // since correct answers are not sent from backend
+      // The backend will calculate the actual score
     });
 
-    // If no answers, return 0 to avoid NaN
-    if (totalAnswered === 0) return 0;
-
-    return Math.round((correct / totalAnswered) * 100);
+    // Return answers for submission to backend
+    return answers;
   };
 
-  // Handle navigation - Modified to support completion animation
+  // Handle navigation - Modified to support completion
   const handleNext = ({ isCompletion } = {}) => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Test completed - calculate score and proceed
-      const score = calculateScore();
+      // Test completed - send answers to parent
+      const finalAnswers = calculateScore();
 
-      // For completion with animation, pass the score to the handler
-      if (isCompletion && onComplete) {
-        onComplete({ score });
-      }
-      // For completion without animation, directly call completion handler
-      else if (onComplete) {
-        onComplete(score);
+      if (onComplete) {
+        onComplete(finalAnswers);
       }
     }
   };
@@ -208,12 +177,10 @@ const TestContent = ({ onComplete }) => {
 };
 
 // Main component that wraps the test content
-const NumericalTest = ({ onComplete }) => {
-  return (
-    <TestCompletionWrapper onComplete={onComplete} testType="numerical">
-      <TestContent />
-    </TestCompletionWrapper>
-  );
+const NumericalTest = ({ onComplete, questions = [] }) => {
+  // Don't use TestCompletionWrapper since we're handling completion
+  // in the parent TestStartPage component now
+  return <TestContent onComplete={onComplete} questions={questions} />;
 };
 
 export default NumericalTest;

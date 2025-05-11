@@ -1,23 +1,53 @@
-// src/fetch/tests.js
 import api from "./api";
 import { TEST_TYPES } from "@/components/constants/testTypes";
 
-// No need to fetch test types - they're defined in constants
-export const getAvailableTests = () => {
-  return TEST_TYPES;
+// Get test types from constants (they're hardcoded)
+export const getAvailableTests = async () => {
+  try {
+    // Can also fetch from backend if needed: const testTypes = await api.get("api/test/types");
+
+    return TEST_TYPES;
+  } catch (error) {
+    console.error("Failed to fetch test types:", error);
+    // Fallback to constants if API fails
+    return TEST_TYPES;
+  }
 };
 
-export const getTestById = (testId) => {
-  return TEST_TYPES.find((test) => test.id === testId) || null;
+export const getTestById = async (testId) => {
+  try {
+    // First check constants
+    const testFromConstants = TEST_TYPES.find((test) => test.id === testId);
+
+    if (testFromConstants) {
+      return testFromConstants;
+    }
+
+    // If not found in constants, try API
+    return await api.get(`api/test/types/${testId}`);
+  } catch (error) {
+    console.error(`Failed to fetch test with ID ${testId}:`, error);
+    // Fallback to constants
+    return TEST_TYPES.find((test) => test.id === testId) || null;
+  }
 };
 
-// Keep this function as it's still needed
+// Submit test answers to backend
 export const submitTest = async (testData) => {
   try {
     console.log("Submitting test:", testData);
-    return await api.post("api/test/submit", testData);
+    const result = await api.post("api/test/submit", testData);
+
+    // Log the result for debugging
+    console.log("Test submission result:", result);
+
+    return result;
   } catch (error) {
     console.error("Failed to submit test:", error);
     throw error;
   }
 };
+
+// For backward compatibility - if you need these functions elsewhere
+export const getTestTypes = getAvailableTests;
+export const fetchTestById = getTestById;
