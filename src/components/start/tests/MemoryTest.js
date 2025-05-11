@@ -197,7 +197,7 @@ const MemoryTest = ({ onComplete }) => {
               </h3>
 
               <p className="text-gray-600 dark:text-gray-300 mb-8">
-                You'll need to recall the missing{" "}
+                You&apos;ll need to recall the missing{" "}
                 {currentSetData.type === "pairs"
                   ? "word from each pair"
                   : "words from each triplet"}{" "}

@@ -2,7 +2,7 @@
 
 import React, { memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
+import Image from "next/image";
 // Component for fill-in-the-gap questions
 const FillInGapQuestion = memo(function FillInGapQuestion({
   question,
@@ -37,7 +37,7 @@ const FillInGapQuestion = memo(function FillInGapQuestion({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <img
+              <Image
                 src={imageSrc}
                 alt="Question visualization"
                 className="max-w-full h-auto max-h-60"

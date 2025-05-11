@@ -375,7 +375,7 @@ const MixedTest = ({ onComplete }) => {
         </h3>
 
         <p className="text-gray-600 dark:text-gray-300 mb-8">
-          You'll need to recall the missing{" "}
+          You&apos;ll need to recall the missing{" "}
           {pairs[0].length === 2
             ? "word from each pair"
             : "words from each triplet"}{" "}

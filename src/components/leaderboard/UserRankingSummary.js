@@ -167,7 +167,7 @@ export default function UserRankingSummary({ userData, activeTab }) {
 
               <p className="text-gray-600 dark:text-gray-300 text-sm">
                 Hey <span className="font-medium">{userData.username}</span>,
-                here's how you compare to other test-takers
+                here&apos;s how you compare to other test-takers
               </p>
             </div>
           </motion.div>

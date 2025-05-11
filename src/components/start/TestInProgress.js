@@ -6,6 +6,7 @@ import { Lightbulb } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import OptionButton from "./OptionButton";
 import NavigationButton from "./NavigationButton";
+import Image from "next/image";
 
 // Using memo for better performance
 const TestInProgress = memo(function TestInProgress({
@@ -56,7 +57,7 @@ const TestInProgress = memo(function TestInProgress({
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
               >
-                <img
+                <Image
                   src={questionData.imageSrc}
                   alt="Question diagram"
                   className="max-w-full h-auto max-h-60"

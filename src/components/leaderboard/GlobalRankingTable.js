@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Brain,
@@ -13,125 +13,167 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-export default function GlobalRankTable({ userData }) {
+export default function GlobalRankTable({
+  userData,
+  leaderboardData: propLeaderboardData,
+}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: "rank",
     direction: "asc",
   });
 
-  // Sample leaderboard data - in real app this would come from API
-  const leaderboardData = [
-    {
-      id: 1,
-      rank: 1,
-      username: "BrainGenius",
-      iqScore: 145,
-      testsCompleted: 42,
-      percentile: 99.9,
-      country: "United States",
-    },
-    {
-      id: 2,
-      rank: 2,
-      username: "MindMaster",
-      iqScore: 143,
-      testsCompleted: 36,
-      percentile: 99.8,
-      country: "Canada",
-    },
-    {
-      id: 3,
-      rank: 3,
-      username: "IQWizard",
-      iqScore: 142,
-      testsCompleted: 38,
-      percentile: 99.7,
-      country: "United Kingdom",
-    },
-    {
-      id: 4,
-      rank: 4,
-      username: "LogicKing",
-      iqScore: 141,
-      testsCompleted: 45,
-      percentile: 99.6,
-      country: "Germany",
-    },
-    {
-      id: 5,
-      rank: 5,
-      username: "BrainiaX",
-      iqScore: 140,
-      testsCompleted: 33,
-      percentile: 99.5,
-      country: "Australia",
-    },
-    {
-      id: 6,
-      rank: 6,
-      username: "TestAce",
-      iqScore: 139,
-      testsCompleted: 29,
-      percentile: 99.4,
-      country: "Japan",
-    },
-    {
-      id: 7,
-      rank: 7,
-      username: "GeniusMode",
-      iqScore: 138,
-      testsCompleted: 31,
-      percentile: 99.3,
-      country: "France",
-    },
-    {
-      id: 8,
-      rank: 8,
-      username: "MindHacker",
-      iqScore: 137,
-      testsCompleted: 27,
-      percentile: 99.2,
-      country: "India",
-    },
-    {
-      id: 9,
-      rank: 9,
-      username: "BrainiacPro",
-      iqScore: 136,
-      testsCompleted: 30,
-      percentile: 99.1,
-      country: "Netherlands",
-    },
-    {
-      id: 10,
-      rank: 10,
-      username: "MegaMind",
-      iqScore: 135,
-      testsCompleted: 28,
-      percentile: 99.0,
-      country: "Brazil",
-    },
-    // Add your user to the list for comparison
-    {
-      id: userData?.userId,
-      rank: userData?.globalRank,
-      username: userData?.username,
-      iqScore: userData?.iqScore,
-      testsCompleted: userData
-        ? Object.values(userData.testResults).reduce(
-            (sum, test) => sum + test.totalTests,
+  // Wrap leaderboardData in its own useMemo to prevent it from changing on every render
+  const leaderboardData = useMemo(() => {
+    // If leaderboard data is passed as a prop, use it
+    if (propLeaderboardData && propLeaderboardData.length > 0) {
+      // Check if user data is not already in the leaderboard
+      const hasUserData = propLeaderboardData.some(
+        (user) => user.isCurrentUser
+      );
+
+      if (!hasUserData && userData) {
+        // Add user data to the leaderboard
+        return [
+          ...propLeaderboardData,
+          {
+            id: userData.userId,
+            rank: userData.globalRank,
+            username: userData.username,
+            iqScore: userData.iqScore,
+            testsCompleted: Object.values(userData.testResults || {}).reduce(
+              (sum, test) => sum + (test.totalTests || 0),
+              0
+            ),
+            percentile: userData.globalPercentile,
+            country: "Romania", // Default country - should come from userData in real app
+            isCurrentUser: true,
+          },
+        ];
+      }
+
+      return propLeaderboardData;
+    }
+
+    // Fallback to sample data
+    const sampleData = [
+      {
+        id: 1,
+        rank: 1,
+        username: "BrainGenius",
+        iqScore: 145,
+        testsCompleted: 42,
+        percentile: 99.9,
+        country: "United States",
+      },
+      {
+        id: 2,
+        rank: 2,
+        username: "MindMaster",
+        iqScore: 143,
+        testsCompleted: 36,
+        percentile: 99.8,
+        country: "Canada",
+      },
+      {
+        id: 3,
+        rank: 3,
+        username: "IQWizard",
+        iqScore: 142,
+        testsCompleted: 38,
+        percentile: 99.7,
+        country: "United Kingdom",
+      },
+      {
+        id: 4,
+        rank: 4,
+        username: "LogicKing",
+        iqScore: 141,
+        testsCompleted: 45,
+        percentile: 99.6,
+        country: "Germany",
+      },
+      {
+        id: 5,
+        rank: 5,
+        username: "BrainiaX",
+        iqScore: 140,
+        testsCompleted: 33,
+        percentile: 99.5,
+        country: "Australia",
+      },
+      {
+        id: 6,
+        rank: 6,
+        username: "TestAce",
+        iqScore: 139,
+        testsCompleted: 29,
+        percentile: 99.4,
+        country: "Japan",
+      },
+      {
+        id: 7,
+        rank: 7,
+        username: "GeniusMode",
+        iqScore: 138,
+        testsCompleted: 31,
+        percentile: 99.3,
+        country: "France",
+      },
+      {
+        id: 8,
+        rank: 8,
+        username: "MindHacker",
+        iqScore: 137,
+        testsCompleted: 27,
+        percentile: 99.2,
+        country: "India",
+      },
+      {
+        id: 9,
+        rank: 9,
+        username: "BrainiacPro",
+        iqScore: 136,
+        testsCompleted: 30,
+        percentile: 99.1,
+        country: "Netherlands",
+      },
+      {
+        id: 10,
+        rank: 10,
+        username: "MegaMind",
+        iqScore: 135,
+        testsCompleted: 28,
+        percentile: 99.0,
+        country: "Brazil",
+      },
+    ];
+
+    // Add user data if available
+    if (userData) {
+      return [
+        ...sampleData,
+        {
+          id: userData.userId,
+          rank: userData.globalRank,
+          username: userData.username,
+          iqScore: userData.iqScore,
+          testsCompleted: Object.values(userData.testResults || {}).reduce(
+            (sum, test) => sum + (test.totalTests || 0),
             0
-          )
-        : null,
-      percentile: userData?.globalPercentile,
-      country: "Romania",
-      isCurrentUser: true,
-    },
-  ];
+          ),
+          percentile: userData.globalPercentile,
+          country: "Romania", // Default country - should come from userData in real app
+          isCurrentUser: true,
+        },
+      ];
+    }
+
+    return sampleData;
+  }, [userData, propLeaderboardData]);
 
   // Sort function for the table
-  const sortedData = React.useMemo(() => {
+  const sortedData = useMemo(() => {
     let sortableItems = [...leaderboardData];
 
     if (sortConfig.key) {
@@ -161,8 +203,8 @@ export default function GlobalRankTable({ userData }) {
   // Filter based on search query
   const filteredData = sortedData.filter(
     (item) =>
-      item.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.country.toLowerCase().includes(searchQuery.toLowerCase())
+      item.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.country?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Get the sort indicator
@@ -343,7 +385,7 @@ export default function GlobalRankTable({ userData }) {
                             : "text-gray-700 dark:text-gray-300"
                         }`}
                       >
-                        {user.username.charAt(0).toUpperCase()}
+                        {user.username?.charAt(0).toUpperCase() || "?"}
                       </span>
                     </div>
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -375,7 +417,7 @@ export default function GlobalRankTable({ userData }) {
 
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900 dark:text-white">
-                    {user.percentile.toFixed(1)}%
+                    {user.percentile?.toFixed(1)}%
                   </div>
                 </td>
 

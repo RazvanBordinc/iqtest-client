@@ -3,6 +3,7 @@
 import React, { memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import OptionButton from "../OptionButton";
+import Image from "next/image";
 
 // Reusable component for multiple choice questions
 const MultipleChoiceQuestion = memo(function MultipleChoiceQuestion({
@@ -36,7 +37,7 @@ const MultipleChoiceQuestion = memo(function MultipleChoiceQuestion({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <img
+              <Image
                 src={imageSrc}
                 alt="Question visualization"
                 className="max-w-full h-auto max-h-60"
