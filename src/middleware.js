@@ -6,7 +6,10 @@ export function middleware(request) {
     request.cookies.get("token")?.value ||
     request.headers.get("authorization")?.replace("Bearer ", "");
 
+  const refreshToken = request.cookies.get("refreshToken")?.value;
+
   console.log("Middleware - Token present:", !!token);
+  console.log("Middleware - Refresh token present:", !!refreshToken);
   console.log("Middleware - Path:", request.nextUrl.pathname);
 
   // Check if user is trying to access protected routes
@@ -15,7 +18,15 @@ export function middleware(request) {
     (request.nextUrl.pathname.startsWith("/tests") ||
       request.nextUrl.pathname.startsWith("/leaderboard"))
   ) {
-    console.log("Middleware - Redirecting to auth");
+    // If we have a refresh token, let the app try to refresh
+    if (refreshToken) {
+      console.log(
+        "Middleware - Has refresh token, allowing through to attempt refresh"
+      );
+      return NextResponse.next();
+    }
+
+    console.log("Middleware - No token or refresh token, redirecting to auth");
     const loginUrl = new URL("/auth", request.url);
     return NextResponse.redirect(loginUrl);
   }

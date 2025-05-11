@@ -2,6 +2,10 @@ import { getCookie } from "@/utils/cookies";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5164";
 
+// Track if we're currently refreshing to avoid multiple refresh calls
+let isRefreshing = false;
+let refreshPromise = null;
+
 // Create headers with auth token if available
 const createHeaders = (additionalHeaders = {}) => {
   const headers = {
@@ -17,7 +21,34 @@ const createHeaders = (additionalHeaders = {}) => {
   return headers;
 };
 
-// Client-side fetch function with better error handling
+// Function to refresh the token
+const refreshToken = async () => {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/refresh-token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // Important for cookies
+    });
+
+    if (!response.ok) {
+      throw new Error("Token refresh failed");
+    }
+
+    const data = await response.json();
+
+    // Token should be set automatically by the server via cookies
+    return data;
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    // Redirect to login if refresh fails
+    window.location.href = "/auth";
+    throw error;
+  }
+};
+
+// Client-side fetch function with automatic token refresh
 export const clientFetch = async (endpoint, options = {}) => {
   const url = `${API_URL}${
     endpoint.startsWith("/") ? endpoint : `/${endpoint}`
@@ -37,13 +68,38 @@ export const clientFetch = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       console.log("Response Status:", response.status);
-      console.log(
-        "Response Headers:",
-        Object.fromEntries(response.headers.entries())
-      );
 
       if (response.status === 401) {
-        // Token might be expired, redirect to login
+        // Try to refresh token if we have a refresh token
+        const refreshTokenCookie = getCookie("refreshToken");
+
+        if (refreshTokenCookie && !isRefreshing) {
+          // If we're not already refreshing, start the refresh process
+          if (!refreshPromise) {
+            isRefreshing = true;
+            refreshPromise = refreshToken().finally(() => {
+              isRefreshing = false;
+              refreshPromise = null;
+            });
+          }
+
+          // Wait for the refresh to complete
+          await refreshPromise;
+
+          // Retry the original request with new token
+          const newFetchOptions = {
+            ...options,
+            headers: createHeaders(options.headers),
+            credentials: "include",
+          };
+
+          const retryResponse = await fetch(url, newFetchOptions);
+          if (retryResponse.ok) {
+            return await handleResponse(retryResponse);
+          }
+        }
+
+        // If refresh failed or no refresh token, redirect to login
         window.location.href = "/auth";
         throw new Error("Authentication required");
       }

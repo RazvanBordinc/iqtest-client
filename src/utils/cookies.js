@@ -1,5 +1,7 @@
 // src/utils/cookies.js
 
+const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
+
 /**
  * Set a cookie
  * @param {string} name - Cookie name
@@ -10,15 +12,19 @@ export const setCookie = (name, value, days = 7) => {
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + days);
 
-  const cookieValue =
+  let cookieValue =
     encodeURIComponent(value) +
     (days ? `; expires=${expiryDate.toUTCString()}` : "") +
-    "; path=/; SameSite=None"; // Allow cross-origin
+    "; path=/";
 
-  // Add secure flag in production
-  const secureFlag = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  // Handle SameSite and Secure flags based on environment
+  if (IS_DEVELOPMENT) {
+    cookieValue += "; SameSite=Lax";
+  } else {
+    cookieValue += "; SameSite=None; Secure";
+  }
 
-  document.cookie = `${name}=${cookieValue}${secureFlag}`;
+  document.cookie = `${name}=${cookieValue}`;
 };
 
 /**
@@ -52,7 +58,16 @@ export const getCookie = (name) => {
  * @param {string} name - Cookie name
  */
 export const removeCookie = (name) => {
-  document.cookie = `${name}=; Max-Age=-99999999; path=/`;
+  let cookieValue = `${name}=; Max-Age=-99999999; path=/`;
+
+  // Handle SameSite and Secure flags based on environment
+  if (IS_DEVELOPMENT) {
+    cookieValue += "; SameSite=Lax";
+  } else {
+    cookieValue += "; SameSite=None; Secure";
+  }
+
+  document.cookie = cookieValue;
 };
 
 /**
