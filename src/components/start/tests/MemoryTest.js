@@ -60,13 +60,18 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
 
   // Handle answer change for memory questions
   const handleAnswerChange = (inputId, value) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [currentSet]: {
-        ...prev[currentSet],
-        [inputId]: value,
-      },
-    }));
+    // Ensure we're creating a proper JSON-serializable object
+    setAnswers((prev) => {
+      const currentSetAnswers = prev[currentSet] || {};
+
+      return {
+        ...prev,
+        [currentSet]: {
+          ...currentSetAnswers,
+          [inputId]: value,
+        },
+      };
+    });
   };
 
   // Handle navigation
@@ -83,7 +88,20 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
       } else {
         // Test completed - send answers to parent
         if (onComplete) {
-          onComplete(answers);
+          // Format the memory test answers to match expected backend format
+          const formattedAnswers = {};
+
+          // Convert from set-based answers to question-based answers
+          Object.entries(answers).forEach(([setIndex, setAnswers]) => {
+            // Each set corresponds to a question
+            const questionId = memorySets[parseInt(setIndex)].id;
+            formattedAnswers[questionId] = {
+              type: "memory-pair",
+              value: setAnswers,
+            };
+          });
+
+          onComplete(formattedAnswers);
         }
       }
     }

@@ -24,7 +24,7 @@ export default async function StartPage({ searchParams }) {
 
   try {
     // Get test type from constants and questions from API
-    const testData = getTestById(category);
+    const testData = await getTestById(category);
 
     // Redirect if invalid test type
     if (!testData) {

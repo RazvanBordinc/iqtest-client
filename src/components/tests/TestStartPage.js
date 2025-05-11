@@ -98,21 +98,25 @@ export default function TestStartPage({
         }
 
         // Format based on answer type
-        let formattedAnswer = {
-          questionId: question.id,
-          type: answer.type || question.type,
-          value: answer.value,
-        };
-
-        // Special handling for memory answers
-        if (
-          question.type === "memory-pair" &&
-          typeof answer.value === "object"
-        ) {
-          formattedAnswer.value = answer.value;
+        if (question.type === "memory-pair") {
+          // For memory questions, properly format the object
+          return {
+            questionId: question.id,
+            type: "memory-pair",
+            // Convert the answer object to a proper string:string dictionary
+            value: JSON.stringify(answer),
+          };
+        } else {
+          // For other question types
+          return {
+            questionId: question.id,
+            type: answer.type || question.type,
+            value:
+              typeof answer.value === "string"
+                ? answer.value
+                : String(answer.value),
+          };
         }
-
-        return formattedAnswer;
       })
       .filter(Boolean); // Remove null entries
   };
