@@ -1,3 +1,4 @@
+// src/app/leaderboard/page.js
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import LeaderboardPage from "@/components/leaderboard/LeaderboardPage";
@@ -16,7 +17,7 @@ export default async function Page() {
   }
 
   try {
-    // Fetch global leaderboard and user ranking
+    // Use the server-side API calls with the token from cookies
     const [leaderboardData, userRankingData] = await Promise.all([
       getGlobalLeaderboard(50), // Get top 50 users
       getUserRanking(),

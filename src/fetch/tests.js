@@ -1,5 +1,4 @@
 // src/fetch/tests.js
-
 import api from "./api";
 import { TEST_TYPES } from "@/components/constants/testTypes";
 
@@ -15,6 +14,7 @@ export const getTestById = (testId) => {
 // Keep this function as it's still needed
 export const submitTest = async (testData) => {
   try {
+    console.log("Submitting test:", testData);
     return await api.post("api/test/submit", testData);
   } catch (error) {
     console.error("Failed to submit test:", error);
