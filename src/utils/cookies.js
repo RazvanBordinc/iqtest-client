@@ -13,7 +13,7 @@ export const setCookie = (name, value, days = 7) => {
   const cookieValue =
     encodeURIComponent(value) +
     (days ? `; expires=${expiryDate.toUTCString()}` : "") +
-    "; path=/; SameSite=Lax";
+    "; path=/; SameSite=None"; // Allow cross-origin
 
   // Add secure flag in production
   const secureFlag = process.env.NODE_ENV === "production" ? "; Secure" : "";

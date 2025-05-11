@@ -7,13 +7,14 @@ export const register = async (userData) => {
 
     // Store token and user data in cookies if available
     if (response.token) {
-      setCookie("token", response.token);
+      setCookie("token", response.token, 1); // 1 day expiry
       setCookie(
         "userData",
         JSON.stringify({
           username: response.username,
           email: response.email,
-        })
+        }),
+        1
       );
     }
 
@@ -30,13 +31,14 @@ export const login = async (credentials) => {
 
     // Store token and user data in cookies
     if (response.token) {
-      setCookie("token", response.token);
+      setCookie("token", response.token, 1); // 1 day expiry
       setCookie(
         "userData",
         JSON.stringify({
           username: response.username,
           email: response.email,
-        })
+        }),
+        1
       );
     }
 
