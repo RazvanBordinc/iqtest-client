@@ -13,29 +13,20 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
   const [currentSet, setCurrentSet] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timer, setTimer] = useState(20); // Countdown timer for memorization phase
-
-  // If no questions are provided, show error
-  if (!questions || questions.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-lg text-gray-600 dark:text-gray-300">
-          No questions available for this test.
-        </p>
-        <button
-          onClick={() => onComplete([])}
-          className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
-        >
-          Return
-        </button>
-      </div>
-    );
-  }
+  const [errorState, setErrorState] = useState(false);
+  const [currentSetData, setCurrentSetData] = useState(null);
 
   // Extract memory sets from questions
   const memorySets = questions.filter((q) => q.type === "memory-pair");
 
-  // Get current memory set
-  const currentSetData = memorySets[currentSet];
+  // Set current memory set data
+  useEffect(() => {
+    if (memorySets && memorySets.length > currentSet) {
+      setCurrentSetData(memorySets[currentSet]);
+    } else {
+      setErrorState(true);
+    }
+  }, [currentSet, memorySets]);
 
   // Start timer for memorization phase
   useEffect(() => {
@@ -65,7 +56,7 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
     if (currentSetData && currentSetData.memorizationTime) {
       setTimer(currentSetData.memorizationTime);
     }
-  }, [currentSet]);
+  }, [currentSet, currentSetData]);
 
   // Handle answer change for memory questions
   const handleAnswerChange = (inputId, value) => {
@@ -126,7 +117,24 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
 
   const isMemorizationPhase = phase === "memorization";
 
-  // If no valid current set data, show error
+  // If no questions are provided or error state is true, show error UI
+  if (!questions || questions.length === 0 || errorState) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          No questions available for this test.
+        </p>
+        <button
+          onClick={() => onComplete([])}
+          className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+        >
+          Return
+        </button>
+      </div>
+    );
+  }
+
+  // If no valid current set data, show error UI
   if (!currentSetData) {
     return (
       <div className="text-center py-12">

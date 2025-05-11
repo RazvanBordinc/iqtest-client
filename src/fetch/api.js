@@ -138,7 +138,8 @@ const handleResponse = async (response) => {
   return response.json();
 };
 
-export default {
+// Create the API object first, then export it (avoiding anonymous default export)
+const apiMethods = {
   get: (endpoint) => fetchApi(endpoint, { method: "GET" }),
   post: (endpoint, data) =>
     fetchApi(endpoint, {
@@ -152,3 +153,5 @@ export default {
     }),
   delete: (endpoint) => fetchApi(endpoint, { method: "DELETE" }),
 };
+
+export default apiMethods;
