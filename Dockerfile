@@ -14,7 +14,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
-
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 # Copy needed files
 COPY --from=base /app/public ./public
 COPY --from=base /app/.next ./.next
