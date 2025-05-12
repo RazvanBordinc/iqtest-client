@@ -143,7 +143,7 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
           No questions available for this test.
         </p>
         <button
-          onClick={() => onComplete([])}
+          onClick={() => onComplete({})}
           className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
         >
           Return
@@ -160,7 +160,7 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
           No memory questions available.
         </p>
         <button
-          onClick={() => onComplete([])}
+          onClick={() => onComplete({})}
           className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
         >
           Return

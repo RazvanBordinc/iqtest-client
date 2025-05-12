@@ -1,4 +1,4 @@
-// src/constants/testTypes.js
+// src/components/constants/testTypes.js
 
 export const TEST_TYPES = [
   {
@@ -11,7 +11,7 @@ export const TEST_TYPES = [
     icon: "Calculator",
     color: "from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600",
     stats: {
-      questionsCount: 24,
+      questionsCount: 20, // Updated from 24
       timeLimit: "25 minutes",
       difficulty: "Adaptive",
     },
@@ -27,7 +27,7 @@ export const TEST_TYPES = [
     color:
       "from-emerald-500 to-green-500 dark:from-emerald-600 dark:to-green-600",
     stats: {
-      questionsCount: 28,
+      questionsCount: 20, // Updated from 28
       timeLimit: "30 minutes",
       difficulty: "Adaptive",
     },
@@ -43,7 +43,7 @@ export const TEST_TYPES = [
     color:
       "from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600",
     stats: {
-      questionsCount: 20,
+      questionsCount: 15, // Updated from 20
       timeLimit: "22 minutes",
       difficulty: "Adaptive",
     },
@@ -59,7 +59,7 @@ export const TEST_TYPES = [
     color:
       "from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600",
     stats: {
-      questionsCount: 40,
+      questionsCount: 16, // Updated from 40
       timeLimit: "45 minutes",
       difficulty: "Adaptive",
     },

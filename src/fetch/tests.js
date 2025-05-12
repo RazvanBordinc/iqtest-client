@@ -1,3 +1,5 @@
+// src/fetch/tests.js
+
 import api from "./api";
 import { TEST_TYPES } from "@/components/constants/testTypes";
 
@@ -5,7 +7,6 @@ import { TEST_TYPES } from "@/components/constants/testTypes";
 export const getAvailableTests = async () => {
   try {
     // Can also fetch from backend if needed: const testTypes = await api.get("api/test/types");
-
     return TEST_TYPES;
   } catch (error) {
     console.error("Failed to fetch test types:", error);
@@ -36,6 +37,12 @@ export const getTestById = async (testId) => {
 export const submitTest = async (testData) => {
   try {
     console.log("Submitting test:", testData);
+
+    // Ensure testData includes timeTaken if not already present
+    if (!testData.timeTaken && typeof testData.timeTaken !== "number") {
+      console.warn("No timeTaken value provided in test submission");
+    }
+
     const result = await api.post("api/test/submit", testData);
 
     // Log the result for debugging

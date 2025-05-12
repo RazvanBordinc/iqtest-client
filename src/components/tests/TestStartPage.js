@@ -17,6 +17,7 @@ import MixedTest from "@/components/start/tests/MixedTest";
 // Import instructions and header
 import TestInstructions from "@/components/start/tests/TestInstructions";
 import Header from "@/components/start/Header";
+import TestResults from "@/components/start/TestResults";
 
 export default function TestStartPage({
   testType,
@@ -30,6 +31,16 @@ export default function TestStartPage({
   const [testStarted, setTestStarted] = useState(false);
   const [testComplete, setTestComplete] = useState(false);
   const [testScore, setTestScore] = useState(null);
+  const [testStartTime, setTestStartTime] = useState(null);
+
+  // Get time limit in seconds from testType
+  const getTimeLimit = () => {
+    if (!testType?.stats?.timeLimit) return 1800; // Default 30 minutes
+
+    const timeLimitStr = testType.stats.timeLimit;
+    const minutes = parseInt(timeLimitStr.match(/(\d+)/)[0], 10);
+    return minutes * 60; // Convert to seconds
+  };
 
   // Check authentication
   useEffect(() => {
@@ -54,11 +65,12 @@ export default function TestStartPage({
   const handleStartTest = () => {
     setShowInstructions(false);
     setTestStarted(true);
+    setTestStartTime(Date.now());
   };
 
   // Handle test completion
   const handleTestComplete = async (answers) => {
-    if (!answers || answers.length === 0) {
+    if (!answers || Object.keys(answers).length === 0) {
       showError("No answers to submit. Please complete the test.");
       return;
     }
@@ -66,13 +78,22 @@ export default function TestStartPage({
     setIsLoading(true);
 
     try {
+      // Calculate time taken in seconds
+      const endTime = Date.now();
+      const calculatedTimeTaken = testStartTime
+        ? Math.floor((endTime - testStartTime) / 1000)
+        : 0;
+
+      console.log(`Test completed in ${calculatedTimeTaken} seconds`);
+
       // Format answers for submission
       const formattedAnswers = formatAnswersForSubmission(answers);
 
-      // Submit test to backend
+      // Submit test to backend with time taken
       const result = await submitTest({
         testTypeId: testType.id,
         answers: formattedAnswers,
+        timeTaken: calculatedTimeTaken,
       });
 
       // Set results and show completion
@@ -104,7 +125,10 @@ export default function TestStartPage({
             questionId: question.id,
             type: "memory-pair",
             // Convert the answer object to a proper string:string dictionary
-            value: JSON.stringify(answer),
+            value:
+              typeof answer.value === "object"
+                ? JSON.stringify(answer.value)
+                : answer.value,
           };
         } else {
           // For other question types
@@ -119,6 +143,13 @@ export default function TestStartPage({
         }
       })
       .filter(Boolean); // Remove null entries
+  };
+
+  // Function to handle timer expiration
+  const handleTimerExpire = () => {
+    console.log("Test time expired, auto-submitting");
+    // Submit whatever answers were collected
+    handleTestComplete({});
   };
 
   // Show loading state
@@ -165,52 +196,11 @@ export default function TestStartPage({
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black">
           <main className="flex flex-col items-center pt-8 pb-16 px-4">
             <div className="w-full max-w-3xl">
-              {/* Test results component */}
-              <div className="bg-white/90 dark:bg-gray-900/80 border border-gray-200/50 dark:border-gray-700/50 rounded-2xl backdrop-blur-md shadow-xl overflow-hidden p-6 sm:p-8">
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                    Test Complete!
-                  </h2>
-                  <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-                    {testScore.score}%
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    You scored in the {testScore.percentile}th percentile
-                  </p>
-
-                  <div className="mt-8 grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                      <div className="text-gray-500 dark:text-gray-400">
-                        Duration
-                      </div>
-                      <div className="font-semibold">{testScore.duration}</div>
-                    </div>
-                    <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                      <div className="text-gray-500 dark:text-gray-400">
-                        Accuracy
-                      </div>
-                      <div className="font-semibold">
-                        {testScore.accuracy.toFixed(1)}%
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-8 flex gap-4 justify-center">
-                    <button
-                      onClick={() => router.push("/tests")}
-                      className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      Back to Tests
-                    </button>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <TestResults
+                answers={[]}
+                totalQuestions={testType?.stats?.questionsCount || 0}
+                calculateScore={() => testScore.score}
+              />
             </div>
           </main>
         </div>
@@ -223,8 +213,8 @@ export default function TestStartPage({
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black">
       <Header
         showTimer={testStarted}
-        totalSeconds={testType?.timeLimit || 1800} // Use time limit from props
-        onTimeFinish={() => handleTestComplete({})} // Submit empty answers on timeout
+        totalSeconds={getTimeLimit()}
+        onTimeFinish={handleTimerExpire}
       />
 
       <main className="flex flex-col items-center pt-8 pb-16 px-4">

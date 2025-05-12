@@ -9,6 +9,7 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
   const [isWarning, setIsWarning] = useState(false);
   const [isCritical, setIsCritical] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Check if we're on a mobile device for responsive sizing
   useEffect(() => {
@@ -27,6 +28,10 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
       return;
     }
 
+    if (isPaused) {
+      return;
+    }
+
     const timer = setInterval(() => {
       setSeconds((prev) => prev - 1);
     }, 1000);
@@ -34,12 +39,12 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
     // Set warning thresholds
     if (seconds < 60 && !isCritical) {
       setIsCritical(true);
-    } else if (seconds < 180 && !isWarning) {
+    } else if (seconds < totalSeconds * 0.1 && !isWarning) {
       setIsWarning(true);
     }
 
     return () => clearInterval(timer);
-  }, [seconds, onTimeFinish, isWarning, isCritical]);
+  }, [seconds, onTimeFinish, isWarning, isCritical, isPaused, totalSeconds]);
 
   const formatTime = useCallback(() => {
     const minutes = Math.floor(seconds / 60);
@@ -52,6 +57,13 @@ export default function Timer({ totalSeconds, onTimeFinish }) {
   const progress = useCallback(() => {
     return (seconds / totalSeconds) * 100;
   }, [seconds, totalSeconds]);
+
+  // Expose remaining time to parent components
+  useEffect(() => {
+    if (window) {
+      window.testRemainingTime = seconds;
+    }
+  }, [seconds]);
 
   // Set dimensions based on device size
   const width = isMobile ? "w-20" : "w-28";
