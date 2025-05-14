@@ -10,6 +10,12 @@ let setGlobalError = null;
 
 // Function to show error from anywhere in the app
 export const showError = (message) => {
+  // Don't show errors on home page or if we're about to redirect
+  if (typeof window !== 'undefined' && 
+      (window.location.pathname === '/' || message === 'Authentication required')) {
+    return;
+  }
+  
   if (setGlobalError) {
     setGlobalError(message);
   } else {

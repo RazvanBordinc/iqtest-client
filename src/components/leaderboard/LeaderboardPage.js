@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/fetch/auth";
 import {
   getGlobalLeaderboard,
   getTestTypeLeaderboard,
@@ -16,15 +18,14 @@ import UserRankingSummary from "@/components/leaderboard/UserRankingSummary";
 import GlobalRankTable from "@/components/leaderboard/GlobalRankingTable";
 import TestSpecificRankTable from "@/components/leaderboard/TestSpecificRankTable";
 
-export default function LeaderboardPage({
-  initialLeaderboard = [],
-  initialUserRanking = null,
-  error = null,
-}) {
+export default function LeaderboardPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("global");
-  const [leaderboardData, setLeaderboardData] = useState(initialLeaderboard);
-  const [userData, setUserData] = useState(initialUserRanking);
-  const [isLoading, setIsLoading] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [userData, setUserData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Tab options for the leaderboard
   const tabOptions = [
@@ -35,46 +36,59 @@ export default function LeaderboardPage({
     { id: "mixed", label: "Mixed" },
   ];
 
-  // If there was an error from server-side fetching, show it
+  // Check authentication on mount
   useEffect(() => {
-    if (error) {
-      showError(error);
+    const authenticated = isAuthenticated();
+    setAuthChecked(true);
+    if (!authenticated) {
+      router.push("/");
+      return;
     }
-  }, [error]);
+  }, [router]);
 
-  // Fetch leaderboard data when tab changes
+  // Fetch leaderboard data when tab changes or auth is checked
   useEffect(() => {
-    fetchLeaderboardData();
-  }, [activeTab]);
+    if (authChecked && isAuthenticated()) {
+      fetchLeaderboardData();
+    }
+  }, [activeTab, authChecked]);
 
   // Fetch leaderboard data based on active tab
   const fetchLeaderboardData = async () => {
-    if (
-      (activeTab === "global" && initialLeaderboard.length > 0) ||
-      (activeTab !== "global" && leaderboardData.length > 0)
-    ) {
-      return; // Skip fetch if we already have data
+    // Don't fetch if not authenticated
+    if (!isAuthenticated()) {
+      router.push("/");
+      return;
     }
 
     setIsLoading(true);
+    setError(null);
 
     try {
-      let data;
-      if (activeTab === "global") {
-        data = await getGlobalLeaderboard(50);
+      // Fetch leaderboard and user data in parallel
+      const [leaderboardResponse, userResponse] = await Promise.allSettled([
+        activeTab === "global" 
+          ? getGlobalLeaderboard(50)
+          : getTestTypeLeaderboard(activeTab, 50),
+        userData ? Promise.resolve(userData) : getUserRanking()
+      ]);
+
+      if (leaderboardResponse.status === 'fulfilled') {
+        setLeaderboardData(leaderboardResponse.value || []);
       } else {
-        data = await getTestTypeLeaderboard(activeTab, 50);
+        console.error('Failed to fetch leaderboard:', leaderboardResponse.reason);
+        setLeaderboardData([]);
       }
 
-      setLeaderboardData(data);
-
-      // If we don't have user ranking data yet, fetch it
-      if (!userData) {
-        const rankingData = await getUserRanking();
-        setUserData(rankingData);
+      if (userResponse.status === 'fulfilled' && !userData) {
+        setUserData(userResponse.value);
       }
     } catch (error) {
-      showError(error.message || "Failed to load leaderboard data");
+      console.error('Error fetching leaderboard data:', error);
+      // Only show error if it's not an auth error (those redirect automatically)
+      if (error.message !== "Authentication required") {
+        showError(error.message || "Failed to load leaderboard data");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +97,20 @@ export default function LeaderboardPage({
   // Get content based on active tab
   const renderTabContent = () => {
     if (isLoading) {
-      return <LoadingAnimation />;
+      return (
+        <div className="flex justify-center items-center py-8">
+          <LoadingAnimation />
+        </div>
+      );
+    }
+
+    if (!leaderboardData || leaderboardData.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">No leaderboard data available yet.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Be the first to complete a test!</p>
+        </div>
+      );
     }
 
     if (activeTab === "global") {
@@ -105,6 +132,15 @@ export default function LeaderboardPage({
     );
   };
 
+  // Don't render until auth is checked
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black text-black dark:text-white flex items-center justify-center">
+        <LoadingAnimation />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black text-black dark:text-white">
       <Header />
@@ -125,7 +161,6 @@ export default function LeaderboardPage({
 
           {/* Tab navigation */}
           <LeaderboardTabs
-            options={tabOptions}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           />

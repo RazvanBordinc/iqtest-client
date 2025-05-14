@@ -1,5 +1,6 @@
 // src/fetch/api.js (Updated version)
 import { getCookie } from "@/utils/cookies";
+import { showError } from "@/components/shared/ErrorModal";
 
 const API_URL =
   typeof window === "undefined"
@@ -33,24 +34,15 @@ export const clientFetch = async (endpoint, options = {}) => {
     credentials: "include", // Include cookies
   };
 
-  console.log("Client API Request:", {
-    url,
-    method: options.method || "GET",
-    headers: fetchOptions.headers,
-  });
-
   try {
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
-      console.error("Client API Error:", {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-      });
-
       if (response.status === 401) {
-        window.location.href = "/auth";
+        // Immediately redirect to home for auth errors
+        if (window.location.pathname !== "/" && window.location.pathname !== "/auth") {
+          window.location.href = "/";
+        }
         throw new Error("Authentication required");
       }
     }
@@ -58,6 +50,10 @@ export const clientFetch = async (endpoint, options = {}) => {
     return await handleResponse(response);
   } catch (error) {
     console.error("Client API request failed:", error);
+    // Show error modal for non-auth errors
+    if (error.message !== "Authentication required") {
+      showError(error.message || "An unexpected error occurred");
+    }
     throw error;
   }
 };

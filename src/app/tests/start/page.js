@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import TestStartPage from "@/components/tests/TestStartPage";
 import { getQuestionsByTestType } from "@/fetch/questions";
 import { getTestById } from "@/fetch/tests";
+import AuthGuard from "@/components/shared/AuthGuard";
 
 // This is a Server Component
 export default async function StartPage({ searchParams }) {
@@ -10,9 +11,9 @@ export default async function StartPage({ searchParams }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token");
 
-  // If not authenticated, redirect to login
+  // If not authenticated, redirect to home
   if (!token) {
-    redirect("/auth");
+    redirect("/");
   }
 
   const { category } = searchParams;
@@ -34,19 +35,23 @@ export default async function StartPage({ searchParams }) {
     // Get questions from API
     const questionsData = await getQuestionsByTestType(category);
 
-    // Pass the data to the client component
+    // Pass the data to the client component wrapped with AuthGuard
     return (
-      <TestStartPage testType={testData} initialQuestions={questionsData} />
+      <AuthGuard>
+        <TestStartPage testType={testData} initialQuestions={questionsData} />
+      </AuthGuard>
     );
   } catch (error) {
     // Handle error while still allowing page to render
     console.error("Failed to fetch test questions:", error);
     return (
-      <TestStartPage
-        testType={getTestById(category)}
-        initialQuestions={[]}
-        error={error.message}
-      />
+      <AuthGuard>
+        <TestStartPage
+          testType={getTestById(category)}
+          initialQuestions={[]}
+          error={error.message}
+        />
+      </AuthGuard>
     );
   }
 }

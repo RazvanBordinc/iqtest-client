@@ -49,7 +49,7 @@ export default function TestStartPage({
     }
   }, [router]);
 
-  // If there was an error from server-side fetching, show it
+  // Show error if passed from server
   useEffect(() => {
     if (error) {
       showError(error);

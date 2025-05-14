@@ -3,25 +3,31 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { login, register, isAuthenticated } from "@/fetch/auth";
+import { checkUsername, createUser, loginWithPassword, isAuthenticated } from "@/fetch/auth";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
+import GenderSelector from "@/components/begin/GenderSelector";
+import AgeSelector from "@/components/begin/AgeSelector";
 
 export default function AuthPage() {
   const router = useRouter();
-  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(true); // New state for checking auth
+  const [isChecking, setIsChecking] = useState(true);
+
+  // Flow state
+  const [step, setStep] = useState("username"); // "username", "details", "password", "login"
+  const [userExists, setUserExists] = useState(false);
 
   // Form state
-  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [gender, setGender] = useState("");
+  const [age, setAge] = useState(null);
   const [password, setPassword] = useState("");
 
   // Form validation state
-  const [emailError, setEmailError] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [ageError, setAgeError] = useState("");
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -40,74 +46,97 @@ export default function AuthPage() {
     checkAuth();
   }, [router]);
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validate inputs
-    const isValid = validateInputs();
-    if (!isValid) return;
+  // Handle username check
+  const handleUsernameCheck = async () => {
+    if (!username.trim()) {
+      setUsernameError("Username is required");
+      return;
+    }
+    if (username.length < 3) {
+      setUsernameError("Username must be at least 3 characters");
+      return;
+    }
+    setUsernameError("");
 
     setIsLoading(true);
-
     try {
-      if (isLogin) {
-        // Handle login
-        await login({ email, password });
+      const response = await checkUsername(username);
+      setUserExists(response.exists);
+      if (response.exists) {
+        setStep("login");
       } else {
-        // Handle registration
-        await register({ username, email, password });
+        setStep("details");
       }
-
-      // Redirect to tests page on success
-      router.push("/tests");
     } catch (error) {
-      showError(error.message || "Authentication failed. Please try again.");
+      showError("Failed to check username. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Input validation
-  const validateInputs = () => {
-    let isValid = true;
-
-    // Email validation
-    if (!email.trim()) {
-      setEmailError("Email is required");
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError("Please enter a valid email");
-      isValid = false;
-    } else {
-      setEmailError("");
+  // Handle user creation
+  const handleCreateUser = async () => {
+    if (!gender || !age) {
+      if (!gender) showError("Please select your gender");
+      if (!age) setAgeError("Please enter your age");
+      return;
     }
 
-    // Username validation (only for signup)
-    if (!isLogin) {
-      if (!username.trim()) {
-        setUsernameError("Username is required");
-        isValid = false;
-      } else if (username.length < 3) {
-        setUsernameError("Username must be at least 3 characters");
-        isValid = false;
-      } else {
-        setUsernameError("");
-      }
+    if (age < 1 || age > 120) {
+      setAgeError("Please enter a valid age");
+      return;
     }
 
-    // Password validation
+    setStep("password");
+  };
+
+  // Handle password submission (for new users)
+  const handlePasswordSubmit = async () => {
     if (!password.trim()) {
       setPasswordError("Password is required");
-      isValid = false;
-    } else if (!isLogin && password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
-      isValid = false;
-    } else {
-      setPasswordError("");
+      return;
     }
+    if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters");
+      return;
+    }
+    setPasswordError("");
 
-    return isValid;
+    setIsLoading(true);
+    try {
+      await createUser({ username, gender, age: parseInt(age), password });
+      router.push("/tests");
+    } catch (error) {
+      showError(error.message || "Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle login (for existing users)
+  const handleLogin = async () => {
+    if (!password.trim()) {
+      setPasswordError("Password is required");
+      return;
+    }
+    setPasswordError("");
+
+    setIsLoading(true);
+    try {
+      await loginWithPassword({ email: `${username}@iqtest.local`, password });
+      router.push("/tests");
+    } catch (error) {
+      showError(error.message || "Invalid password. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e, action) => {
+    if (e.key === "Enter") {
+      action();
+    }
   };
 
   // Show loading while checking authentication
@@ -125,126 +154,250 @@ export default function AuthPage() {
         <LoadingAnimation />
       ) : (
         <div className="w-full max-w-md">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700"
-          >
-            {/* Logo/Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {isLogin ? "Welcome Back" : "Create Account"}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                {isLogin ? "Sign in to your account" : "Sign up to get started"}
-              </p>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Email Field */}
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    emailError
-                      ? "border-red-500"
-                      : "border-gray-300 dark:border-gray-700"
-                  } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
-                  placeholder="Enter your email"
-                />
-                {emailError && (
-                  <p className="mt-1 text-sm text-red-500">{emailError}</p>
-                )}
-              </div>
-
-              {/* Username Field (only for signup) */}
-              {!isLogin && (
-                <div>
-                  <label
-                    htmlFor="username"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  >
-                    Username
-                  </label>
-                  <input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                      usernameError
-                        ? "border-red-500"
-                        : "border-gray-300 dark:border-gray-700"
-                    } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
-                    placeholder="Enter your username"
-                  />
-                  {usernameError && (
-                    <p className="mt-1 text-sm text-red-500">{usernameError}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Password Field */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    passwordError
-                      ? "border-red-500"
-                      : "border-gray-300 dark:border-gray-700"
-                  } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
-                  placeholder="Enter your password"
-                />
-                {passwordError && (
-                  <p className="mt-1 text-sm text-red-500">{passwordError}</p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          <AnimatePresence mode="wait">
+            {/* Username Step */}
+            {step === "username" && (
+              <motion.div
+                key="username"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700"
               >
-                {isLoading ? "Processing..." : isLogin ? "Sign In" : "Sign Up"}
-              </button>
-            </form>
+                <div className="text-center mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    Welcome to IQ Test
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Enter your username to continue
+                  </p>
+                </div>
 
-            {/* Toggle Login/Signup */}
-            <div className="mt-6 text-center">
-              <p className="text-gray-600 dark:text-gray-400">
-                {isLogin
-                  ? "Don't have an account? "
-                  : "Already have an account? "}
-                <button
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-purple-500 hover:text-purple-600 font-medium transition-colors"
-                >
-                  {isLogin ? "Sign up" : "Sign in"}
-                </button>
-              </p>
-            </div>
-          </motion.div>
+                <div className="space-y-6">
+                  <div>
+                    <label
+                      htmlFor="username"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                      Username
+                    </label>
+                    <input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      onKeyPress={(e) => handleKeyPress(e, handleUsernameCheck)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                        usernameError
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-gray-700"
+                      } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
+                      placeholder="Enter your username"
+                      autoFocus
+                    />
+                    {usernameError && (
+                      <p className="mt-1 text-sm text-red-500">{usernameError}</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleUsernameCheck}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Details Step (for new users) */}
+            {step === "details" && (
+              <motion.div
+                key="details"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <div className="text-center mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    Tell us about yourself
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Help us personalize your experience
+                  </p>
+                </div>
+
+                <div className="space-y-8">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                      Select your gender
+                    </p>
+                    <GenderSelector gender={gender} setGender={setGender} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+                      Enter your age
+                    </p>
+                    <AgeSelector age={age} setAge={setAge} />
+                    {ageError && (
+                      <p className="mt-2 text-sm text-red-500 text-center">{ageError}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setStep("username")}
+                      className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handleCreateUser}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Password Step (for new users) */}
+            {step === "password" && (
+              <motion.div
+                key="password"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <div className="text-center mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    Create a password
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Keep your account secure
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyPress={(e) => handleKeyPress(e, handlePasswordSubmit)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                        passwordError
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-gray-700"
+                      } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
+                      placeholder="Create a password (8+ characters)"
+                      autoFocus
+                    />
+                    {passwordError && (
+                      <p className="mt-1 text-sm text-red-500">{passwordError}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setStep("details")}
+                      className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={handlePasswordSubmit}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                      Create Account
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Login Step (for existing users) */}
+            {step === "login" && (
+              <motion.div
+                key="login"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700"
+              >
+                <div className="text-center mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    Welcome back, {username}!
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Enter your password to continue
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyPress={(e) => handleKeyPress(e, handleLogin)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                        passwordError
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-gray-700"
+                      } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
+                      placeholder="Enter your password"
+                      autoFocus
+                    />
+                    {passwordError && (
+                      <p className="mt-1 text-sm text-red-500">{passwordError}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        setStep("username");
+                        setPassword("");
+                        setUsername("");
+                      }}
+                      className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+                    >
+                      Use Different Account
+                    </button>
+                    <button
+                      onClick={handleLogin}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>

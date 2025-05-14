@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BrainCircuit, Trophy, User, ClipboardList } from "lucide-react";
+import { BrainCircuit, Trophy, LogOut, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import Timer from "./Timer";
 import ThemeToggle from "../shared/ThemeToggle";
 import { useTheme } from "../shared/ThemeProvider";
+import { isAuthenticated, disconnect } from "@/fetch/auth";
 
 export default function Header({
   totalSeconds,
@@ -14,6 +15,27 @@ export default function Header({
   showTimer = true,
 }) {
   const { mounted } = useTheme();
+  const [authenticated, setAuthenticated] = useState(false);
+  
+  useEffect(() => {
+    // Check authentication status
+    const checkAuth = () => {
+      const isAuth = isAuthenticated();
+      setAuthenticated(isAuth);
+    };
+    
+    // Initial check
+    checkAuth();
+    
+    // Listen for changes in authentication
+    const interval = setInterval(checkAuth, 1000); // Check every second
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleDisconnect = async () => {
+    await disconnect();
+  };
 
   if (!mounted) return null;
 
@@ -65,16 +87,17 @@ export default function Header({
             </motion.div>
           </Link>
 
-          <Link href="/auth" passHref>
-            <motion.div
-              className="flex items-center px-2 py-1.5 sm:px-3 sm:py-2 text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 cursor-pointer rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+          {authenticated && (
+            <motion.button
+              onClick={handleDisconnect}
+              className="flex items-center px-2 py-1.5 sm:px-3 sm:py-2 text-sm sm:text-base font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 cursor-pointer rounded-md hover:bg-red-100 dark:hover:bg-red-900/30"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <User className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-1.5" />
-              <span className="hidden sm:inline">Account</span>
-            </motion.div>
-          </Link>
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-1.5" />
+              <span className="hidden sm:inline">Disconnect</span>
+            </motion.button>
+          )}
 
           {/* Theme Toggle */}
           <div className="flex items-center">

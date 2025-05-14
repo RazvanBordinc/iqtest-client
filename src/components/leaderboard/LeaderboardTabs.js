@@ -8,7 +8,7 @@ import { TEST_TYPES } from "../constants/testTypes";
 export default function LeaderboardTabs({ activeTab, setActiveTab }) {
   const [indicatorWidth, setIndicatorWidth] = useState(0);
   const [indicatorLeft, setIndicatorLeft] = useState(0);
-  const [activeTabEl, setActiveTabEl] = useState(null);
+  const [tabRefs, setTabRefs] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
   // Create tab options from test types plus global
@@ -55,12 +55,13 @@ export default function LeaderboardTabs({ activeTab, setActiveTab }) {
 
   // Update indicator position when active tab changes
   useEffect(() => {
-    if (activeTabEl) {
-      const { offsetWidth, offsetLeft } = activeTabEl;
+    const activeEl = tabRefs[activeTab];
+    if (activeEl) {
+      const { offsetWidth, offsetLeft } = activeEl;
       setIndicatorWidth(offsetWidth);
       setIndicatorLeft(offsetLeft);
     }
-  }, [activeTabEl, activeTab]);
+  }, [activeTab, tabRefs, isMobile]);
 
   // Handle tab change
   const handleTabChange = (tabId) => {
@@ -152,8 +153,16 @@ export default function LeaderboardTabs({ activeTab, setActiveTab }) {
           <button
             key={option.id}
             ref={(el) => {
-              if (option.id === activeTab) {
-                setActiveTabEl(el);
+              if (el) {
+                setTabRefs(prev => {
+                  if (prev[option.id] !== el) {
+                    return {
+                      ...prev,
+                      [option.id]: el
+                    };
+                  }
+                  return prev;
+                });
               }
             }}
             onClick={() => handleTabChange(option.id)}

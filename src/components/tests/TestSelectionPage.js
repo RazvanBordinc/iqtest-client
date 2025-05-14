@@ -14,28 +14,35 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   const router = useRouter();
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
   const [username, setUsername] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Get user data from cookie
   useEffect(() => {
     // Check if user is authenticated
-    if (!isAuthenticated()) {
-      router.push("/auth");
-      return;
-    }
+    const checkAuth = () => {
+      const authenticated = isAuthenticated();
+      
+      if (!authenticated) {
+        router.push("/");
+        return;
+      }
 
-    // Get user data if available
-    const userData = getCurrentUser();
-    if (userData?.username) {
-      setUsername(userData.username);
-    }
-
+      // Get user data if available
+      const userData = getCurrentUser();
+      if (userData?.username) {
+        setUsername(userData.username);
+      }
+      
+      setAuthChecked(true);
+    };
+    
+    checkAuth();
+    
     // Simulate a short loading state for smooth animation
-    const timer = setTimeout(() => {
+    setTimeout(() => {
       setIsAnimationComplete(true);
     }, 800);
-
-    return () => clearTimeout(timer);
-  }, [router]);
+  }, []); // Remove router dependency to prevent infinite loop
 
   // Handle category selection
   const handleCategorySelect = (category) => {
@@ -83,7 +90,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   );
 
   // Show brief loading animation
-  if (!isAnimationComplete) {
+  if (!authChecked || !isAnimationComplete) {
     return (
       <>
         <Header />

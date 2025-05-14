@@ -1,6 +1,68 @@
 import api from "./api";
 import { setCookie, removeCookie, getCookie } from "@/utils/cookies";
 
+export const checkUsername = async (username) => {
+  try {
+    const response = await api.post("api/auth/check-username", { username });
+    return response;
+  } catch (error) {
+    console.error("Username check failed:", error);
+    throw error;
+  }
+};
+
+export const createUser = async (userData) => {
+  try {
+    const response = await api.post("api/auth/create-user", userData);
+
+    // Store token and user data in cookies if available
+    if (response.token) {
+      setCookie("token", response.token, 1); // 1 day expiry
+      if (response.refreshToken) {
+        setCookie("refreshToken", response.refreshToken, 7); // 7 days for refresh token
+      }
+      const userDataObj = {
+        username: response.username,
+        email: response.email,
+        gender: response.gender,
+        age: response.age,
+      };
+      setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
+    }
+
+    return response;
+  } catch (error) {
+    console.error("User creation failed:", error);
+    throw error;
+  }
+};
+
+export const loginWithPassword = async (credentials) => {
+  try {
+    const response = await api.post("api/auth/login-with-password", credentials);
+
+    // Store token and user data in cookies
+    if (response.token) {
+      setCookie("token", response.token, 1); // 1 day expiry
+      if (response.refreshToken) {
+        setCookie("refreshToken", response.refreshToken, 7); // 7 days for refresh token
+      }
+      const userDataObj = {
+        username: response.username,
+        email: response.email,
+        gender: response.gender,
+        age: response.age,
+      };
+      setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Login failed:", error);
+    throw error;
+  }
+};
+
 export const register = async (userData) => {
   try {
     const response = await api.post("api/auth/register", userData);
@@ -8,14 +70,11 @@ export const register = async (userData) => {
     // Store token and user data in cookies if available
     if (response.token) {
       setCookie("token", response.token, 1); // 1 day expiry
-      setCookie(
-        "userData",
-        JSON.stringify({
-          username: response.username,
-          email: response.email,
-        }),
-        1
-      );
+      const userDataObj = {
+        username: response.username,
+        email: response.email,
+      };
+      setCookie("userData", JSON.stringify(userDataObj), 1);
     }
 
     return response;
@@ -32,14 +91,11 @@ export const login = async (credentials) => {
     // Store token and user data in cookies
     if (response.token) {
       setCookie("token", response.token, 1); // 1 day expiry
-      setCookie(
-        "userData",
-        JSON.stringify({
-          username: response.username,
-          email: response.email,
-        }),
-        1
-      );
+      const userDataObj = {
+        username: response.username,
+        email: response.email,
+      };
+      setCookie("userData", JSON.stringify(userDataObj), 1);
     }
 
     return response;
@@ -49,15 +105,38 @@ export const login = async (credentials) => {
   }
 };
 
-export const logout = () => {
-  // Clear auth data from cookies
-  removeCookie("token");
-  removeCookie("userData");
+export const disconnect = async () => {
+  try {
+    await api.post("api/auth/disconnect");
+    
+    // Clear all cookies
+    removeCookie("token");
+    removeCookie("userData");
+    removeCookie("username");
+    removeCookie("age");
+    removeCookie("gender");
 
-  // Redirect to home page
-  if (typeof window !== "undefined") {
-    window.location.href = "/";
+    // Redirect to home page
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
+  } catch (error) {
+    console.error("Disconnect failed:", error);
+    // Still clear cookies even if API call fails
+    removeCookie("token");
+    removeCookie("userData");
+    removeCookie("username");
+    removeCookie("age");
+    removeCookie("gender");
+    
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   }
+};
+
+export const logout = () => {
+  disconnect();
 };
 
 export const getCurrentUser = () => {
@@ -68,5 +147,6 @@ export const getCurrentUser = () => {
 
 export const isAuthenticated = () => {
   // Check if user is authenticated by verifying token cookie exists
-  return !!getCookie("token");
+  const token = getCookie("token");
+  return !!token;
 };

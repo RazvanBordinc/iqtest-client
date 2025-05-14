@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-export default function TestSpecificRankTable({ testType, userData }) {
+export default function TestSpecificRankTable({ testType, userData, leaderboardData: propLeaderboardData }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: "rank",
@@ -135,121 +135,45 @@ export default function TestSpecificRankTable({ testType, userData }) {
 
   const testInfo = getTestInfo();
 
-  // Sample leaderboard data - in real app this would come from API
-  const generateLeaderboardData = () => {
-    // Generate different data based on test type to simulate variety
-    const baseData = [
-      {
-        id: 1,
-        rank: 1,
-        username: "MathWizard",
-        score: 98,
-        accuracy: 99.2,
-        time: "12:45",
-        date: "2 days ago",
-      },
-      {
-        id: 2,
-        rank: 2,
-        username: "QuizMaster",
-        score: 97,
-        accuracy: 98.5,
-        time: "13:20",
-        date: "1 day ago",
-      },
-      {
-        id: 3,
-        rank: 3,
-        username: "TestAce",
-        score: 95,
-        accuracy: 97.8,
-        time: "14:15",
-        date: "4 days ago",
-      },
-      {
-        id: 4,
-        rank: 4,
-        username: "BrainBox",
-        score: 94,
-        accuracy: 96.3,
-        time: "15:10",
-        date: "1 week ago",
-      },
-      {
-        id: 5,
-        rank: 5,
-        username: "LogicMaster",
-        score: 92,
-        accuracy: 95.7,
-        time: "12:30",
-        date: "2 days ago",
-      },
-      {
-        id: 6,
-        rank: 6,
-        username: "MindHacker",
-        score: 91,
-        accuracy: 94.8,
-        time: "14:50",
-        date: "3 days ago",
-      },
-      {
-        id: 7,
-        rank: 7,
-        username: "GeniusMode",
-        score: 90,
-        accuracy: 93.5,
-        time: "16:25",
-        date: "5 days ago",
-      },
-      {
-        id: 8,
-        rank: 8,
-        username: "IQChamp",
-        score: 89,
-        accuracy: 92.6,
-        time: "13:45",
-        date: "1 week ago",
-      },
-      {
-        id: 9,
-        rank: 9,
-        username: "SmartAlec",
-        score: 88,
-        accuracy: 91.9,
-        time: "15:30",
-        date: "2 days ago",
-      },
-      {
-        id: 10,
-        rank: 10,
-        username: "BrainiacPro",
-        score: 87,
-        accuracy: 90.8,
-        time: "17:15",
-        date: "4 days ago",
-      },
-    ];
+  // Process leaderboard data from backend
+  const leaderboardData = React.useMemo(() => {
+    // Return empty array if no data
+    if (!propLeaderboardData || propLeaderboardData.length === 0) {
+      return [];
+    }
 
-    if (testType && userData?.testResults?.[testType]) {
-      // Add current user data
+    // Map the backend data to the expected format
+    const mappedData = propLeaderboardData.map((user) => ({
+      id: user.userId,
+      rank: user.rank,
+      username: user.username,
+      score: user.score,
+      accuracy: user.accuracy || user.percentile || 0,
+      accuracyDisplay: user.percentileDisplay,
+      time: user.averageTime || user.completionTime || "N/A",
+      date: user.lastTestDate ? new Date(user.lastTestDate).toLocaleDateString() : "N/A",
+      isCurrentUser: userData && user.userId === userData.userId,
+    }));
+
+    // If userData exists and isn't already in the list, add it
+    const hasUserData = mappedData.some((user) => user.isCurrentUser);
+    
+    if (!hasUserData && userData && userData.testResults?.[testType]) {
       const userTestData = userData.testResults[testType];
-      baseData.push({
+      mappedData.push({
         id: userData.userId,
-        rank: userTestData.rank,
+        rank: userTestData.rank || mappedData.length + 1,
         username: userData.username,
-        score: userTestData.score,
-        accuracy: userTestData.percentile,
-        time: "14:22", // Example time
+        score: userTestData.score || 0,
+        accuracy: userTestData.accuracy || userTestData.percentile || 0,
+        time: userTestData.time || "N/A",
         date: "Today",
         isCurrentUser: true,
       });
     }
 
-    return baseData;
-  };
-
-  const leaderboardData = generateLeaderboardData();
+    return mappedData;
+  }, [propLeaderboardData, userData, testType]);
 
   // Sort function for the table
   const sortedData = React.useMemo(() => {
@@ -493,7 +417,9 @@ export default function TestSpecificRankTable({ testType, userData }) {
 
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900 dark:text-white">
-                    {user.accuracy}%
+                    {user.accuracyDisplay ? 
+                      (user.accuracyDisplay === "0.01" ? "0.01% or less" : `${user.accuracyDisplay}%`) : 
+                      `${user.accuracy?.toFixed(2)}%`}
                   </div>
                 </td>
 
