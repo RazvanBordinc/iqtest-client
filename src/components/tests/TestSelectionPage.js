@@ -42,7 +42,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
     setTimeout(() => {
       setIsAnimationComplete(true);
     }, 800);
-  }, []); // Remove router dependency to prevent infinite loop
+  }, [router]);
 
   // Handle category selection
   const handleCategorySelect = (category) => {

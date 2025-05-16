@@ -148,8 +148,8 @@ export default function TestStartPage({
   // Function to handle timer expiration
   const handleTimerExpire = () => {
     console.log("Test time expired, auto-submitting");
-    // Submit whatever answers were collected
-    handleTestComplete({});
+    // Auto-submit is handled by the test components themselves
+    // This is just a fallback if needed
   };
 
   // Show loading state
@@ -197,9 +197,8 @@ export default function TestStartPage({
           <main className="flex flex-col items-center pt-8 pb-16 px-4">
             <div className="w-full max-w-3xl">
               <TestResults
-                answers={[]}
-                totalQuestions={testType?.stats?.questionsCount || 0}
-                calculateScore={() => testScore.score}
+                testResult={testScore}
+                testType={testType?.id}
               />
             </div>
           </main>

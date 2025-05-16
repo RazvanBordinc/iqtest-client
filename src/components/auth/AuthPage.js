@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { checkUsername, createUser, loginWithPassword, isAuthenticated } from "@/fetch/auth";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
-import GenderSelector from "@/components/begin/GenderSelector";
+import CountrySelect from "@/components/shared/CountrySelect";
 import AgeSelector from "@/components/begin/AgeSelector";
 
 export default function AuthPage() {
@@ -20,7 +20,7 @@ export default function AuthPage() {
 
   // Form state
   const [username, setUsername] = useState("");
-  const [gender, setGender] = useState("");
+  const [country, setCountry] = useState("");
   const [age, setAge] = useState(null);
   const [password, setPassword] = useState("");
 
@@ -61,8 +61,10 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       const response = await checkUsername(username);
-      setUserExists(response.exists);
-      if (response.exists) {
+      // In production, exists is null, so we always go to details step
+      const userExists = response.exists ?? false;
+      setUserExists(userExists);
+      if (userExists) {
         setStep("login");
       } else {
         setStep("details");
@@ -76,8 +78,8 @@ export default function AuthPage() {
 
   // Handle user creation
   const handleCreateUser = async () => {
-    if (!gender || !age) {
-      if (!gender) showError("Please select your gender");
+    if (!country || !age) {
+      if (!country) showError("Please select your country");
       if (!age) setAgeError("Please enter your age");
       return;
     }
@@ -104,7 +106,7 @@ export default function AuthPage() {
 
     setIsLoading(true);
     try {
-      await createUser({ username, gender, age: parseInt(age), password });
+      await createUser({ username, country, age: parseInt(age), password });
       router.push("/tests");
     } catch (error) {
       showError(error.message || "Failed to create account. Please try again.");
@@ -201,12 +203,30 @@ export default function AuthPage() {
                     )}
                   </div>
 
-                  <button
+                  <motion.button
                     onClick={handleUsernameCheck}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                    className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 relative overflow-hidden"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={isLoading}
                   >
-                    Continue
-                  </button>
+                    <motion.span
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: isLoading ? 0 : 1 }}
+                      className="relative z-10"
+                    >
+                      Continue
+                    </motion.span>
+                    {isLoading && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute inset-0 flex items-center justify-center"
+                      >
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      </motion.div>
+                    )}
+                  </motion.button>
                 </div>
               </motion.div>
             )}
@@ -233,9 +253,9 @@ export default function AuthPage() {
                 <div className="space-y-8">
                   <div>
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                      Select your gender
+                      Select your country
                     </p>
-                    <GenderSelector gender={gender} setGender={setGender} />
+                    <CountrySelect value={country} onChange={setCountry} />
                   </div>
 
                   <div>

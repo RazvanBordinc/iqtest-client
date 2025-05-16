@@ -1,12 +1,64 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, ListChecks, TrendingUp } from "lucide-react";
+import { Clock, ListChecks, TrendingUp, Lock, CheckCircle } from "lucide-react";
+import { checkTestAvailability } from "@/fetch/tests";
 
 export default function TestCategoryButton({ category, onSelect, isMobile }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [availability, setAvailability] = useState({ canTake: true, timeUntilNext: null });
+  const [loading, setLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState("");
 
+  // Check test availability on mount
+  useEffect(() => {
+    async function checkAvailability() {
+      try {
+        const result = await checkTestAvailability(category.id);
+        setAvailability(result);
+      } catch (error) {
+        console.error("Error checking test availability:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    checkAvailability();
+  }, [category.id]);
+  
+  // Update timer display
+  useEffect(() => {
+    if (!availability.canTake && availability.timeUntilNext) {
+      const timer = setInterval(() => {
+        const seconds = Math.max(0, Math.floor(availability.timeUntilNext));
+        if (seconds <= 0) {
+          setAvailability({ canTake: true, timeUntilNext: null });
+          clearInterval(timer);
+          return;
+        }
+        
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        if (hours > 0) {
+          setTimeLeft(`${hours}h ${minutes}m ${secs}s`);
+        } else if (minutes > 0) {
+          setTimeLeft(`${minutes}m ${secs}s`);
+        } else {
+          setTimeLeft(`${secs}s`);
+        }
+        
+        if (availability.timeUntilNext > 0) {
+          availability.timeUntilNext -= 1;
+        }
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [availability]);
+  
   // Animation variants
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -23,22 +75,34 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
   if (isMobile) {
     return (
       <motion.div
-        className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 cursor-pointer relative overflow-hidden"
+        className={`bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 relative overflow-hidden ${
+          availability.canTake ? "cursor-pointer" : "cursor-not-allowed opacity-75"
+        }`}
         variants={itemVariants}
-        onClick={onSelect}
-        whileTap={{ scale: 0.97 }}
+        onClick={availability.canTake ? onSelect : undefined}
+        whileTap={availability.canTake ? { scale: 0.97 } : {}}
         style={{ touchAction: "manipulation" }}
       >
         <div className="flex flex-col items-center">
           <div
-            className={`w-16 h-16 rounded-full bg-gradient-to-r ${category.color} flex items-center justify-center mb-4 shadow-md`}
+            className={`w-16 h-16 rounded-full bg-gradient-to-r ${category.color} flex items-center justify-center mb-4 shadow-md relative`}
           >
-            <Icon className="w-8 h-8 text-white" />
+            {availability.canTake ? (
+              <Icon className="w-8 h-8 text-white" />
+            ) : (
+              <Lock className="w-8 h-8 text-white" />
+            )}
           </div>
 
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             {category.title}
           </h3>
+          
+          {!availability.canTake && (
+            <div className="text-xs text-red-500 dark:text-red-400 mb-2 text-center">
+              Available in: {timeLeft}
+            </div>
+          )}
 
           <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
             {category.description}
@@ -57,8 +121,12 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
           </div>
 
           {/* Action hint */}
-          <div className="mt-3 text-xs font-medium text-purple-600 dark:text-purple-400">
-            Tap to select
+          <div className="mt-3 text-xs font-medium">
+            {availability.canTake ? (
+              <span className="text-purple-600 dark:text-purple-400">Tap to select</span>
+            ) : (
+              <span className="text-gray-500 dark:text-gray-400">Currently locked</span>
+            )}
           </div>
         </div>
       </motion.div>
@@ -68,20 +136,22 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
   // Desktop version with rich animations
   return (
     <motion.div
-      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 cursor-pointer relative overflow-hidden h-full"
+      className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 relative overflow-hidden h-full ${
+        availability.canTake ? "cursor-pointer" : "cursor-not-allowed opacity-90"
+      }`}
       variants={itemVariants}
-      onHoverStart={() => setIsHovered(true)}
+      onHoverStart={() => availability.canTake && setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      whileHover={{
+      whileHover={availability.canTake ? {
         y: -6,
         scale: 1.02,
         boxShadow:
           "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
         borderColor: "rgb(139, 92, 246)",
         transition: { duration: 0.3 },
-      }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onSelect}
+      } : {}}
+      whileTap={availability.canTake ? { scale: 0.98 } : {}}
+      onClick={availability.canTake ? onSelect : undefined}
     >
       {/* Background elements */}
       <motion.div
@@ -101,10 +171,10 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
         {/* Icon */}
         <div className="flex items-center mb-5">
           <motion.div
-            className={`w-16 h-16 rounded-full bg-gradient-to-r ${category.color} flex items-center justify-center shadow-lg`}
-            whileHover={{ scale: 1.05 }}
+            className={`w-16 h-16 rounded-full bg-gradient-to-r ${category.color} flex items-center justify-center shadow-lg relative`}
+            whileHover={availability.canTake ? { scale: 1.05 } : {}}
             animate={{
-              y: isHovered ? [0, -4, 0] : 0,
+              y: availability.canTake && isHovered ? [0, -4, 0] : 0,
             }}
             transition={{
               y: {
@@ -115,7 +185,11 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
               },
             }}
           >
-            <Icon className="w-8 h-8 text-white" />
+            {availability.canTake ? (
+              <Icon className="w-8 h-8 text-white" />
+            ) : (
+              <Lock className="w-8 h-8 text-white" />
+            )}
 
             {/* Orbital effect on hover */}
             {isHovered && (
@@ -144,12 +218,23 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
               className="text-xl font-bold text-gray-900 dark:text-white mb-1"
               animate={{
                 x: isHovered ? 4 : 0,
-                color: isHovered ? "rgb(139, 92, 246)" : "",
+                color: isHovered && availability.canTake ? "rgb(139, 92, 246)" : "",
               }}
               transition={{ duration: 0.3 }}
             >
               {category.title}
             </motion.h3>
+            
+            {!availability.canTake && (
+              <motion.div
+                className="text-sm text-red-500 dark:text-red-400 font-medium mb-1"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                Available in: {timeLeft}
+              </motion.div>
+            )}
 
             {/* Stats row */}
             <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
@@ -185,31 +270,50 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
             className="text-xs text-gray-500 dark:text-gray-400 flex items-center"
             animate={{ opacity: isHovered ? 0 : 1 }}
           >
-            <TrendingUp className="w-3 h-3 mr-1" />
-            <span>Difficulty: {category.stats.difficulty}</span>
+            {availability.canTake ? (
+              <>
+                <TrendingUp className="w-3 h-3 mr-1" />
+                <span>Difficulty: {category.stats.difficulty}</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-3 h-3 mr-1" />
+                <span>Temporarily Locked</span>
+              </>
+            )}
           </motion.div>
 
-          <motion.div
-            className="text-purple-600 dark:text-purple-400 font-medium flex items-center gap-1"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{
-              opacity: isHovered ? 1 : 0,
-              x: isHovered ? 0 : -10,
-            }}
-            transition={{ duration: 0.2 }}
-          >
-            <span>Select Test</span>
-            <motion.span
-              animate={{ x: isHovered ? [0, 4, 0] : 0 }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                repeatType: "loop",
+          {availability.canTake ? (
+            <motion.div
+              className="text-purple-600 dark:text-purple-400 font-medium flex items-center gap-1"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{
+                opacity: isHovered ? 1 : 0,
+                x: isHovered ? 0 : -10,
               }}
+              transition={{ duration: 0.2 }}
             >
-              →
-            </motion.span>
-          </motion.div>
+              <span>Select Test</span>
+              <motion.span
+                animate={{ x: isHovered ? [0, 4, 0] : 0 }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Infinity,
+                  repeatType: "loop",
+                }}
+              >
+                →
+              </motion.span>
+            </motion.div>
+          ) : (
+            <motion.div
+              className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1"
+              animate={{ opacity: 1 }}
+            >
+              <Lock className="w-3 h-3" />
+              <span className="text-xs">Cooldown Active</span>
+            </motion.div>
+          )}
         </motion.div>
       </div>
 

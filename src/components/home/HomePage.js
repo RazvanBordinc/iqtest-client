@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, User, Lock, Calendar, Users, AlertCircle } from "lucide-react";
 
 import InputRectangle from "@/components/begin/InputRectangle";
-import GenderSelector from "@/components/begin/GenderSelector";
+import CountrySelect from "@/components/shared/CountrySelect";
 import AgeSelector from "@/components/begin/AgeSelector";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { checkUsername, createUser, loginWithPassword, isAuthenticated } from "@/fetch/auth";
@@ -55,7 +55,7 @@ export default function HomePage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [age, setAge] = useState(25);
-  const [gender, setGender] = useState(null);
+  const [country, setCountry] = useState("");
   
   // UI states
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +72,7 @@ export default function HomePage() {
     password: "",
     confirmPassword: "",
     age: "",
-    gender: "",
+    country: "",
     general: ""
   });
   
@@ -224,11 +224,11 @@ export default function HomePage() {
   const handleCreateAccount = async () => {
     const newErrors = {
       ...errors,
-      gender: !gender ? "Please select your gender" : "",
-      age: !age || age < 1 || age > 120 ? "Please enter a valid age" : ""
+      country: !country ? "Please select your country" : "",
+      age: age && (age < 1 || age > 120) ? "Please enter a valid age" : ""
     };
     
-    if (newErrors.gender || newErrors.age) {
+    if (newErrors.country || newErrors.age) {
       setErrors(newErrors);
       return;
     }
@@ -240,15 +240,15 @@ export default function HomePage() {
       const response = await createUser({ 
         username, 
         password,
-        gender, 
-        age: parseInt(age) 
+        country, 
+        age: age ? parseInt(age) : null 
       });
       
       // Save user data to localStorage
       localStorage.setItem("userData", JSON.stringify({ 
         username, 
         age, 
-        gender 
+        country 
       }));
       
       // Give time for cookies to be set properly
@@ -561,10 +561,9 @@ export default function HomePage() {
                   transition={{ delay: 0.3 }}
                 >
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                    Select your gender
+                    Select your country
                   </p>
-                  <GenderSelector gender={gender} setGender={setGender} />
-                  <ErrorMessage error={errors.gender} />
+                  <CountrySelect value={country} onChange={setCountry} error={errors.country} />
                 </motion.div>
 
                 <motion.div
@@ -573,7 +572,7 @@ export default function HomePage() {
                   transition={{ delay: 0.4 }}
                 >
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                    Enter your age
+                    Enter your age (optional)
                   </p>
                   <AgeSelector age={age} setAge={setAge} />
                   <ErrorMessage error={errors.age} />
@@ -595,7 +594,7 @@ export default function HomePage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCreateAccount}
-                    disabled={isLoading || !gender || !age}
+                    disabled={isLoading || !country}
                     className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isLoading ? <LoadingDots /> : "Create Account"}

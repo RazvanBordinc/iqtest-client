@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Trophy, Calculator, BookText, Brain, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Calculator, BookText, Brain, Sparkles } from "lucide-react";
 import { TEST_TYPES } from "../constants/testTypes";
 
 export default function LeaderboardTabs({ activeTab, setActiveTab }) {
@@ -11,36 +11,34 @@ export default function LeaderboardTabs({ activeTab, setActiveTab }) {
   const [tabRefs, setTabRefs] = useState({});
   const [isMobile, setIsMobile] = useState(false);
 
-  // Create tab options from test types plus global
-  const options = [
-    { id: "global", label: "Global Rankings", icon: Trophy },
-    ...TEST_TYPES.map((type) => {
-      let icon;
-      switch (type.icon) {
-        case "Calculator":
-          icon = Calculator;
-          break;
-        case "BookText":
-          icon = BookText;
-          break;
-        case "Brain":
-          icon = Brain;
-          break;
-        case "Sparkles":
-          icon = Sparkles;
-          break;
-        default:
-          icon = Trophy;
-          break;
-      }
+  // Create tab options from test types
+  const options = TEST_TYPES.map((type) => {
+    let icon;
+    switch (type.icon) {
+      case "Calculator":
+        icon = Calculator;
+        break;
+      case "BookText":
+        icon = BookText;
+        break;
+      case "Brain":
+        icon = Brain;
+        break;
+      case "Sparkles":
+        icon = Sparkles;
+        break;
+      default:
+        icon = Calculator;
+        break;
+    }
 
-      return {
-        id: type.id,
-        label: type.title,
-        icon: icon,
-      };
-    }),
-  ];
+    return {
+      id: type.id,
+      label: type.shortTitle || type.title,
+      icon: icon,
+      gradient: type.color,
+    };
+  });
 
   // Detect mobile devices for responsive design
   useEffect(() => {
@@ -70,16 +68,8 @@ export default function LeaderboardTabs({ activeTab, setActiveTab }) {
 
   // Custom styles based on which tab is active
   const getActiveStyles = (tabId) => {
-    // Find the corresponding test type
     const testType = TEST_TYPES.find((type) => type.id === tabId);
-
-    if (tabId === "global") {
-      return "text-amber-600 dark:text-amber-400";
-    }
-
-    if (!testType) {
-      return "text-purple-600 dark:text-purple-400";
-    }
+    if (!testType) return "text-purple-600 dark:text-purple-400";
 
     // Extract color from test type gradient classes
     if (testType.id === "number-logic") {
@@ -98,11 +88,6 @@ export default function LeaderboardTabs({ activeTab, setActiveTab }) {
   // Indicator color based on active tab
   const getIndicatorColor = () => {
     const testType = TEST_TYPES.find((type) => type.id === activeTab);
-
-    if (activeTab === "global") {
-      return "bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600";
-    }
-
     return (
       testType?.color ||
       "bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600"
@@ -148,45 +133,62 @@ export default function LeaderboardTabs({ activeTab, setActiveTab }) {
   // Desktop version with animated tabs
   return (
     <div className="relative mb-6">
-      <div className="flex overflow-x-auto hide-scrollbar py-2 px-1">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            ref={(el) => {
-              if (el) {
-                setTabRefs(prev => {
-                  if (prev[option.id] !== el) {
-                    return {
-                      ...prev,
-                      [option.id]: el
-                    };
-                  }
-                  return prev;
-                });
-              }
-            }}
-            onClick={() => handleTabChange(option.id)}
-            className={`relative px-4 py-2 rounded-lg flex items-center whitespace-nowrap font-medium text-gray-600 dark:text-gray-300 transition-colors cursor-pointer ${
-              activeTab === option.id
-                ? getActiveStyles(option.id)
-                : "hover:text-gray-900 dark:hover:text-white"
-            }`}
-          >
-            <option.icon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-1.5" />
-            <span className="hidden sm:inline">{option.label}</span>
+      <motion.div 
+        className="flex overflow-x-auto hide-scrollbar py-2 px-1"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <AnimatePresence mode="wait">
+          {options.map((option, index) => (
+            <motion.button
+              key={option.id}
+              ref={(el) => {
+                if (el) {
+                  setTabRefs(prev => {
+                    if (prev[option.id] !== el) {
+                      return {
+                        ...prev,
+                        [option.id]: el
+                      };
+                    }
+                    return prev;
+                  });
+                }
+              }}
+              onClick={() => handleTabChange(option.id)}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`relative px-4 py-2 rounded-lg flex items-center whitespace-nowrap font-medium transition-all duration-300 cursor-pointer ${
+                activeTab === option.id
+                  ? getActiveStyles(option.id)
+                  : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              }`}
+            >
+              <option.icon className={`w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-1.5 transition-colors duration-300 ${
+                activeTab === option.id ? '' : 'text-gray-500'
+              }`} />
+              <span className="hidden sm:inline">{option.label}</span>
 
-            {/* Tab glow effect when active */}
-            {activeTab === option.id && (
-              <motion.div
-                className="absolute inset-0 -z-10 rounded-lg opacity-10"
-                layoutId="tab-glow"
-                transition={{ duration: 0.3 }}
-                initial={false}
-              />
-            )}
-          </button>
-        ))}
-      </div>
+              {/* Tab background effect when active */}
+              <AnimatePresence>
+                {activeTab === option.id && (
+                  <motion.div
+                    className={`absolute inset-0 -z-10 rounded-lg bg-gradient-to-r ${option.gradient}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.15 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.button>
+          ))}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Animated indicator */}
       <motion.div

@@ -55,6 +55,16 @@ export const submitTest = async (testData) => {
   }
 };
 
+// Check test availability
+export const checkTestAvailability = async (testTypeId) => {
+  try {
+    return await api.get(`api/test/availability/${testTypeId}`);
+  } catch (error) {
+    console.error(`Failed to check test availability for ${testTypeId}:`, error);
+    throw error;
+  }
+};
+
 // For backward compatibility - if you need these functions elsewhere
 export const getTestTypes = getAvailableTests;
 export const fetchTestById = getTestById;

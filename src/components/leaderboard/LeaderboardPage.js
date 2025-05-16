@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/fetch/auth";
 import {
-  getGlobalLeaderboard,
   getTestTypeLeaderboard,
   getUserRanking,
 } from "@/fetch/leaderboard";
@@ -15,46 +14,29 @@ import Header from "@/components/start/Header";
 import LeaderboardHeader from "@/components/leaderboard/LeaderboardHeader";
 import LeaderboardTabs from "@/components/leaderboard/LeaderboardTabs";
 import UserRankingSummary from "@/components/leaderboard/UserRankingSummary";
-import GlobalRankTable from "@/components/leaderboard/GlobalRankingTable";
 import TestSpecificRankTable from "@/components/leaderboard/TestSpecificRankTable";
 
 export default function LeaderboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("global");
+  const [activeTab, setActiveTab] = useState("number-logic");
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [userData, setUserData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [testStats, setTestStats] = useState(null);
 
   // Tab options for the leaderboard
   const tabOptions = [
-    { id: "global", label: "Global Rankings" },
     { id: "number-logic", label: "Numerical" },
     { id: "word-logic", label: "Verbal" },
     { id: "memory", label: "Memory" },
     { id: "mixed", label: "Mixed" },
   ];
 
-  // Check authentication on mount
-  useEffect(() => {
-    const authenticated = isAuthenticated();
-    setAuthChecked(true);
-    if (!authenticated) {
-      router.push("/");
-      return;
-    }
-  }, [router]);
-
-  // Fetch leaderboard data when tab changes or auth is checked
-  useEffect(() => {
-    if (authChecked && isAuthenticated()) {
-      fetchLeaderboardData();
-    }
-  }, [activeTab, authChecked]);
-
   // Fetch leaderboard data based on active tab
-  const fetchLeaderboardData = async () => {
+  const fetchLeaderboardData = useCallback(async () => {
     // Don't fetch if not authenticated
     if (!isAuthenticated()) {
       router.push("/");
@@ -67,14 +49,19 @@ export default function LeaderboardPage() {
     try {
       // Fetch leaderboard and user data in parallel
       const [leaderboardResponse, userResponse] = await Promise.allSettled([
-        activeTab === "global" 
-          ? getGlobalLeaderboard(50)
-          : getTestTypeLeaderboard(activeTab, 50),
+        getTestTypeLeaderboard(activeTab, currentPage, 10),
         userData ? Promise.resolve(userData) : getUserRanking()
       ]);
 
       if (leaderboardResponse.status === 'fulfilled') {
-        setLeaderboardData(leaderboardResponse.value || []);
+        const response = leaderboardResponse.value;
+        setLeaderboardData(response.entries || []);
+        setTestStats({
+          testCompletedCount: response.testCompletedCount,
+          totalUsers: response.totalUsers,
+          currentPage: response.currentPage,
+          pageSize: response.pageSize
+        });
       } else {
         console.error('Failed to fetch leaderboard:', leaderboardResponse.reason);
         setLeaderboardData([]);
@@ -92,7 +79,32 @@ export default function LeaderboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab, currentPage, userData, router]);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const authenticated = isAuthenticated();
+    setAuthChecked(true);
+    if (!authenticated) {
+      router.push("/");
+      return;
+    }
+  }, [router]);
+
+  // Fetch leaderboard data when tab changes or auth is checked
+  useEffect(() => {
+    if (authChecked && isAuthenticated()) {
+      setCurrentPage(1); // Reset to first page when changing tabs
+      fetchLeaderboardData();
+    }
+  }, [activeTab, authChecked, fetchLeaderboardData]);
+  
+  // Fetch when page changes
+  useEffect(() => {
+    if (authChecked && isAuthenticated() && currentPage > 1) {
+      fetchLeaderboardData();
+    }
+  }, [currentPage, authChecked, fetchLeaderboardData]);
 
   // Get content based on active tab
   const renderTabContent = () => {
@@ -113,21 +125,15 @@ export default function LeaderboardPage() {
       );
     }
 
-    if (activeTab === "global") {
-      return (
-        <GlobalRankTable
-          userData={userData}
-          leaderboardData={leaderboardData}
-        />
-      );
-    }
-
     // For test specific tabs
     return (
       <TestSpecificRankTable
         testType={activeTab}
         userData={userData}
         leaderboardData={leaderboardData}
+        testStats={testStats}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
       />
     );
   };
@@ -152,7 +158,7 @@ export default function LeaderboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
         >
-          <LeaderboardHeader />
+          <LeaderboardHeader activeTest={activeTab} testStats={testStats} />
 
           {/* User ranking summary */}
           {userData && (

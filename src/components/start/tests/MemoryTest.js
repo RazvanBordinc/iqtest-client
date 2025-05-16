@@ -15,6 +15,23 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
   const [timer, setTimer] = useState(20); // Countdown timer for memorization phase
   const [errorState, setErrorState] = useState(false);
   const [currentSetData, setCurrentSetData] = useState(null);
+  
+  // Effect to handle timer expiration
+  useEffect(() => {
+    const checkTimeExpiration = () => {
+      if (window.testRemainingTime !== undefined && window.testRemainingTime <= 0) {
+        // Submit whatever answers we have
+        const finalAnswers = Object.entries(answers).map(([index, answer]) => ({
+          ...answer,
+          questionIndex: parseInt(index),
+        }));
+        onComplete(finalAnswers);
+      }
+    };
+    
+    const interval = setInterval(checkTimeExpiration, 1000);
+    return () => clearInterval(interval);
+  }, [answers, onComplete]);
 
   // Extract memory sets from questions
   const memorySets = questions.filter((q) => q.type === "memory-pair");

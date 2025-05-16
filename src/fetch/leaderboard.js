@@ -1,18 +1,9 @@
 import api from "./api";
 
-export const getGlobalLeaderboard = async (limit = 10) => {
-  try {
-    return await api.get(`api/leaderboard/global?limit=${limit}`);
-  } catch (error) {
-    console.error("Failed to fetch global leaderboard:", error);
-    throw error;
-  }
-};
-
-export const getTestTypeLeaderboard = async (testTypeId, limit = 10) => {
+export const getTestTypeLeaderboard = async (testTypeId, page = 1, pageSize = 10) => {
   try {
     return await api.get(
-      `api/leaderboard/test-type/${testTypeId}?limit=${limit}`
+      `api/leaderboard/test-type/${testTypeId}?page=${page}&pageSize=${pageSize}`
     );
   } catch (error) {
     console.error(

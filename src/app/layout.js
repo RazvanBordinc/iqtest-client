@@ -10,9 +10,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <body className="overflow-x-hidden">
         <ThemeProvider>
-          {children}
+          <div className="min-h-screen overflow-x-hidden">
+            {children}
+          </div>
           <ErrorModal />
         </ThemeProvider>
       </body>

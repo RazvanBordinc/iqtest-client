@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
@@ -12,6 +12,23 @@ import TestCompletionWrapper from "../TestCompletionWrapper";
 const TestContent = ({ onComplete, questions = [] }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
+  
+  // Effect to handle timer expiration
+  useEffect(() => {
+    const checkTimeExpiration = () => {
+      if (window.testRemainingTime !== undefined && window.testRemainingTime <= 0) {
+        // Submit whatever answers we have
+        const finalAnswers = Object.entries(answers).map(([index, answer]) => ({
+          ...answer,
+          questionIndex: parseInt(index),
+        }));
+        onComplete(finalAnswers);
+      }
+    };
+    
+    const interval = setInterval(checkTimeExpiration, 1000);
+    return () => clearInterval(interval);
+  }, [answers, onComplete]);
 
   // If no questions are provided, show error
   if (!questions || questions.length === 0) {

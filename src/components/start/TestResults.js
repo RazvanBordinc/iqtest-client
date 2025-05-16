@@ -17,13 +17,15 @@ import {
 } from "lucide-react";
 
 export default function TestResults({
-  answers,
-  totalQuestions,
-  calculateScore,
+  testResult,
+  testType,
 }) {
-  // Calculate ranking (this would normally come from a database)
-  const ranking = 13515;
-  const betterThanPercent = 87; // Placeholder value
+  // Extract data from backend result
+  const score = testResult?.score || 0;
+  const percentile = testResult?.percentile || 0;
+  const iqScore = testResult?.iqScore;
+  const duration = testResult?.duration || "N/A";
+  const accuracy = testResult?.accuracy || 0;
 
   // Animation variants
   const containerVariants = {
@@ -174,23 +176,26 @@ export default function TestResults({
             Your Performance
           </h3>
 
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div className="flex items-center">
-              <TrendingUp className="w-5 h-5 text-green-500 dark:text-green-400 mr-2" />
-              <span className="text-gray-700 dark:text-gray-300 text-lg">
-                Better than
-              </span>
+          {/* Score and percentile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+            <div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Test Score</div>
+              <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+                {score}/100
+              </div>
             </div>
-
-            <motion.div className="relative" variants={scoreRevealVariants}>
-              <div
-                className="relative px-4 py-3 rounded-lg bg-gradient-to-r 
-                            from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700
-                            text-white font-bold text-xl sm:text-2xl
-                            flex items-center gap-1 shadow-lg"
-              >
-                <span>{betterThanPercent}%</span>
-                <ChevronUp className="w-5 h-5" />
+            
+            <div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Better than</div>
+              <motion.div className="relative" variants={scoreRevealVariants}>
+                <div
+                  className="inline-flex px-4 py-2 rounded-lg bg-gradient-to-r 
+                              from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700
+                              text-white font-bold text-2xl
+                              items-center gap-1 shadow-lg"
+                >
+                  <span>Top {100 - percentile < 1 ? (100 - percentile).toFixed(2) : Math.round(100 - percentile)}%</span>
+                  <ChevronUp className="w-5 h-5" />
 
                 <motion.div
                   className="absolute inset-0 rounded-lg opacity-30 overflow-hidden"
@@ -225,189 +230,82 @@ export default function TestResults({
               >
                 <Crown className="w-3 h-3" />
               </motion.span>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
 
-          {/* Leaderboard position */}
-          <motion.div
-            className="flex flex-col sm:flex-row justify-between items-start sm:items-center
-                      mt-8 border-t border-gray-200 dark:border-gray-700 pt-6"
-            variants={itemVariants}
-          >
-            <div className="flex items-center">
-              <Trophy className="w-5 h-5 text-amber-500 dark:text-amber-400 mr-2" />
-              <span className="text-gray-700 dark:text-gray-300">
-                Leaderboard Position
-              </span>
+          {/* Additional stats */}
+          <div className="grid grid-cols-2 gap-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Time Taken</div>
+              <div className="text-xl font-semibold text-gray-900 dark:text-white">
+                {duration}
+              </div>
             </div>
-
-            <div className="mt-2 sm:mt-0 flex items-center gap-3">
-              <span className="text-xl font-semibold text-gray-900 dark:text-white">
-                #{ranking}
-              </span>
-
-              <motion.div
-                className="flex items-center gap-1.5 text-sm text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/40 
-                          py-1 px-2 rounded-full border border-indigo-100 dark:border-indigo-800"
-                whileHover={{ y: -2 }}
-                whileTap={{ y: 0 }}
-              >
-                <Lock className="w-3 h-3" />
-                <span>Global</span>
-              </motion.div>
+            
+            <div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Accuracy</div>
+              <div className="text-xl font-semibold text-gray-900 dark:text-white">
+                {accuracy.toFixed(1)}%
+              </div>
             </div>
-          </motion.div>
+          </div>
+
+          {/* IQ Score for comprehensive test only */}
+          {testType === "mixed" && iqScore && (
+            <motion.div
+              className="mt-8 p-6 bg-gradient-to-r from-indigo-500 to-purple-600 
+                        dark:from-indigo-600 dark:to-purple-700 rounded-xl
+                        text-center shadow-lg"
+              variants={itemVariants}
+            >
+              <div className="flex items-center justify-center mb-2">
+                <BrainCircuit className="w-8 h-8 text-white mr-3" />
+                <h4 className="text-xl font-bold text-white">Your IQ Score</h4>
+              </div>
+              <div className="text-5xl font-bold text-white">
+                {iqScore}
+              </div>
+              <p className="text-indigo-100 mt-2">
+                Based on your performance and time
+              </p>
+            </motion.div>
+          )}
         </motion.div>
 
-        {/* ENHANCED LOGIN/SIGNUP CARD WITH HIGHLIGHTED IQ SCORE */}
+        {/* Action buttons */}
         <motion.div
-          className="relative overflow-hidden"
+          className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8"
           variants={itemVariants}
         >
-          {/* Animated highlight border */}
-          <motion.div
-            className="absolute inset-0 rounded-xl z-0"
-            variants={pulseVariants}
-            animate="pulse"
-          />
-
-          <motion.div
-            className="relative z-10 bg-gradient-to-br from-indigo-50 via-white to-purple-50 
-                      dark:from-indigo-950/60 dark:via-indigo-900/40 dark:to-purple-950/60
-                      p-6 rounded-xl border-2 border-indigo-300 dark:border-indigo-700
-                      text-center shadow-lg"
-          >
-            {/* Decorative stars */}
-            <motion.div
-              className="absolute top-2 left-2 text-yellow-400 dark:text-yellow-300"
-              animate={{
-                rotate: [0, 15, 0],
-                scale: [1, 1.1, 1],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                repeatType: "reverse",
-              }}
-            >
-              <Star size={16} fill="currentColor" />
-            </motion.div>
-
-            <motion.div
-              className="absolute top-2 right-2 text-yellow-400 dark:text-yellow-300"
-              animate={{
-                rotate: [0, -15, 0],
-                scale: [1, 1.1, 1],
-              }}
-              transition={{
-                duration: 3.5,
-                repeat: Infinity,
-                repeatType: "reverse",
-              }}
-            >
-              <Star size={16} fill="currentColor" />
-            </motion.div>
-
-            {/* Header */}
-            <div className="flex justify-center mb-2">
-              <motion.div
-                className="w-14 h-14 bg-indigo-100 dark:bg-indigo-800 rounded-full 
-                          flex items-center justify-center shadow-md 
-                          text-indigo-600 dark:text-indigo-300"
-                animate={{
-                  boxShadow: [
-                    "0 0 0 0 rgba(79, 70, 229, 0)",
-                    "0 0 0 8px rgba(79, 70, 229, 0.2)",
-                    "0 0 0 0 rgba(79, 70, 229, 0)",
-                  ],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatType: "loop",
-                }}
-              >
-                <BrainCircuit className="w-8 h-8" />
-              </motion.div>
-            </div>
-
-            {/* Highlighted message */}
-            <div className="relative mb-4 mt-1">
-              <h3 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                Discover Your Exact IQ Score
-              </h3>
-
-              <div
-                className="h-2 w-32 bg-gradient-to-r from-indigo-400 to-purple-400 
-                            dark:from-indigo-500 dark:to-purple-500 
-                            rounded-full mx-auto mt-2 mb-3"
-              />
-
-              <motion.div
-                className="mt-3 mx-auto max-w-sm p-3 rounded-lg 
-                          bg-gradient-to-r from-indigo-100/80 to-purple-100/80 
-                          dark:from-indigo-900/30 dark:to-purple-900/30
-                          border border-indigo-200 dark:border-indigo-800"
-                whileHover={{ y: -2 }}
-              >
-                <p className="text-base text-gray-800 dark:text-gray-200 font-medium">
-                  Log in now to see your precise IQ measurement and detailed
-                  analysis
-                </p>
-              </motion.div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-5">
-              <motion.button
-                className="flex items-center gap-1 px-5 py-2.5 bg-white dark:bg-gray-800 
-                          text-indigo-600 dark:text-indigo-400 rounded-lg 
-                          border border-indigo-200 dark:border-indigo-700 
-                          font-medium shadow-sm cursor-pointer
-                          hover:border-indigo-300 dark:hover:border-indigo-600
-                          w-full sm:w-auto justify-center"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Login</span>
-              </motion.button>
-
-              <span className="text-gray-500 dark:text-gray-400 font-medium text-sm">
-                or
-              </span>
-
-              <motion.button
-                className="flex items-center gap-2 px-5 py-2.5 
-                          bg-gradient-to-r from-indigo-600 to-purple-600 
-                          dark:from-indigo-700 dark:to-purple-700 
-                          text-white rounded-lg font-medium 
-                          shadow-md shadow-indigo-200/50 dark:shadow-indigo-900/30 
-                          cursor-pointer w-full sm:w-auto justify-center"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <span>Sign up for free</span>
-                <motion.div variants={arrowVariants} animate="animate">
-                  <ArrowRight className="w-4 h-4" />
-                </motion.div>
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
-
-        {/* Try again button */}
-        <motion.div className="text-center mt-8" variants={itemVariants}>
           <motion.button
-            className="px-5 py-3 bg-indigo-600 dark:bg-indigo-700 text-white
-                        rounded-lg font-medium text-xl cursor-pointer"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 
+                       dark:from-indigo-700 dark:to-purple-700 text-white
+                       rounded-xl font-medium text-lg cursor-pointer
+                       shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/30
+                       hover:shadow-xl transition-shadow"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => window.location.reload()}
+            onClick={() => window.location.href = '/tests'}
           >
-            Restart
+            Try Another Test
+          </motion.button>
+
+          <motion.button
+            className="px-6 py-3 bg-white dark:bg-gray-800 
+                       text-indigo-600 dark:text-indigo-400 rounded-xl
+                       border border-indigo-200 dark:border-indigo-700 
+                       font-medium text-lg cursor-pointer
+                       hover:border-indigo-300 dark:hover:border-indigo-600
+                       transition-colors"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => window.location.href = '/leaderboard'}
+          >
+            View Leaderboard
           </motion.button>
         </motion.div>
+
       </motion.div>
     </motion.div>
   );

@@ -4,6 +4,7 @@ export const TEST_TYPES = [
   {
     id: "number-logic",
     title: "Numerical Reasoning",
+    shortTitle: "Numerical",
     description:
       "Analyze patterns, solve equations, and demonstrate mathematical intelligence",
     longDescription:
@@ -11,7 +12,7 @@ export const TEST_TYPES = [
     icon: "Calculator",
     color: "from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600",
     stats: {
-      questionsCount: 20, // Updated from 24
+      questionsCount: 24,
       timeLimit: "25 minutes",
       difficulty: "Adaptive",
     },
@@ -19,6 +20,7 @@ export const TEST_TYPES = [
   {
     id: "word-logic",
     title: "Verbal Intelligence",
+    shortTitle: "Verbal",
     description:
       "Process language, understand relationships between words, and analyze text",
     longDescription:
@@ -27,7 +29,7 @@ export const TEST_TYPES = [
     color:
       "from-emerald-500 to-green-500 dark:from-emerald-600 dark:to-green-600",
     stats: {
-      questionsCount: 20, // Updated from 28
+      questionsCount: 28,
       timeLimit: "30 minutes",
       difficulty: "Adaptive",
     },
@@ -35,6 +37,7 @@ export const TEST_TYPES = [
   {
     id: "memory",
     title: "Memory & Recall",
+    shortTitle: "Memory",
     description:
       "Test working memory capacity, recall accuracy, and information retention",
     longDescription:
@@ -43,7 +46,7 @@ export const TEST_TYPES = [
     color:
       "from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600",
     stats: {
-      questionsCount: 15, // Updated from 20
+      questionsCount: 20,
       timeLimit: "22 minutes",
       difficulty: "Adaptive",
     },
@@ -51,6 +54,7 @@ export const TEST_TYPES = [
   {
     id: "mixed",
     title: "Comprehensive IQ",
+    shortTitle: "Mixed",
     description:
       "Full cognitive assessment combining all major intelligence domains",
     longDescription:
@@ -59,7 +63,7 @@ export const TEST_TYPES = [
     color:
       "from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600",
     stats: {
-      questionsCount: 16, // Updated from 40
+      questionsCount: 40,
       timeLimit: "45 minutes",
       difficulty: "Adaptive",
     },

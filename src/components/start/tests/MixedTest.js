@@ -15,13 +15,30 @@ const MixedTest = ({ onComplete, questions = [] }) => {
   const [testComplete, setTestComplete] = useState(false);
   const [memoryPhase, setMemoryPhase] = useState("memorization"); // Only used for memory questions
   const [timer, setTimer] = useState(0); // For memory questions timer
+  
+  // Effect to handle timer expiration
+  useEffect(() => {
+    const checkTimeExpiration = () => {
+      if (window.testRemainingTime !== undefined && window.testRemainingTime <= 0) {
+        // Submit whatever answers we have
+        const finalAnswers = Object.entries(answers).map(([index, answer]) => ({
+          ...answer,
+          questionIndex: parseInt(index),
+        }));
+        onComplete(finalAnswers);
+      }
+    };
+    
+    const interval = setInterval(checkTimeExpiration, 1000);
+    return () => clearInterval(interval);
+  }, [answers, onComplete]);
 
   useEffect(() => {
     console.log("Mixed Test Questions:", questions);
   }, [questions]);
 
   // Get current question data
-  const currentQuestionData = questions[currentQuestion] || {};
+  const currentQuestionData = React.useMemo(() => questions[currentQuestion] || {}, [questions, currentQuestion]);
 
   // Handle memory question timer
   useEffect(() => {

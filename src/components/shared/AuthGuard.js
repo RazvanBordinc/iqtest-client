@@ -20,7 +20,7 @@ export default function AuthGuard({ children }) {
     
     setIsAuthenticated(true);
     setIsChecking(false);
-  }, []);
+  }, [router]);
 
   if (isChecking) {
     // Optional: Show a loading state while checking auth

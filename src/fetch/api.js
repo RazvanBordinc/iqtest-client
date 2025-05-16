@@ -8,7 +8,7 @@ const API_URL =
     : process.env.NEXT_PUBLIC_API_URL || "/api";
 
 // Create headers with auth token if available
-const createHeaders = (additionalHeaders = {}) => {
+export const createHeaders = (additionalHeaders = {}) => {
   const headers = {
     "Content-Type": "application/json",
     ...additionalHeaders,

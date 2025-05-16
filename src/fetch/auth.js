@@ -24,7 +24,7 @@ export const createUser = async (userData) => {
       const userDataObj = {
         username: response.username,
         email: response.email,
-        gender: response.gender,
+        country: response.country,
         age: response.age,
       };
       setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
@@ -50,7 +50,7 @@ export const loginWithPassword = async (credentials) => {
       const userDataObj = {
         username: response.username,
         email: response.email,
-        gender: response.gender,
+        country: response.country,
         age: response.age,
       };
       setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
@@ -146,7 +146,32 @@ export const getCurrentUser = () => {
 };
 
 export const isAuthenticated = () => {
-  // Check if user is authenticated by verifying token cookie exists
+  // Check if user is authenticated by verifying token cookie exists and is not expired
   const token = getCookie("token");
-  return !!token;
+  
+  if (!token) {
+    return false;
+  }
+  
+  try {
+    // Decode JWT token to check expiration
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    
+    // Check if token is expired
+    if (payload.exp && payload.exp < currentTime) {
+      // Token is expired, remove it
+      removeCookie("token");
+      removeCookie("userData");
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    // Invalid token format, consider it invalid
+    console.error("Invalid token format:", error);
+    removeCookie("token");
+    removeCookie("userData");
+    return false;
+  }
 };

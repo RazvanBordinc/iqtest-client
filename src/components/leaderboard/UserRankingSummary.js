@@ -182,7 +182,7 @@ export default function UserRankingSummary({ userData, activeTab }) {
               </div>
               <div className="flex items-center">
                 <span className="text-xl font-bold text-gray-900 dark:text-white">
-                  #{rankData.rank}
+                  #{rankData.rank || 1}
                 </span>
                 <motion.div
                   className="ml-2 text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full flex items-center"
@@ -190,7 +190,7 @@ export default function UserRankingSummary({ userData, activeTab }) {
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   <Award className="w-3 h-3 mr-1" />
-                  <span>Top {100 - rankData.percentile}%</span>
+                  <span>Top {Math.max(1, Math.round(100 - (rankData.percentile || 99)))}%</span>
                 </motion.div>
               </div>
             </div>
