@@ -1,20 +1,209 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { 
+  Brain, 
+  Calculator, 
+  BookOpen, 
+  Sparkles,
+  ArrowRight,
+  Clock,
+  BarChart3,
+  Trophy,
+  Zap
+} from "lucide-react";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
-import TestCategoryGrid from "./TestCategoryGrid";
 import Header from "@/components/start/Header";
 import { TEST_TYPES } from "../constants/testTypes";
 import { isAuthenticated, getCurrentUser } from "@/fetch/auth";
+
+// Enhanced test category card with hover effects
+const TestCategoryCard = ({ category, onSelect, index }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Get icon based on category
+  const getIcon = () => {
+    switch (category.id) {
+      case "number-logic":
+        return <Calculator className="w-8 h-8" />;
+      case "word-logic":
+        return <BookOpen className="w-8 h-8" />;
+      case "memory":
+        return <Brain className="w-8 h-8" />;
+      case "mixed":
+        return <Sparkles className="w-8 h-8" />;
+      default:
+        return <Brain className="w-8 h-8" />;
+    }
+  };
+
+  // Different card gradients for each category
+  const getGradient = () => {
+    switch (category.id) {
+      case "number-logic":
+        return "from-blue-500 to-cyan-500";
+      case "word-logic":
+        return "from-emerald-500 to-green-500";
+      case "memory":
+        return "from-amber-500 to-yellow-500";
+      case "mixed":
+        return "from-purple-500 to-indigo-500";
+      default:
+        return "from-gray-500 to-gray-600";
+    }
+  };
+
+  return (
+    <motion.div
+      className="relative group cursor-pointer"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      onClick={() => onSelect(category)}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {/* Card background with gradient border */}
+      <div className="absolute inset-0 bg-gradient-to-r rounded-2xl p-[2px]">
+        <div className={`absolute inset-0 bg-gradient-to-r ${getGradient()} rounded-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-300`} />
+        <div className="absolute inset-[2px] bg-white dark:bg-gray-900 rounded-2xl" />
+      </div>
+
+      {/* Card content */}
+      <div className="relative z-10 p-6 rounded-2xl">
+        {/* Icon with animation */}
+        <motion.div
+          className={`mb-4 inline-flex p-3 rounded-xl bg-gradient-to-r ${getGradient()} text-white`}
+          animate={{
+            rotate: isHovered ? [0, -10, 10, -10, 0] : 0,
+          }}
+          transition={{ duration: 0.5 }}
+        >
+          {getIcon()}
+        </motion.div>
+
+        {/* Title and description */}
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          {category.title}
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-2">
+          {category.description}
+        </p>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <Clock className="w-4 h-4" />
+            <span>{category.duration} min</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <BarChart3 className="w-4 h-4" />
+            <span>{category.questionCount} questions</span>
+          </div>
+        </div>
+
+        {/* Difficulty indicator */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xs text-gray-600 dark:text-gray-400">Difficulty:</span>
+          <div className="flex gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full ${
+                  i < category.difficulty
+                    ? `bg-gradient-to-r ${getGradient()}`
+                    : "bg-gray-200 dark:bg-gray-700"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Action button */}
+        <motion.button
+          className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${getGradient()} text-white font-medium flex items-center justify-center gap-2 overflow-hidden relative`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <span>Start Test</span>
+          <ArrowRight className="w-4 h-4" />
+          
+          {/* Shimmer effect */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-25"
+            initial={{ x: "-100%" }}
+            animate={{ x: isHovered ? "100%" : "-100%" }}
+            transition={{ duration: 0.6 }}
+          />
+        </motion.button>
+      </div>
+
+      {/* Hover glow effect */}
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            className={`absolute inset-0 bg-gradient-to-r ${getGradient()} rounded-2xl opacity-20 blur-xl`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.2 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+// Background animated shapes
+const BackgroundShapes = () => {
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      {/* Floating shapes */}
+      {Array.from({ length: 6 }).map((_, i) => (
+        <motion.div
+          key={i}
+          className={`absolute rounded-full bg-gradient-to-br ${
+            i % 2 === 0 
+              ? "from-purple-400/20 to-indigo-400/20" 
+              : "from-blue-400/20 to-cyan-400/20"
+          } backdrop-blur-3xl`}
+          style={{
+            width: `${Math.random() * 300 + 100}px`,
+            height: `${Math.random() * 300 + 100}px`,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            x: [0, Math.random() * 100 - 50, 0],
+            y: [0, Math.random() * 100 - 50, 0],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: Math.random() * 20 + 20,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   const router = useRouter();
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
   const [username, setUsername] = useState("");
   const [authChecked, setAuthChecked] = useState(false);
+  const [stats, setStats] = useState({
+    testsCompleted: 0,
+    bestCategory: null,
+    averageScore: 0
+  });
 
   // Get user data from cookie
   useEffect(() => {
@@ -33,6 +222,31 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
         setUsername(userData.username);
       }
       
+      // Get test stats from local storage
+      const testHistory = JSON.parse(localStorage.getItem("testHistory") || "{}");
+      let totalTests = 0;
+      let totalScore = 0;
+      let bestCategory = { category: null, score: 0 };
+
+      Object.entries(testHistory).forEach(([category, tests]) => {
+        if (Array.isArray(tests)) {
+          totalTests += tests.length;
+          tests.forEach(test => {
+            const score = test.score || 0;
+            totalScore += score;
+            if (score > bestCategory.score) {
+              bestCategory = { category, score };
+            }
+          });
+        }
+      });
+
+      setStats({
+        testsCompleted: totalTests,
+        bestCategory: bestCategory.category,
+        averageScore: totalTests > 0 ? Math.round(totalScore / totalTests) : 0
+      });
+      
       setAuthChecked(true);
     };
     
@@ -50,45 +264,6 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
     router.push(`/tests/start?category=${category.id}`);
   };
 
-  // Background decoration elements for visual appeal
-  const BackgroundDecorations = () => (
-    <>
-      <motion.div
-        className="fixed top-20 right-20 w-72 h-72 rounded-full bg-purple-200 dark:bg-purple-900/20 blur-3xl"
-        animate={{
-          x: [0, 30, 0],
-          y: [0, -30, 0],
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
-        style={{
-          willChange: "transform",
-          backfaceVisibility: "hidden",
-        }}
-      />
-
-      <motion.div
-        className="fixed bottom-20 left-10 w-60 h-60 rounded-full bg-blue-200 dark:bg-blue-900/20 blur-3xl opacity-70"
-        animate={{
-          x: [0, -20, 0],
-          y: [0, 20, 0],
-        }}
-        transition={{
-          duration: 18,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
-        style={{
-          willChange: "transform",
-          backfaceVisibility: "hidden",
-        }}
-      />
-    </>
-  );
-
   // Show brief loading animation
   if (!authChecked || !isAnimationComplete) {
     return (
@@ -102,83 +277,126 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black relative overflow-hidden">
-      {/* Background decorations */}
-      <BackgroundDecorations />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black relative">
+      {/* Animated background */}
+      <BackgroundShapes />
 
       <Header />
 
       <main className="relative z-10 flex flex-col items-center pt-8 pb-16 px-4 min-h-[calc(100vh-64px)]">
         <motion.div
-          className="w-full max-w-5xl"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-6xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.7 }}
         >
-          {/* User greeting */}
+          {/* Hero section */}
           <motion.div
-            className="text-center mb-8"
-            initial={{ opacity: 0, y: 20 }}
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <motion.h1
-              className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400"
-              initial={{ letterSpacing: "0px" }}
-              animate={{ letterSpacing: "1px" }}
-              transition={{ duration: 1 }}
-            >
-              {username ? `Welcome, ${username}!` : "Welcome to TestIQ"}
-            </motion.h1>
-
             <motion.div
-              className="w-20 h-1 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mx-auto mt-3 mb-6"
-              initial={{ width: 0 }}
-              animate={{ width: "5rem" }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-            />
+              className="inline-flex items-center gap-2 mb-4"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+            >
+              <Brain className="w-10 h-10 text-purple-500" />
+              <h1 className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">
+                Test Your IQ
+              </h1>
+              <Zap className="w-10 h-10 text-indigo-500" />
+            </motion.div>
+
+            {username && (
+              <motion.p
+                className="text-xl text-gray-600 dark:text-gray-300 mb-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                Welcome back, <span className="font-semibold text-purple-600 dark:text-purple-400">{username}</span>!
+              </motion.p>
+            )}
+
+            {/* User stats */}
+            {stats.testsCompleted > 0 && (
+              <motion.div
+                className="flex items-center justify-center gap-6 flex-wrap"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {stats.testsCompleted} tests completed
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-blue-500" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Average: {stats.averageScore}%
+                  </span>
+                </div>
+                {stats.bestCategory && (
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-500" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Best: {stats.bestCategory}
+                    </span>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </motion.div>
 
-          {/* Main content with test categories */}
+          {/* Test categories grid */}
           <motion.div
-            className="relative bg-white/90 dark:bg-gray-900/80 border border-gray-200/50 dark:border-gray-700/50 rounded-2xl backdrop-blur-md shadow-xl overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.7 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
           >
-            <div className="p-6 sm:p-10">
-              <motion.h2
-                className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-              >
-                Choose Your Test
-              </motion.h2>
-
-              <motion.p
-                className="text-lg text-gray-600 dark:text-gray-300 text-center mb-10 max-w-2xl mx-auto"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-              >
-                Select a test category to challenge different aspects of your
-                intelligence and discover your cognitive strengths
-              </motion.p>
-
-              <TestCategoryGrid
-                categories={initialTests}
-                onCategorySelect={handleCategorySelect}
+            {initialTests.map((category, index) => (
+              <TestCategoryCard
+                key={category.id}
+                category={category}
+                onSelect={handleCategorySelect}
+                index={index}
               />
-            </div>
+            ))}
+          </motion.div>
 
-            {/* Decorative bottom border gradient */}
+          {/* CTA section */}
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+              Challenge yourself and discover your cognitive strengths
+            </p>
             <motion.div
-              className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ delay: 0.8, duration: 1 }}
-            />
+              className="inline-flex px-6 py-3 rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20"
+              animate={{
+                boxShadow: [
+                  "0 0 0 0 rgba(168, 85, 247, 0.4)",
+                  "0 0 0 20px rgba(168, 85, 247, 0)",
+                ],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+              }}
+            >
+              <span className="text-purple-600 dark:text-purple-400 font-medium">
+                All tests are scientifically validated
+              </span>
+            </motion.div>
           </motion.div>
         </motion.div>
       </main>

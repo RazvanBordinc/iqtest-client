@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
-import TestProgressBar from "../TestPorgressBar";
+import TestProgressBar from "../TestProgressBar";
 import NavigationControls from "../NavigationControls";
 
 const VerbalTest = ({ onComplete, questions = [] }) => {
@@ -64,14 +64,48 @@ const VerbalTest = ({ onComplete, questions = [] }) => {
     });
   };
 
-  // Handle navigation
-  const handleNext = () => {
+  // Calculate score and prepare answers for submission
+  const calculateScore = () => {
+    // Convert answers object to array format for backend submission
+    const formattedAnswers = [];
+    
+    questions.forEach((question, index) => {
+      const userAnswer = answers[index];
+      
+      if (userAnswer) {
+        // Only include non-null values (skip empty questions)
+        if (userAnswer.type !== "skipped" && userAnswer.value !== null) {
+          formattedAnswers.push({
+            questionIndex: index,
+            value: userAnswer.value,
+            type: userAnswer.type
+          });
+        }
+      }
+    });
+
+    // Return formatted answers for submission to backend
+    return formattedAnswers;
+  };
+
+  // Handle navigation - Modified to support completion and skipping
+  const handleNext = ({ isCompletion, isSkip } = {}) => {
+    // If skipping, mark the question as skipped
+    if (isSkip && !answers[currentQuestion]) {
+      setAnswers({
+        ...answers,
+        [currentQuestion]: { value: null, type: "skipped" },
+      });
+    }
+    
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
       // Test completed - send answers to parent
+      const finalAnswers = calculateScore();
+
       if (onComplete) {
-        onComplete(answers);
+        onComplete(finalAnswers);
       }
     }
   };
@@ -93,14 +127,18 @@ const VerbalTest = ({ onComplete, questions = [] }) => {
     return answerData.value;
   };
 
-  // Is next button enabled - enable if user has answered
-  const isNextEnabled = () => {
-    return (
-      (currentQuestionData.type === "multiple-choice" &&
-        typeof answers[currentQuestion]?.value === "number") ||
-      (currentQuestionData.type === "fill-in-gap" &&
-        answers[currentQuestion]?.value?.trim().length > 0)
-    );
+  // Check if current question has been answered
+  const hasAnswer = () => {
+    const answerData = answers[currentQuestion];
+    if (!answerData || answerData.type === "skipped") return false;
+    
+    if (currentQuestionData.type === "multiple-choice") {
+      return typeof answerData.value === "number";
+    } else if (currentQuestionData.type === "fill-in-gap") {
+      return answerData.value?.trim().length > 0;
+    }
+    
+    return false;
   };
 
   return (
@@ -115,43 +153,53 @@ const VerbalTest = ({ onComplete, questions = [] }) => {
           Verbal Intelligence Test
         </h2>
         <p className="text-gray-600 dark:text-gray-300">
-          Challenge your vocabulary, word relationships, and language
-          comprehension
+          Test your ability to understand and analyze language, words, and
+          concepts
         </p>
       </motion.div>
+
       <TestProgressBar
         current={currentQuestion}
         total={questions.length}
         type="verbal"
       />
 
-      {/* Question */}
+      {/* Question content */}
       <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-lg backdrop-blur-sm">
-        {currentQuestionData.type === "multiple-choice" ? (
-          <MultipleChoiceQuestion
-            question={currentQuestionData.text}
-            options={currentQuestionData.options}
-            selectedOption={getCurrentAnswer()}
-            onSelectOption={handleOptionSelect}
-            questionNumber={currentQuestion}
-          />
-        ) : (
-          <FillInGapQuestion
-            question={currentQuestionData.text}
-            currentAnswer={getCurrentAnswer()}
-            onAnswerChange={handleTextInput}
-            questionNumber={currentQuestion}
-          />
-        )}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+        >
+          {currentQuestionData.type === "multiple-choice" ? (
+            <MultipleChoiceQuestion
+              question={currentQuestionData.text}
+              options={currentQuestionData.options}
+              selectedOption={getCurrentAnswer()}
+              onSelectOption={handleOptionSelect}
+              questionNumber={currentQuestion}
+            />
+          ) : (
+            <FillInGapQuestion
+              question={currentQuestionData.text}
+              currentAnswer={getCurrentAnswer()}
+              onAnswerChange={handleTextInput}
+              questionNumber={currentQuestion}
+            />
+          )}
+        </motion.div>
 
-        {/* Navigation */}
+        {/* Updated navigation controls with skip functionality */}
         <NavigationControls
           onPrevious={handlePrevious}
           onNext={handleNext}
           isPreviousDisabled={currentQuestion === 0}
-          isNextDisabled={!isNextEnabled()}
+          isNextDisabled={false} // Never disable - allow skipping
           isLastQuestion={currentQuestion === questions.length - 1}
           testType="verbal"
+          hasAnswer={hasAnswer()}
+          enableKeyboard={true}
         />
       </div>
     </div>

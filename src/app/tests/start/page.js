@@ -23,35 +23,33 @@ export default async function StartPage({ searchParams }) {
     redirect("/tests");
   }
 
-  try {
-    // Get test type from constants and questions from API
-    const testData = await getTestById(category);
+  // Get test type from constants
+  const testData = getTestById(category);
 
-    // Redirect if invalid test type
-    if (!testData) {
-      redirect("/tests");
-    }
-
-    // Get questions from API
-    const questionsData = await getQuestionsByTestType(category);
-
-    // Pass the data to the client component wrapped with AuthGuard
-    return (
-      <AuthGuard>
-        <TestStartPage testType={testData} initialQuestions={questionsData} />
-      </AuthGuard>
-    );
-  } catch (error) {
-    // Handle error while still allowing page to render
-    console.error("Failed to fetch test questions:", error);
-    return (
-      <AuthGuard>
-        <TestStartPage
-          testType={getTestById(category)}
-          initialQuestions={[]}
-          error={error.message}
-        />
-      </AuthGuard>
-    );
+  // Redirect if invalid test type
+  if (!testData) {
+    redirect("/tests");
   }
+
+  let questionsData = [];
+  let errorMessage = null;
+
+  try {
+    // Get questions from API
+    questionsData = await getQuestionsByTestType(category);
+  } catch (error) {
+    console.error("Failed to fetch test questions:", error);
+    errorMessage = error.message;
+  }
+
+  // Pass the data to the client component wrapped with AuthGuard
+  return (
+    <AuthGuard>
+      <TestStartPage
+        testType={testData}
+        initialQuestions={questionsData}
+        error={errorMessage}
+      />
+    </AuthGuard>
+  );
 }

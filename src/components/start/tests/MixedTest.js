@@ -6,7 +6,7 @@ import { Sparkles } from "lucide-react";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
 import MemoryPairQuestion from "../questions/MemoryPairQuestion";
-import TestProgressBar from "../TestPorgressBar";
+import TestProgressBar from "../TestProgressBar";
 import NavigationControls from "../NavigationControls";
 
 const MixedTest = ({ onComplete, questions = [] }) => {
@@ -48,29 +48,43 @@ const MixedTest = ({ onComplete, questions = [] }) => {
       timer > 0
     ) {
       const countdown = setInterval(() => {
-        setTimer((prev) => prev - 1);
+        setTimer((prev) => {
+          if (prev <= 1) {
+            setMemoryPhase("recall");
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
 
       return () => clearInterval(countdown);
-    } else if (
-      currentQuestionData?.type === "memory-pair" &&
-      memoryPhase === "memorization" &&
-      timer === 0
-    ) {
-      // Automatically switch to recall phase when timer reaches 0
-      setMemoryPhase("recall");
     }
-  }, [currentQuestionData, memoryPhase, timer]);
+  }, [currentQuestionData?.type, memoryPhase, timer]);
 
-  // Initialize timer when moving to a memory question
+  // Reset memory phase when moving to a new memory question
   useEffect(() => {
-    if (
-      currentQuestionData?.type === "memory-pair" &&
-      memoryPhase === "memorization"
-    ) {
-      setTimer(currentQuestionData.memorizationTime || 15);
+    if (currentQuestionData?.type === "memory-pair") {
+      setMemoryPhase("memorization");
+      setTimer(currentQuestionData.memorizationTime || 10);
     }
-  }, [currentQuestion, currentQuestionData, memoryPhase]);
+  }, [currentQuestion, currentQuestionData?.type, currentQuestionData?.memorizationTime]);
+
+  // If no questions are provided, show error
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-lg text-gray-600 dark:text-gray-300">
+          No questions available for this test.
+        </p>
+        <button
+          onClick={() => onComplete([])}
+          className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+        >
+          Return
+        </button>
+      </div>
+    );
+  }
 
   // Handle option selection for multiple choice
   const handleOptionSelect = (index) => {
@@ -88,62 +102,63 @@ const MixedTest = ({ onComplete, questions = [] }) => {
     });
   };
 
-  // Handle memory questions answers
-  const handleMemoryAnswerChange = (inputId, value) => {
-    // Create or update the memory answers object for current question
-    const currentMemoryAnswers = answers[currentQuestion]?.value || {};
-
+  // Handle memory pair answer
+  const handleMemoryAnswer = (answer) => {
     setAnswers({
       ...answers,
-      [currentQuestion]: {
-        value: { ...currentMemoryAnswers, [inputId]: value },
-        type: "memory-pair",
-      },
+      [currentQuestion]: { value: answer, type: "memory-pair" },
     });
   };
 
-  // Handle navigation
-  const handleNext = () => {
-    if (
-      currentQuestionData?.type === "memory-pair" &&
-      memoryPhase === "memorization"
-    ) {
-      // Skip timer and move to recall phase when pressing Next in memorization
-      setMemoryPhase("recall");
-      return;
-    }
-
-    if (currentQuestion < questions.length - 1) {
-      // Move to next question
-      setCurrentQuestion(currentQuestion + 1);
-
-      // Reset memory phase for next question if it's a memory type
-      if (questions[currentQuestion + 1]?.type === "memory-pair") {
-        setMemoryPhase("memorization");
+  // Calculate score and prepare answers for submission
+  const calculateScore = () => {
+    // Convert answers object to array format for backend submission
+    const formattedAnswers = [];
+    
+    questions.forEach((question, index) => {
+      const userAnswer = answers[index];
+      
+      if (userAnswer) {
+        // Only include non-null values (skip empty questions)
+        if (userAnswer.type !== "skipped" && userAnswer.value !== null) {
+          formattedAnswers.push({
+            questionIndex: index,
+            value: userAnswer.value,
+            type: userAnswer.type
+          });
+        }
       }
+    });
+
+    // Return formatted answers for submission to backend
+    return formattedAnswers;
+  };
+
+  // Handle navigation - Modified to support completion and skipping
+  const handleNext = ({ isCompletion, isSkip } = {}) => {
+    // If skipping, mark the question as skipped
+    if (isSkip && !answers[currentQuestion]) {
+      setAnswers({
+        ...answers,
+        [currentQuestion]: { value: null, type: "skipped" },
+      });
+    }
+    
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Test completed
-      setTestComplete(true);
+      // Test completed - send answers to parent
+      const finalAnswers = calculateScore();
+
       if (onComplete) {
-        onComplete(answers);
+        onComplete(finalAnswers);
       }
     }
   };
 
   const handlePrevious = () => {
     if (currentQuestion > 0) {
-      // Only allow going back if not in memory question or if in recall phase
-      if (
-        currentQuestionData?.type !== "memory-pair" ||
-        memoryPhase === "recall"
-      ) {
-        setCurrentQuestion(currentQuestion - 1);
-
-        // Reset memory phase if previous question is memory type
-        if (questions[currentQuestion - 1]?.type === "memory-pair") {
-          setMemoryPhase("recall"); // Always go to recall phase when going back
-        }
-      }
+      setCurrentQuestion(currentQuestion - 1);
     }
   };
 
@@ -152,244 +167,75 @@ const MixedTest = ({ onComplete, questions = [] }) => {
     const answerData = answers[currentQuestion];
 
     if (!answerData) {
-      return currentQuestionData.type === "multiple-choice"
-        ? null
-        : currentQuestionData.type === "fill-in-gap"
-        ? ""
-        : {};
+      return currentQuestionData.type === "multiple-choice" ? null : "";
     }
 
     return answerData.value;
   };
 
-  // Is next button enabled
-  const isNextEnabled = () => {
-    // For memory questions in memorization phase, always enable Next
-    if (
-      currentQuestionData.type === "memory-pair" &&
-      memoryPhase === "memorization"
-    ) {
-      return true;
-    }
-
-    // For memory questions in recall phase, check if all fields are filled
-    if (
-      currentQuestionData.type === "memory-pair" &&
-      memoryPhase === "recall"
-    ) {
-      // If no answers yet, disable
-      if (!answers[currentQuestion]?.value) return false;
-
-      let allFilled = true;
-
-      // Check each required field
-      currentQuestionData.pairs.forEach((pair, pairIndex) => {
-        if (!currentQuestionData.missingIndices) return;
-
-        currentQuestionData.missingIndices[pairIndex]?.forEach((wordIndex) => {
-          const inputId = `pair-${pairIndex}-word-${wordIndex}`;
-          if (!answers[currentQuestion]?.value[inputId]?.trim()) {
-            allFilled = false;
-          }
-        });
-      });
-
-      return allFilled;
-    }
-
-    // For multiple choice, check if an option is selected
+  // Check if current question has been answered
+  const hasAnswer = () => {
+    const answerData = answers[currentQuestion];
+    if (!answerData || answerData.type === "skipped") return false;
+    
     if (currentQuestionData.type === "multiple-choice") {
-      return typeof answers[currentQuestion]?.value === "number";
+      return typeof answerData.value === "number";
+    } else if (currentQuestionData.type === "fill-in-gap") {
+      return answerData.value?.trim().length > 0;
+    } else if (currentQuestionData.type === "memory-pair") {
+      return answerData.value !== null && answerData.value !== undefined;
     }
-
-    // For fill-in-gap, check if there's text
-    if (currentQuestionData.type === "fill-in-gap") {
-      return answers[currentQuestion]?.value?.trim().length > 0;
-    }
-
+    
     return false;
   };
 
-  // Calculate question component key for animations
-  const getQuestionKey = () => {
-    if (currentQuestionData.type === "memory-pair") {
-      return `memory-${currentQuestion}-${memoryPhase}`;
-    }
-    return `question-${currentQuestion}`;
-  };
-
-  // Get next button text
-  const getNextButtonText = () => {
-    if (
-      currentQuestionData.type === "memory-pair" &&
-      memoryPhase === "memorization"
-    ) {
-      return "I'm Ready";
-    }
-    return currentQuestion === questions.length - 1 ? "Finish" : "Next";
-  };
-
-  // Render memory question in memorization phase
-  const renderMemorizationPhase = () => {
-    const { pairs } = currentQuestionData;
-    if (!pairs || pairs.length === 0) return null;
-
-    return (
-      <motion.div
-        key="memorization"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.3 }}
-        className="text-center"
-      >
-        <motion.div
-          className="mb-6 text-purple-600 dark:text-purple-400"
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <Sparkles className="w-16 h-16 mx-auto" />
-        </motion.div>
-
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Memorize {pairs[0]?.length === 2 ? "These Pairs" : "These Triplets"}
-        </h3>
-
-        <p className="text-gray-600 dark:text-gray-300 mb-8">
-          You&apos;ll need to recall the missing{" "}
-          {pairs[0]?.length === 2
-            ? "word from each pair"
-            : "words from each triplet"}{" "}
-          afterward
-        </p>
-
-        {/* Memory pairs or triplets to memorize */}
-        <div className="grid gap-4 max-w-lg mx-auto mb-8">
-          {pairs.map((pair, pairIndex) => (
-            <motion.div
-              key={`memorize-${pairIndex}`}
-              className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: pairIndex * 0.15 }}
-            >
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                {pair.map((word, wordIndex) => (
-                  <React.Fragment key={`word-${pairIndex}-${wordIndex}`}>
-                    <motion.div
-                      className="bg-white dark:bg-gray-800 px-4 py-2 rounded-md font-medium text-gray-900 dark:text-white shadow-sm"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {word}
-                    </motion.div>
-
-                    {wordIndex < pair.length - 1 && (
-                      <div className="text-gray-400">→</div>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-          Take your time to memorize. The test will automatically continue in{" "}
-          {timer} seconds...
-        </p>
-      </motion.div>
-    );
-  };
-
-  // Render appropriate question component based on type
+  // Render question based on type
   const renderQuestion = () => {
-    // If memory question in memorization phase
-    if (
-      currentQuestionData.type === "memory-pair" &&
-      memoryPhase === "memorization"
-    ) {
-      return renderMemorizationPhase();
-    }
-
-    // If memory question in recall phase
-    if (
-      currentQuestionData.type === "memory-pair" &&
-      memoryPhase === "recall"
-    ) {
-      return (
-        <MemoryPairQuestion
-          questionText={currentQuestionData.text}
-          pairs={currentQuestionData.pairs}
-          missingIndices={currentQuestionData.missingIndices}
-          userAnswers={getCurrentAnswer()}
-          onAnswerChange={handleMemoryAnswerChange}
-          questionNumber={currentQuestion}
-          showHint={true}
-        />
-      );
-    }
-
-    // Multiple choice question
-    if (currentQuestionData.type === "multiple-choice") {
-      return (
-        <MultipleChoiceQuestion
-          question={currentQuestionData.text}
-          options={currentQuestionData.options}
-          selectedOption={getCurrentAnswer()}
-          onSelectOption={handleOptionSelect}
-          questionNumber={currentQuestion}
-          animateKey={getQuestionKey()}
-        />
-      );
-    }
-
-    // Fill in gap question
-    if (currentQuestionData.type === "fill-in-gap") {
-      return (
-        <FillInGapQuestion
-          question={currentQuestionData.text}
-          currentAnswer={getCurrentAnswer()}
-          onAnswerChange={handleTextInput}
-          questionNumber={currentQuestion}
-          animateKey={getQuestionKey()}
-        />
-      );
-    }
-
-    return null;
-  };
-
-  // Category indicator styles
-  const getCategoryIndicatorStyles = (category) => {
-    switch (category) {
-      case "numerical":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
-      case "verbal":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
-      case "memory":
-        return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
+    switch (currentQuestionData.type) {
+      case "multiple-choice":
+        return (
+          <MultipleChoiceQuestion
+            question={currentQuestionData.text}
+            options={currentQuestionData.options}
+            selectedOption={getCurrentAnswer()}
+            onSelectOption={handleOptionSelect}
+            questionNumber={currentQuestion}
+          />
+        );
+      case "fill-in-gap":
+        return (
+          <FillInGapQuestion
+            question={currentQuestionData.text}
+            currentAnswer={getCurrentAnswer()}
+            onAnswerChange={handleTextInput}
+            questionNumber={currentQuestion}
+          />
+        );
+      case "memory-pair":
+        return (
+          <MemoryPairQuestion
+            question={currentQuestionData.text}
+            pairs={currentQuestionData.pairs}
+            memoryDuration={currentQuestionData.memorizationTime}
+            onAnswer={handleMemoryAnswer}
+            phase={memoryPhase}
+            timer={timer}
+            onPhaseComplete={() => setMemoryPhase("recall")}
+          />
+        );
       default:
-        return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
+        // Fallback to multiple choice if type is not recognized
+        return (
+          <MultipleChoiceQuestion
+            question={currentQuestionData.text || "Question not available"}
+            options={currentQuestionData.options || ["Option A", "Option B", "Option C", "Option D"]}
+            selectedOption={getCurrentAnswer()}
+            onSelectOption={handleOptionSelect}
+            questionNumber={currentQuestion}
+          />
+        );
     }
   };
-
-  // Handle missing or empty questions
-  if (!questions || questions.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-lg text-gray-600 dark:text-gray-300">
-          No questions available for this test.
-        </p>
-        <button
-          onClick={() => onComplete({})}
-          className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-        >
-          Return
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -399,41 +245,29 @@ const MixedTest = ({ onComplete, questions = [] }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Comprehensive IQ Test
-        </h2>
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <Sparkles className="w-8 h-8 text-purple-500" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Comprehensive IQ Test
+          </h2>
+          <Sparkles className="w-8 h-8 text-indigo-500" />
+        </div>
         <p className="text-gray-600 dark:text-gray-300">
-          A balanced assessment combining multiple cognitive domains
+          A comprehensive test combining numerical, verbal, and memory challenges
         </p>
       </motion.div>
 
-      {/* Question type indicator */}
-      <div className="mb-4 flex justify-center">
-        <span
-          className={`text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full ${getCategoryIndicatorStyles(
-            currentQuestionData.category
-          )}`}
-        >
-          {currentQuestionData.category === "numerical"
-            ? "Numerical Reasoning"
-            : currentQuestionData.category === "verbal"
-            ? "Verbal Intelligence"
-            : "Memory & Recall"}
-        </span>
-      </div>
-
-      {/* Progress bar */}
       <TestProgressBar
-        current={currentQuestion} // For numerical/verbal tests
+        current={currentQuestion}
         total={questions.length}
-        type="mixed" // "verbal", "memory", "mixed"
+        type="mixed"
       />
 
-      {/* Question */}
-      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-lg backdrop-blur-sm mb-6">
+      {/* Question content */}
+      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 shadow-lg backdrop-blur-sm">
         <AnimatePresence mode="wait">
           <motion.div
-            key={getQuestionKey()}
+            key={`question-${currentQuestion}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -443,18 +277,16 @@ const MixedTest = ({ onComplete, questions = [] }) => {
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation */}
+        {/* Updated navigation controls with skip functionality */}
         <NavigationControls
           onPrevious={handlePrevious}
           onNext={handleNext}
-          isPreviousDisabled={
-            currentQuestion === 0 ||
-            (currentQuestionData.type === "memory-pair" &&
-              memoryPhase === "memorization")
-          }
-          isNextDisabled={!isNextEnabled()}
+          isPreviousDisabled={currentQuestion === 0}
+          isNextDisabled={false} // Never disable - allow skipping
           isLastQuestion={currentQuestion === questions.length - 1}
-          nextText={getNextButtonText()}
+          testType="mixed"
+          hasAnswer={hasAnswer()}
+          enableKeyboard={true}
         />
       </div>
     </div>

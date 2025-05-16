@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Finger_Paint } from "next/font/google";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, User, Lock, Calendar, Users, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, User, Lock, Calendar, Users, AlertCircle, Brain } from "lucide-react";
 
 import InputRectangle from "@/components/begin/InputRectangle";
 import CountrySelect from "@/components/shared/CountrySelect";
@@ -65,6 +65,7 @@ export default function HomePage() {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [lettersTyped, setLettersTyped] = useState([]);
+  const [showIntro, setShowIntro] = useState(true);
   
   // Error states
   const [errors, setErrors] = useState({
@@ -88,6 +89,9 @@ export default function HomePage() {
       setHasCheckedAuth(true);
       
       if (isAuthenticated()) {
+        // Skip intro for authenticated users
+        setShowIntro(false);
+        
         // Save current username in localStorage if available
         const userData = JSON.parse(localStorage.getItem("userData") || "{}");
         if (userData.username) {
@@ -103,6 +107,18 @@ export default function HomePage() {
       }
     }
   }, [mounted, router, hasCheckedAuth]);
+
+  // Handle intro timer separately for non-authenticated users
+  useEffect(() => {
+    if (mounted && showIntro && !isAuthenticated()) {
+      const timer = setTimeout(() => {
+        setShowIntro(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mounted, showIntro]);
+
 
   // Validate password
   const validatePassword = (pwd) => {
@@ -267,18 +283,197 @@ export default function HomePage() {
     return null;
   }
 
+  const pageReady = mounted && hasCheckedAuth;
+
   return (
     <motion.div
       className={`relative h-screen w-full overflow-hidden ${fingerPaint.className} transition-all duration-1000 bg-white dark:bg-gray-900`}
     >
       <AnimatePresence mode="wait">
-        {/* Username Step */}
-        {step === "username" && !isConfirmed && (
+        {/* Intro Animation */}
+        {showIntro && pageReady && (
           <motion.div
-            key="username"
+            key="intro"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 flex items-center justify-center z-50 bg-white dark:bg-gray-900"
+          >
+            <div className="relative w-full h-full overflow-hidden">
+              {/* Floating geometric shapes */}
+              {/* Squares */}
+              <motion.div
+                className="absolute top-10 left-10 w-16 h-16 bg-amber-500/20 border-2 border-amber-500/50 rounded-lg"
+                animate={{
+                  rotate: [0, 360],
+                  x: [0, 100, 0],
+                  y: [0, -50, 0],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute bottom-20 right-20 w-12 h-12 bg-orange-500/10 border-2 border-dashed border-orange-500/50 rounded"
+                animate={{
+                  rotate: [0, -360],
+                  scale: [1, 1.5, 1],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              
+              {/* Triangles */}
+              <motion.div
+                className="absolute top-1/3 right-1/4 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-blue-500/50"
+                animate={{
+                  rotate: [0, 360],
+                  y: [0, 100, 0],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute bottom-1/3 left-1/4 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-b-[26px] border-b-indigo-500/40"
+                animate={{
+                  rotate: [0, -360],
+                  x: [0, -80, 0],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              
+              {/* Circles */}
+              <motion.div
+                className="absolute top-1/2 left-10 w-20 h-20 bg-purple-500/10 border-2 border-purple-500/40 rounded-full"
+                animate={{
+                  scale: [1, 1.3, 1],
+                  x: [0, 150, 0],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute top-10 right-1/3 w-14 h-14 border-2 border-dashed border-pink-500/50 rounded-full"
+                animate={{
+                  y: [0, 200, 0],
+                  scale: [1, 0.8, 1],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              
+              {/* Additional shapes for variety */}
+              <motion.div
+                className="absolute bottom-40 left-1/2 w-18 h-18 border-2 border-amber-500/40 rounded-lg"
+                animate={{
+                  rotate: [0, 45, 90, 135, 180],
+                  scale: [1, 0.8, 1],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute top-1/4 left-1/3 w-16 h-16 bg-indigo-500/15 border-2 border-indigo-500/40 rounded-full"
+                animate={{
+                  x: [0, 120, 0],
+                  y: [0, -60, 0],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute top-2/3 right-1/4 w-10 h-10 border-2 border-purple-500/50 rounded"
+                animate={{
+                  scale: [1, 1.6, 1],
+                  rotate: [0, -180, 0],
+                }}
+                transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+              />
+              
+              {/* Center content */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-10"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.8, ease: "easeOut" }}
+              >
+                <motion.div
+                  className="relative inline-block"
+                  animate={{
+                    rotate: [0, 5, -5, 0],
+                  }}
+                  transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
+                >
+                  <motion.h1
+                    className="text-7xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-4"
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{ duration: 2, repeat: 0 }}
+                  >
+                    IQ Test
+                  </motion.h1>
+                  
+                  {/* Decorative elements around text */}
+                  <motion.div
+                    className="absolute -top-4 -left-4 w-2 h-2 bg-amber-500 rounded-full"
+                    animate={{
+                      scale: [0, 1, 0],
+                      opacity: [0, 1, 0],
+                    }}
+                    transition={{ duration: 1.5, repeat: 0, delay: 0.5 }}
+                  />
+                  <motion.div
+                    className="absolute -bottom-4 -right-4 w-2 h-2 bg-orange-500 rounded-full"
+                    animate={{
+                      scale: [0, 1, 0],
+                      opacity: [0, 1, 0],
+                    }}
+                    transition={{ duration: 1.5, repeat: 0, delay: 0.7 }}
+                  />
+                </motion.div>
+                
+                <motion.p
+                  className="text-xl text-gray-600 dark:text-gray-400 mt-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8, duration: 0.8 }}
+                >
+                  Discover your potential
+                </motion.p>
+                
+                {/* Progress indicator */}
+                <motion.div
+                  className="mt-8 w-32 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto overflow-hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                >
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2, delay: 0.5 }}
+                  />
+                </motion.div>
+              </motion.div>
+              
+              {/* Rotating orbit */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: 0, ease: "linear" }}
+              >
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full" />
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-indigo-500 rounded-full" />
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-purple-500 rounded-full" />
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-pink-500 rounded-full" />
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Username Step */}
+        {step === "username" && !isConfirmed && !showIntro && pageReady && (
+          <motion.div
+            key="username"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
             className="flex items-center justify-center h-full px-4"
           >
             <div className="relative">

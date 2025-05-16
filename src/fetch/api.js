@@ -1,11 +1,9 @@
-// src/fetch/api.js (Updated version)
-import { getCookie } from "@/utils/cookies";
-import { showError } from "@/components/shared/ErrorModal";
+// src/fetch/api.js
 
-const API_URL =
-  typeof window === "undefined"
-    ? process.env.NEXT_SERVER_API_URL || "http://backend:5164"
-    : process.env.NEXT_PUBLIC_API_URL || "/api";
+// Always use the backend URL directly
+const API_URL = typeof window === "undefined"
+  ? "http://backend:5164"  // Server-side: Docker service name
+  : "http://localhost:5164"; // Client-side: Host port
 
 // Create headers with auth token if available
 export const createHeaders = (additionalHeaders = {}) => {
@@ -14,9 +12,13 @@ export const createHeaders = (additionalHeaders = {}) => {
     ...additionalHeaders,
   };
 
-  const token = getCookie("token");
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  // Only import getCookie on client-side
+  if (typeof window !== "undefined") {
+    const { getCookie } = require("@/utils/cookies");
+    const token = getCookie("token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
   }
 
   return headers;
@@ -24,9 +26,11 @@ export const createHeaders = (additionalHeaders = {}) => {
 
 // Client-side fetch function
 export const clientFetch = async (endpoint, options = {}) => {
-  const url = `${API_URL}${
-    endpoint.startsWith("/") ? endpoint : `/${endpoint}`
-  }`;
+  // Strip leading slash if present
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const url = `${API_URL}/${cleanEndpoint}`;
+  
+  console.log("clientFetch:", { endpoint, cleanEndpoint, url, API_URL });
 
   const fetchOptions = {
     ...options,
@@ -49,25 +53,21 @@ export const clientFetch = async (endpoint, options = {}) => {
 
     return await handleResponse(response);
   } catch (error) {
-    console.error("Client API request failed:", error);
-    // Show error modal for non-auth errors
-    if (error.message !== "Authentication required") {
-      showError(error.message || "An unexpected error occurred");
-    }
+    console.error("Client API error:", error);
     throw error;
   }
 };
 
-// Server-side API fetch
+// Server-side fetch function
 export const serverFetch = async (endpoint, options = {}) => {
   // IMPORTANT: Import cookies dynamically for server-side use
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
-  const url = `${API_URL}${
-    endpoint.startsWith("/") ? endpoint : `/${endpoint}`
-  }`;
+  // Strip leading slash if present
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const url = `${API_URL}/${cleanEndpoint}`;
 
   const headers = {
     "Content-Type": "application/json",
@@ -99,58 +99,69 @@ export const serverFetch = async (endpoint, options = {}) => {
       });
 
       const errorData = await response.json().catch(() => null);
-      const errorMessage =
-        errorData?.message ||
-        `Error: ${response.status} ${response.statusText}`;
+      console.error("Server API Error Details:", errorData);
 
-      throw new Error(errorMessage);
+      throw new Error(
+        errorData?.message || `Server error: ${response.statusText}`
+      );
     }
 
-    if (response.status === 204) {
-      return null;
-    }
-
-    return response.json();
+    return await handleResponse(response);
   } catch (error) {
     console.error("Server API request failed:", error);
     throw error;
   }
 };
 
-// Auto-detect environment
-export const fetchApi =
-  typeof window === "undefined" ? serverFetch : clientFetch;
+// Handle response parsing
+async function handleResponse(response) {
+  const contentType = response.headers.get("content-type");
 
-// Helper function
-const handleResponse = async (response) => {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const errorMessage =
-      errorData?.message || `Error: ${response.status} ${response.statusText}`;
-    throw new Error(errorMessage);
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      return await response.json();
+    } catch (error) {
+      console.error("Failed to parse JSON:", error);
+      return null;
+    }
   }
 
-  if (response.status === 204) {
-    return null;
-  }
+  return await response.text();
+}
 
-  return response.json();
-};
+// Main API object
+const api = {
+  get: (endpoint, options = {}) => {
+    const isServer = typeof window === "undefined";
+    const fetchFunction = isServer ? serverFetch : clientFetch;
+    return fetchFunction(endpoint, { ...options, method: "GET" });
+  },
 
-// Create the API object first, then export it (avoiding anonymous default export)
-const apiMethods = {
-  get: (endpoint) => fetchApi(endpoint, { method: "GET" }),
-  post: (endpoint, data) =>
-    fetchApi(endpoint, {
+  post: (endpoint, body, options = {}) => {
+    const isServer = typeof window === "undefined";
+    const fetchFunction = isServer ? serverFetch : clientFetch;
+    return fetchFunction(endpoint, {
+      ...options,
       method: "POST",
-      body: JSON.stringify(data),
-    }),
-  put: (endpoint, data) =>
-    fetchApi(endpoint, {
+      body: JSON.stringify(body),
+    });
+  },
+
+  put: (endpoint, body, options = {}) => {
+    const isServer = typeof window === "undefined";
+    const fetchFunction = isServer ? serverFetch : clientFetch;
+    return fetchFunction(endpoint, {
+      ...options,
       method: "PUT",
-      body: JSON.stringify(data),
-    }),
-  delete: (endpoint) => fetchApi(endpoint, { method: "DELETE" }),
+      body: JSON.stringify(body),
+    });
+  },
+
+  delete: (endpoint, options = {}) => {
+    const isServer = typeof window === "undefined";
+    const fetchFunction = isServer ? serverFetch : clientFetch;
+    return fetchFunction(endpoint, { ...options, method: "DELETE" });
+  },
 };
 
-export default apiMethods;
+export default api;

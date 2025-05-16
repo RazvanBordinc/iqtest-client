@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MultipleChoiceQuestion from "../questions/MultipleChoiceQuestion";
 import FillInGapQuestion from "../questions/FillInGapQuestion";
-import TestProgressBar from "../TestProgressBar";
+import TestProgressBar from "../TestPorgressBar";
 import NavigationControls from "../NavigationControls";
 import TestCompletionWrapper from "../TestCompletionWrapper";
 

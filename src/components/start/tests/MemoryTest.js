@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Eye } from "lucide-react";
 import MemoryPairQuestion from "../questions/MemoryPairQuestion";
 import NavigationControls from "../NavigationControls";
-import TestProgressBar from "../TestPorgressBar";
+import TestProgressBar from "../TestProgressBar";
 
 const MemoryTest = ({ onComplete, questions = [] }) => {
   // Test state
@@ -91,12 +91,20 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
     });
   };
 
-  // Handle navigation
-  const handleNext = () => {
+  // Handle navigation - now with skip functionality
+  const handleNext = ({ isSkip } = {}) => {
     if (phase === "memorization") {
       // Skip timer and move to recall phase
       setPhase("recall");
     } else if (phase === "recall") {
+      // Mark as skipped if no answers provided
+      if (isSkip && !answers[currentSet]) {
+        setAnswers({
+          ...answers,
+          [currentSet]: { skipped: true },
+        });
+      }
+      
       if (currentSet < memorySets.length - 1) {
         // Move to next memory set
         setCurrentSet(currentSet + 1);
@@ -112,10 +120,12 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
           Object.entries(answers).forEach(([setIndex, setAnswers]) => {
             // Each set corresponds to a question
             const questionId = memorySets[parseInt(setIndex)].id;
-            formattedAnswers[questionId] = {
-              type: "memory-pair",
-              value: setAnswers,
-            };
+            if (!setAnswers.skipped) {
+              formattedAnswers[questionId] = {
+                type: "memory-pair",
+                value: setAnswers,
+              };
+            }
           });
 
           onComplete(formattedAnswers);
@@ -316,12 +326,12 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
           )}
         </AnimatePresence>
 
-        {/* Navigation */}
+        {/* Navigation with skip functionality */}
         <NavigationControls
           onPrevious={handlePrevious}
           onNext={handleNext}
           isPreviousDisabled={currentSet === 0 || isMemorizationPhase}
-          isNextDisabled={phase === "recall" && !areAllAnswersFilled()}
+          isNextDisabled={false} // Allow skipping
           isLastQuestion={
             currentSet === memorySets.length - 1 && phase === "recall"
           }
@@ -333,6 +343,8 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
               : "Finish"
           }
           testType="memory"
+          hasAnswer={phase === "recall" ? areAllAnswersFilled() : true}
+          enableKeyboard={true}
         />
       </div>
     </div>

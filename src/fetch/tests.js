@@ -15,22 +15,9 @@ export const getAvailableTests = async () => {
   }
 };
 
-export const getTestById = async (testId) => {
-  try {
-    // First check constants
-    const testFromConstants = TEST_TYPES.find((test) => test.id === testId);
-
-    if (testFromConstants) {
-      return testFromConstants;
-    }
-
-    // If not found in constants, try API
-    return await api.get(`api/test/types/${testId}`);
-  } catch (error) {
-    console.error(`Failed to fetch test with ID ${testId}:`, error);
-    // Fallback to constants
-    return TEST_TYPES.find((test) => test.id === testId) || null;
-  }
+export const getTestById = (testId) => {
+  // Use synchronous version for server components
+  return TEST_TYPES.find((test) => test.id === testId) || null;
 };
 
 // Submit test answers to backend

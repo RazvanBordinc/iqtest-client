@@ -13,6 +13,7 @@ import LoadingAnimation from '@/components/shared/LoadingAnimation';
 import ErrorMessage from '@/components/shared/ErrorMessage';
 import CountrySelect from '@/components/shared/CountrySelect';
 import Header from '@/components/start/Header';
+import DataPrivacy from '@/components/profile/DataPrivacy';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -723,6 +724,11 @@ export default function ProfilePage() {
               Browse Tests
             </motion.button>
           </motion.div>
+        )}
+
+        {/* Data Privacy Section */}
+        {profile && (
+          <DataPrivacy />
         )}
       </motion.div>
     </div>

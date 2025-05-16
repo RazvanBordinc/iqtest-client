@@ -68,12 +68,10 @@ export default function TestStartPage({
     setTestStartTime(Date.now());
   };
 
-  // Handle test completion
+  // Handle test completion - Allow submission even with no answers (counts as 0 score)
   const handleTestComplete = async (answers) => {
-    if (!answers || Object.keys(answers).length === 0) {
-      showError("No answers to submit. Please complete the test.");
-      return;
-    }
+    // Allow submission even if no answers provided - user gets 0 score
+    // This is intentional to let users finish test without answering
 
     setIsLoading(true);
 
@@ -109,40 +107,50 @@ export default function TestStartPage({
 
   // Format answers for backend submission
   const formatAnswersForSubmission = (answers) => {
-    return Object.entries(answers)
-      .map(([questionIndex, answer]) => {
-        const question = questions[parseInt(questionIndex)];
+    // If no answers provided, create answers with null values for all questions
+    if (!answers || Object.keys(answers).length === 0) {
+      return questions.map((question) => ({
+        questionId: question.id,
+        type: question.type,
+        value: null, // null indicates unanswered question
+      }));
+    }
 
-        if (!question) {
-          console.warn(`Question not found for index ${questionIndex}`);
-          return null;
-        }
+    // Format existing answers and include unanswered questions
+    const formattedAnswers = questions.map((question, index) => {
+      const answer = answers[index];
 
-        // Format based on answer type
-        if (question.type === "memory-pair") {
-          // For memory questions, properly format the object
-          return {
-            questionId: question.id,
-            type: "memory-pair",
-            // Convert the answer object to a proper string:string dictionary
-            value:
-              typeof answer.value === "object"
-                ? JSON.stringify(answer.value)
-                : answer.value,
-          };
-        } else {
-          // For other question types
-          return {
-            questionId: question.id,
-            type: answer.type || question.type,
-            value:
-              typeof answer.value === "string"
-                ? answer.value
-                : String(answer.value),
-          };
-        }
-      })
-      .filter(Boolean); // Remove null entries
+      // If no answer for this question, return null value
+      if (!answer || answer.type === "skipped") {
+        return {
+          questionId: question.id,
+          type: question.type,
+          value: null,
+        };
+      }
+
+      // Format based on answer type
+      if (question.type === "memory-pair") {
+        // For memory questions, properly format the object
+        return {
+          questionId: question.id,
+          type: "memory-pair",
+          value:
+            typeof answer.value === "object"
+              ? JSON.stringify(answer.value)
+              : answer.value,
+        };
+      } else {
+        // For other question types
+        return {
+          questionId: question.id,
+          type: answer.type || question.type,
+          value: answer.value,
+        };
+      }
+    });
+
+    return formattedAnswers;
   };
 
   // Function to handle timer expiration

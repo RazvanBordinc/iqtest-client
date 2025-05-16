@@ -9,6 +9,15 @@ const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
  * @param {number} days - Cookie expiration in days
  */
 export const setCookie = (name, value, days = 7) => {
+  // Check if cookies are consented to
+  const consent = localStorage.getItem("cookieConsent");
+  if (!consent && name !== "cookieConsent") {
+    // Only allow essential cookies without consent
+    if (name !== "token" && name !== "refreshToken") {
+      return; // Don't set non-essential cookies without consent
+    }
+  }
+
   const expiryDate = new Date();
   expiryDate.setDate(expiryDate.getDate() + days);
 

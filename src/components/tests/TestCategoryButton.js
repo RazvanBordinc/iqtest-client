@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, ListChecks, TrendingUp, Lock, CheckCircle } from "lucide-react";
+import { Clock, ListChecks, TrendingUp, Lock, CheckCircle, Star } from "lucide-react";
 import { checkTestAvailability } from "@/fetch/tests";
 
 export default function TestCategoryButton({ category, onSelect, isMobile }) {
@@ -112,11 +112,15 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
           <div className="flex justify-center gap-3 mt-4 text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center">
               <ListChecks className="w-3 h-3 mr-1" />
-              <span>{category.stats.questionsCount}</span>
+              <span>{category.stats.questionsCount}Q</span>
             </div>
             <div className="flex items-center">
               <Clock className="w-3 h-3 mr-1" />
-              <span>{category.stats.timeLimit}</span>
+              <span>{category.stats.minutes}min</span>
+            </div>
+            <div className="flex items-center">
+              <Star className="w-3 h-3 mr-1" />
+              <span>{category.stats.difficultyRating}/{category.stats.maxDifficulty}</span>
             </div>
           </div>
 
@@ -244,7 +248,11 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
               </div>
               <div className="flex items-center">
                 <Clock className="w-3 h-3 mr-1" />
-                <span>{category.stats.timeLimit}</span>
+                <span>{category.stats.minutes} minutes</span>
+              </div>
+              <div className="flex items-center">
+                <Star className="w-3 h-3 mr-1" />
+                <span>{category.stats.difficultyRating}/{category.stats.maxDifficulty} Difficulty</span>
               </div>
             </div>
           </div>
@@ -272,8 +280,20 @@ export default function TestCategoryButton({ category, onSelect, isMobile }) {
           >
             {availability.canTake ? (
               <>
-                <TrendingUp className="w-3 h-3 mr-1" />
-                <span>Difficulty: {category.stats.difficulty}</span>
+                {category.stats.difficultyRating && (
+                  <div className="flex items-center">
+                    {[...Array(category.stats.maxDifficulty)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-3 h-3 ${
+                          i < category.stats.difficultyRating
+                            ? "text-yellow-500 fill-yellow-500"
+                            : "text-gray-300 dark:text-gray-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <>

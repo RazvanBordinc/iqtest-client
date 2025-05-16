@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testApi()">Test API</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testApi() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing...\n';
+            
+            // Test 1: Direct API call to backend
+            try {
+                const response1 = await fetch('http://localhost:5164/api/test/types', {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+                result.textContent += `Direct Backend Response: ${response1.status} ${response1.statusText}\n`;
+                const data1 = await response1.text();
+                result.textContent += `Data: ${data1.substring(0, 200)}\n\n`;
+            } catch (error) {
+                result.textContent += `Direct Backend Error: ${error.message}\n\n`;
+            }
+            
+            // Test 2: API call with /api prefix
+            try {
+                const response2 = await fetch('/api/test/types', {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+                result.textContent += `Relative /api Response: ${response2.status} ${response2.statusText}\n`;
+                const data2 = await response2.text();
+                result.textContent += `Data: ${data2.substring(0, 200)}\n\n`;
+            } catch (error) {
+                result.textContent += `Relative /api Error: ${error.message}\n\n`;
+            }
+            
+            // Test 3: Check environment variable
+            result.textContent += `NEXT_PUBLIC_API_URL: ${process?.env?.NEXT_PUBLIC_API_URL || 'undefined'}\n`;
+        }
+    </script>
+</body>
+</html>
