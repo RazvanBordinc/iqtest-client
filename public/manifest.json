@@ -1,0 +1,16 @@
+{
+  "name": "IQ Test App",
+  "short_name": "IQ Test",
+  "description": "Measure your intelligence with our comprehensive IQ test suite",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ]
+}
