@@ -1,8 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
+    // For client-side: default to relative path for API proxy
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
-    NEXT_SERVER_API_URL: process.env.NEXT_SERVER_API_URL || 'http://backend:5164'
+    
+    // For server-side: default to Docker service for local dev, or API URL for prod
+    NEXT_SERVER_API_URL: process.env.NEXT_SERVER_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? process.env.BACKEND_API_URL  // Use a production fallback if available
+        : 'http://backend:5164')       // Use Docker service name for local dev
   },
   // Enable production optimizations
   reactStrictMode: true,

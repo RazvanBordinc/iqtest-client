@@ -1,9 +1,9 @@
 // src/fetch/api.js
 
-// Always use the backend URL directly
+// Use environment variables for API URLs
 const API_URL = typeof window === "undefined"
-  ? "http://backend:5164"  // Server-side: Docker service name
-  : "http://localhost:5164"; // Client-side: Host port
+  ? process.env.NEXT_SERVER_API_URL || "http://backend:5164"  // Server-side from env
+  : (process.env.NEXT_PUBLIC_API_URL || "/api"); // Client-side from env
 
 // Create headers with auth token if available
 export const createHeaders = (additionalHeaders = {}) => {
@@ -49,7 +49,11 @@ export const checkBackendStatus = async () => {
   
   try {
     // Simple health check endpoint
-    const response = await fetch(`${API_URL}/api/health`, {
+    const healthUrl = API_URL.endsWith('/api') 
+      ? `${API_URL}/health` 
+      : `${API_URL}/api/health`;
+      
+    const response = await fetch(healthUrl, {
       method: 'GET',
       headers: createHeaders(),
       timeout: 5000, // 5 second timeout
@@ -88,9 +92,18 @@ const notifyBackendStatusListeners = () => {
 
 // Client-side fetch function with backend status check
 export const clientFetch = async (endpoint, options = {}) => {
-  // Strip leading slash if present
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  const url = `${API_URL}/${cleanEndpoint}`;
+  // Handle different API URL formats
+  // If API_URL ends with /api and endpoint starts with api/, we need to handle it
+  let url;
+  if (API_URL.endsWith('/api') && endpoint.startsWith('api/')) {
+    // Remove the duplicate 'api/' from the endpoint
+    const adjustedEndpoint = endpoint.replace(/^api\//, '');
+    url = `${API_URL}/${adjustedEndpoint}`;
+  } else {
+    // Normal case - just strip leading slash if present
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    url = `${API_URL}/${cleanEndpoint}`;
+  }
 
   const fetchOptions = {
     ...options,
@@ -136,9 +149,18 @@ export const serverFetch = async (endpoint, options = {}) => {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
-  // Strip leading slash if present
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-  const url = `${API_URL}/${cleanEndpoint}`;
+  // Handle different API URL formats
+  // If API_URL ends with /api and endpoint starts with api/, we need to handle it
+  let url;
+  if (API_URL.endsWith('/api') && endpoint.startsWith('api/')) {
+    // Remove the duplicate 'api/' from the endpoint
+    const adjustedEndpoint = endpoint.replace(/^api\//, '');
+    url = `${API_URL}/${adjustedEndpoint}`;
+  } else {
+    // Normal case - just strip leading slash if present
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    url = `${API_URL}/${cleanEndpoint}`;
+  }
 
   const headers = {
     "Content-Type": "application/json",
