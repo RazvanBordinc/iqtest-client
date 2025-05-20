@@ -24,7 +24,69 @@ export const createHeaders = (additionalHeaders = {}) => {
   return headers;
 };
 
-// Client-side fetch function
+// Backend status tracking
+let backendStatusListeners = [];
+let isBackendActive = false;
+let spinUpInProgress = false;
+let lastCheckTime = 0;
+const CHECK_INTERVAL = 5000; // 5 seconds
+
+// Function to check if backend is active
+export const checkBackendStatus = async () => {
+  // Don't check too frequently
+  const now = Date.now();
+  if (now - lastCheckTime < CHECK_INTERVAL) {
+    return isBackendActive;
+  }
+  
+  lastCheckTime = now;
+  
+  // Only mark as in progress if we haven't started yet
+  if (!spinUpInProgress && !isBackendActive) {
+    spinUpInProgress = true;
+    notifyBackendStatusListeners();
+  }
+  
+  try {
+    // Simple health check endpoint
+    const response = await fetch(`${API_URL}/api/health`, {
+      method: 'GET',
+      headers: createHeaders(),
+      timeout: 5000, // 5 second timeout
+    });
+    
+    if (response.ok) {
+      isBackendActive = true;
+      spinUpInProgress = false;
+      notifyBackendStatusListeners();
+      return true;
+    }
+  } catch (error) {
+    // Backend is still spinning up
+    isBackendActive = false;
+  }
+  
+  return isBackendActive;
+};
+
+// Add a status change listener
+export const addBackendStatusListener = (callback) => {
+  backendStatusListeners.push(callback);
+  // Immediately notify with current status
+  callback({ isActive: isBackendActive, spinUpInProgress });
+  return () => {
+    backendStatusListeners = backendStatusListeners.filter(cb => cb !== callback);
+  };
+};
+
+// Notify all listeners of status change
+const notifyBackendStatusListeners = () => {
+  backendStatusListeners.forEach(callback => {
+    callback({ isActive: isBackendActive, spinUpInProgress });
+  });
+};
+
+// Client-side fetch function with backend status check
 export const clientFetch = async (endpoint, options = {}) => {
   // Strip leading slash if present
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
@@ -36,6 +98,9 @@ export const clientFetch = async (endpoint, options = {}) => {
     credentials: "include", // Include cookies
   };
 
+  // Check backend status and wait if necessary
+  await checkBackendStatus();
+  
   try {
     const response = await fetch(url, fetchOptions);
 
@@ -152,6 +217,10 @@ const api = {
     const fetchFunction = isServer ? serverFetch : clientFetch;
     return fetchFunction(endpoint, { ...options, method: "DELETE" });
   },
+  
+  checkBackendStatus,
+  addBackendStatusListener,
+  baseUrl: API_URL
 };
 
 export default api;

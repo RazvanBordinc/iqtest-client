@@ -2,6 +2,7 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import ErrorModal from "@/components/shared/ErrorModal";
 import ConditionalFooter from "@/components/shared/ConditionalFooter";
 import CookieConsent from "@/components/shared/CookieConsent";
+import BackendStatusModal from "@/components/shared/BackendStatusModal";
 import Favicon from "@/components/shared/Favicon";
 import "./globals.css";
 
@@ -88,6 +89,7 @@ export default function RootLayout({ children }) {
           </div>
           <ErrorModal />
           <CookieConsent />
+          <BackendStatusModal />
         </ThemeProvider>
       </body>
     </html>
