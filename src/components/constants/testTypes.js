@@ -12,12 +12,12 @@ export const TEST_TYPES = [
     icon: "Calculator",
     color: "from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600",
     stats: {
-      questionsCount: 20,
-      timeLimit: "25 minutes",
+      questionsCount: 24,
+      timeLimit: "18 minutes",
       difficulty: "Adaptive",
       difficultyRating: 3,
       maxDifficulty: 5,
-      minutes: 25,
+      minutes: 18,
     },
   },
   {
@@ -32,12 +32,12 @@ export const TEST_TYPES = [
     color:
       "from-emerald-500 to-green-500 dark:from-emerald-600 dark:to-green-600",
     stats: {
-      questionsCount: 20,
-      timeLimit: "30 minutes",
+      questionsCount: 28,
+      timeLimit: "20 minutes",
       difficulty: "Adaptive",
       difficultyRating: 3,
       maxDifficulty: 5,
-      minutes: 30,
+      minutes: 20,
     },
   },
   {
@@ -52,12 +52,12 @@ export const TEST_TYPES = [
     color:
       "from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600",
     stats: {
-      questionsCount: 15,
-      timeLimit: "22 minutes",
+      questionsCount: 20,
+      timeLimit: "15 minutes",
       difficulty: "Adaptive",
       difficultyRating: 3,
       maxDifficulty: 5,
-      minutes: 22,
+      minutes: 15,
     },
   },
   {
@@ -72,12 +72,12 @@ export const TEST_TYPES = [
     color:
       "from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600",
     stats: {
-      questionsCount: 16,
-      timeLimit: "45 minutes",
+      questionsCount: 40,
+      timeLimit: "35 minutes",
       difficulty: "Adaptive",
       difficultyRating: 5,
       maxDifficulty: 5,
-      minutes: 45,
+      minutes: 35,
     },
   },
 ];

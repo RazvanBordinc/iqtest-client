@@ -3,22 +3,24 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { 
-  Brain, 
-  Calculator, 
-  BookOpen, 
+import {
+  Brain,
+  Calculator,
+  BookOpen,
   Sparkles,
   ArrowRight,
   Clock,
   BarChart3,
   Trophy,
-  Zap
+  Zap,
 } from "lucide-react";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
 import Header from "@/components/start/Header";
 import { TEST_TYPES } from "../constants/testTypes";
+import TestAvailability from "./TestAvailability";
 import { isAuthenticated, getCurrentUser } from "@/fetch/auth";
+import api from "@/fetch/api";
 
 // Enhanced test category card with hover effects
 const TestCategoryCard = ({ category, onSelect, index }) => {
@@ -70,7 +72,9 @@ const TestCategoryCard = ({ category, onSelect, index }) => {
     >
       {/* Card background with gradient border */}
       <div className="absolute inset-0 bg-gradient-to-r rounded-2xl p-[2px]">
-        <div className={`absolute inset-0 bg-gradient-to-r ${getGradient()} rounded-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-300`} />
+        <div
+          className={`absolute inset-0 bg-gradient-to-r ${getGradient()} rounded-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-300`}
+        />
         <div className="absolute inset-[2px] bg-white dark:bg-gray-900 rounded-2xl" />
       </div>
 
@@ -99,23 +103,31 @@ const TestCategoryCard = ({ category, onSelect, index }) => {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <Clock className="w-4 h-4" />
-            <span>{category.duration} min</span>
+            <span>
+              {category.stats.minutes}{" "}
+              min
+            </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <BarChart3 className="w-4 h-4" />
-            <span>{category.questionCount} questions</span>
+            <span>
+              {category.stats.questionsCount}{" "}
+              questions
+            </span>
           </div>
         </div>
 
         {/* Difficulty indicator */}
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs text-gray-600 dark:text-gray-400">Difficulty:</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">
+            Difficulty:
+          </span>
           <div className="flex gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full ${
-                  i < category.difficulty
+                  i < (category.id === "mixed" ? 5 : 3)
                     ? `bg-gradient-to-r ${getGradient()}`
                     : "bg-gray-200 dark:bg-gray-700"
                 }`}
@@ -126,13 +138,13 @@ const TestCategoryCard = ({ category, onSelect, index }) => {
 
         {/* Action button */}
         <motion.button
-          className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${getGradient()} text-white font-medium flex items-center justify-center gap-2 overflow-hidden relative`}
+          className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${getGradient()} text-white font-medium flex items-center justify-center gap-2 overflow-hidden relative cursor-pointer`}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
           <span>Start Test</span>
           <ArrowRight className="w-4 h-4" />
-          
+
           {/* Shimmer effect */}
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-25"
@@ -168,8 +180,8 @@ const BackgroundShapes = () => {
         <motion.div
           key={i}
           className={`absolute rounded-full bg-gradient-to-br ${
-            i % 2 === 0 
-              ? "from-purple-400/20 to-indigo-400/20" 
+            i % 2 === 0
+              ? "from-purple-400/20 to-indigo-400/20"
               : "from-blue-400/20 to-cyan-400/20"
           } backdrop-blur-3xl`}
           style={{
@@ -202,15 +214,27 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   const [stats, setStats] = useState({
     testsCompleted: 0,
     bestCategory: null,
-    averageScore: 0
+    averageScore: 0,
   });
+  const [clearingCooldowns, setClearingCooldowns] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Refresh when page gains focus or after navigation
+  useEffect(() => {
+    const handleFocus = () => {
+      setRefreshKey(prev => prev + 1);
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   // Get user data from cookie
   useEffect(() => {
     // Check if user is authenticated
     const checkAuth = () => {
       const authenticated = isAuthenticated();
-      
+
       if (!authenticated) {
         router.push("/");
         return;
@@ -221,9 +245,11 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
       if (userData?.username) {
         setUsername(userData.username);
       }
-      
+
       // Get test stats from local storage
-      const testHistory = JSON.parse(localStorage.getItem("testHistory") || "{}");
+      const testHistory = JSON.parse(
+        localStorage.getItem("testHistory") || "{}"
+      );
       let totalTests = 0;
       let totalScore = 0;
       let bestCategory = { category: null, score: 0 };
@@ -231,7 +257,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
       Object.entries(testHistory).forEach(([category, tests]) => {
         if (Array.isArray(tests)) {
           totalTests += tests.length;
-          tests.forEach(test => {
+          tests.forEach((test) => {
             const score = test.score || 0;
             totalScore += score;
             if (score > bestCategory.score) {
@@ -244,14 +270,14 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
       setStats({
         testsCompleted: totalTests,
         bestCategory: bestCategory.category,
-        averageScore: totalTests > 0 ? Math.round(totalScore / totalTests) : 0
+        averageScore: totalTests > 0 ? Math.round(totalScore / totalTests) : 0,
       });
-      
+
       setAuthChecked(true);
     };
-    
+
     checkAuth();
-    
+
     // Simulate a short loading state for smooth animation
     setTimeout(() => {
       setIsAnimationComplete(true);
@@ -262,6 +288,19 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   const handleCategorySelect = (category) => {
     // Redirect to test start page with selected category
     router.push(`/tests/start?category=${category.id}`);
+  };
+
+  // Clear all test cooldowns (for testing/development)
+  const handleClearCooldowns = async () => {
+    try {
+      setClearingCooldowns(true);
+      await api.post("/api/test/clear-cooldowns");
+      window.location.reload(); // Reload to refresh availability status
+    } catch (error) {
+      showError("Failed to clear cooldowns");
+    } finally {
+      setClearingCooldowns(false);
+    }
   };
 
   // Show brief loading animation
@@ -280,7 +319,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black relative">
       {/* Animated background */}
       <BackgroundShapes />
-
+      
       <Header />
 
       <main className="relative z-10 flex flex-col items-center pt-8 pb-16 px-4 min-h-[calc(100vh-64px)]">
@@ -317,7 +356,11 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                Welcome back, <span className="font-semibold text-purple-600 dark:text-purple-400">{username}</span>!
+                Welcome back,{" "}
+                <span className="font-semibold text-purple-600 dark:text-purple-400">
+                  {username}
+                </span>
+                !
               </motion.p>
             )}
 
@@ -353,6 +396,22 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
             )}
           </motion.div>
 
+          {/* Debug button for clearing cooldowns */}
+          <motion.div
+            className="flex justify-center mt-4 mb-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <button
+              onClick={handleClearCooldowns}
+              disabled={clearingCooldowns}
+              className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              {clearingCooldowns ? "Clearing..." : "Clear All Cooldowns (Dev)"}
+            </button>
+          </motion.div>
+
           {/* Test categories grid */}
           <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
@@ -361,12 +420,13 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
             transition={{ delay: 0.5 }}
           >
             {initialTests.map((category, index) => (
-              <TestCategoryCard
-                key={category.id}
-                category={category}
-                onSelect={handleCategorySelect}
-                index={index}
-              />
+              <TestAvailability key={category.id} testTypeId={category.id}>
+                <TestCategoryCard
+                  category={category}
+                  onSelect={handleCategorySelect}
+                  index={index}
+                />
+              </TestAvailability>
             ))}
           </motion.div>
 
@@ -380,8 +440,8 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
               Challenge yourself and discover your cognitive strengths
             </p>
-            <motion.div
-              className="inline-flex px-6 py-3 rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20"
+            <motion.button
+              className="inline-flex px-6 py-3 cursor-pointer rounded-full bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20"
               animate={{
                 boxShadow: [
                   "0 0 0 0 rgba(168, 85, 247, 0.4)",
@@ -392,11 +452,12 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
                 duration: 2,
                 repeat: Infinity,
               }}
+              onClick={() => router.push("/leaderboard")}
             >
-              <span className="text-purple-600 dark:text-purple-400 font-medium">
-                All tests are scientifically validated
+              <span className="text-purple-600 dark:text-purple-400 font-medium uppercase">
+                see how you rank among others
               </span>
-            </motion.div>
+            </motion.button>
           </motion.div>
         </motion.div>
       </main>

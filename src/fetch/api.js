@@ -29,8 +29,6 @@ export const clientFetch = async (endpoint, options = {}) => {
   // Strip leading slash if present
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   const url = `${API_URL}/${cleanEndpoint}`;
-  
-  console.log("clientFetch:", { endpoint, cleanEndpoint, url, API_URL });
 
   const fetchOptions = {
     ...options,
@@ -49,11 +47,19 @@ export const clientFetch = async (endpoint, options = {}) => {
         }
         throw new Error("Authentication required");
       }
+      
+      // Handle other error responses
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || `Error: ${response.statusText}`;
+      
+      // Create an error object with status code
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      throw error;
     }
 
     return await handleResponse(response);
   } catch (error) {
-    console.error("Client API error:", error);
     throw error;
   }
 };
@@ -78,12 +84,6 @@ export const serverFetch = async (endpoint, options = {}) => {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  console.log("Server API Request:", {
-    url,
-    method: options.method || "GET",
-    headers,
-  });
-
   try {
     const response = await fetch(url, {
       ...options,
@@ -92,15 +92,7 @@ export const serverFetch = async (endpoint, options = {}) => {
     });
 
     if (!response.ok) {
-      console.error("Server API Error:", {
-        status: response.status,
-        statusText: response.statusText,
-        url,
-      });
-
       const errorData = await response.json().catch(() => null);
-      console.error("Server API Error Details:", errorData);
-
       throw new Error(
         errorData?.message || `Server error: ${response.statusText}`
       );
@@ -108,7 +100,6 @@ export const serverFetch = async (endpoint, options = {}) => {
 
     return await handleResponse(response);
   } catch (error) {
-    console.error("Server API request failed:", error);
     throw error;
   }
 };
@@ -121,7 +112,6 @@ async function handleResponse(response) {
     try {
       return await response.json();
     } catch (error) {
-      console.error("Failed to parse JSON:", error);
       return null;
     }
   }

@@ -20,12 +20,12 @@ export default function TestResults({
   testResult,
   testType,
 }) {
-  // Extract data from backend result
-  const score = testResult?.score || 0;
-  const percentile = testResult?.percentile || 0;
-  const iqScore = testResult?.iqScore;
-  const duration = testResult?.duration || "N/A";
-  const accuracy = testResult?.accuracy || 0;
+  // Extract data from backend result (note: backend returns PascalCase)
+  const score = testResult?.Score || testResult?.score || 0;
+  const percentile = testResult?.Percentile || testResult?.percentile || 0;
+  const iqScore = testResult?.IQScore || testResult?.iqScore;
+  const duration = testResult?.Duration || testResult?.duration || "N/A";
+  const accuracy = testResult?.Accuracy || testResult?.accuracy || 0;
 
   // Animation variants
   const containerVariants = {

@@ -23,9 +23,9 @@ export default function UserRankingSummary({ userData, activeTab }) {
   const getRankData = () => {
     if (activeTab === "global") {
       return {
-        rank: userData.globalRank,
-        percentile: userData.globalPercentile,
-        score: userData.iqScore,
+        rank: userData.GlobalRank || userData.globalRank,
+        percentile: userData.GlobalPercentile || userData.globalPercentile,
+        score: userData.IqScore || userData.iqScore,
         icon: <Trophy className="w-5 h-5 text-amber-500" />,
         color:
           "from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600",
@@ -34,17 +34,20 @@ export default function UserRankingSummary({ userData, activeTab }) {
       };
     }
 
-    const testData = userData.testResults[activeTab];
+    const testResults = userData.TestResults || userData.testResults;
+    if (!testResults) return null;
+    
+    const testData = testResults[activeTab];
     if (!testData) return null;
 
     // Return test-specific data with appropriate styling
     switch (activeTab) {
       case "number-logic":
         return {
-          rank: testData.rank,
-          percentile: testData.percentile,
-          score: testData.score,
-          totalTests: testData.totalTests,
+          rank: testData.Rank || testData.rank,
+          percentile: testData.Percentile || testData.percentile,
+          score: testData.Score || testData.score,
+          totalTests: testData.TotalTests || testData.totalTests,
           icon: <Calculator className="w-5 h-5 text-blue-500" />,
           color:
             "from-blue-500 to-cyan-500 dark:from-blue-600 dark:to-cyan-600",
@@ -53,10 +56,10 @@ export default function UserRankingSummary({ userData, activeTab }) {
         };
       case "word-logic":
         return {
-          rank: testData.rank,
-          percentile: testData.percentile,
-          score: testData.score,
-          totalTests: testData.totalTests,
+          rank: testData.Rank || testData.rank,
+          percentile: testData.Percentile || testData.percentile,
+          score: testData.Score || testData.score,
+          totalTests: testData.TotalTests || testData.totalTests,
           icon: <BookText className="w-5 h-5 text-emerald-500" />,
           color:
             "from-emerald-500 to-green-500 dark:from-emerald-600 dark:to-green-600",
@@ -65,10 +68,10 @@ export default function UserRankingSummary({ userData, activeTab }) {
         };
       case "memory":
         return {
-          rank: testData.rank,
-          percentile: testData.percentile,
-          score: testData.score,
-          totalTests: testData.totalTests,
+          rank: testData.Rank || testData.rank,
+          percentile: testData.Percentile || testData.percentile,
+          score: testData.Score || testData.score,
+          totalTests: testData.TotalTests || testData.totalTests,
           icon: <Brain className="w-5 h-5 text-amber-500" />,
           color:
             "from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600",
@@ -77,10 +80,10 @@ export default function UserRankingSummary({ userData, activeTab }) {
         };
       case "mixed":
         return {
-          rank: testData.rank,
-          percentile: testData.percentile,
-          score: testData.score,
-          totalTests: testData.totalTests,
+          rank: testData.Rank || testData.rank,
+          percentile: testData.Percentile || testData.percentile,
+          score: testData.Score || testData.score,
+          totalTests: testData.TotalTests || testData.totalTests,
           icon: <Sparkles className="w-5 h-5 text-purple-500" />,
           color:
             "from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600",
@@ -166,7 +169,7 @@ export default function UserRankingSummary({ userData, activeTab }) {
               </div>
 
               <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Hey <span className="font-medium">{userData.username}</span>,
+                Hey <span className="font-medium">{userData.Username || userData.username}</span>,
                 here&apos;s how you compare to other test-takers
               </p>
             </div>

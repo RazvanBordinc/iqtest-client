@@ -136,7 +136,7 @@ export default function TestSpecificRankTable({ testType, userData, leaderboardD
     } else if (rank === 2) {
       return "bg-gradient-to-br from-gray-300 via-gray-400 to-gray-300 text-white shadow-lg ring-2 ring-gray-300/20";
     } else if (rank === 3) {
-      return "bg-gradient-to-br from-orange-500 via-red-500 to-orange-500 text-white shadow-lg ring-2 ring-orange-400/20";
+      return "bg-gradient-to-br from-amber-600 via-amber-700 to-amber-600 text-white shadow-lg ring-2 ring-amber-400/20";
     }
     return "";
   };
@@ -151,33 +151,56 @@ export default function TestSpecificRankTable({ testType, userData, leaderboardD
     }
 
     // Map the backend data to the expected format
-    const mappedData = propLeaderboardData.map((user) => ({
-      id: user.userId,
-      rank: user.rank,
-      username: user.username,
-      score: user.score,
-      percentile: user.percentile || 0,
-      time: user.averageTime || user.bestTime || "N/A", 
-      iqScore: user.iqScore,
-      country: user.country || "Not specified",
-      isCurrentUser: userData && user.userId === userData.userId,
-    }));
+    const userIdToCheck = userData ? (userData.UserId || userData.userId) : null;
+    
+    const mappedData = propLeaderboardData.map((user) => {
+      const userId = user.UserId || user.userId;
+      
+      // Determine if this is the current user - important for highlighting
+      // First check if backend already marked it as current user
+      let isCurrentUser = user.IsCurrentUser || user.isCurrentUser || false;
+      
+      // If not already marked and we have userData to compare against
+      if (!isCurrentUser && userIdToCheck && userId) {
+        isCurrentUser = userId == userIdToCheck;
+      }
+      
+      // Calculate percentile correctly for "top X%" representation
+      // Server returns a value representing what percentage of users scored lower
+      const percentileValue = user.Percentile || user.percentile || 0;
+      
+      return {
+        id: userId,
+        rank: user.Rank || user.rank,
+        username: user.Username || user.username || "Unknown",
+        score: user.Score || user.score,
+        percentile: percentileValue, // Using directly as provided by backend
+        time: user.AverageTime || user.averageTime || user.BestTime || user.bestTime || "N/A", 
+        iqScore: user.IQScore || user.iqScore,
+        country: user.Country || user.country || "Not specified",
+        isCurrentUser: isCurrentUser
+      };
+    });
 
     // If userData exists and isn't already in the list, add it
     const hasUserData = mappedData.some((user) => user.isCurrentUser);
     
-    if (!hasUserData && userData && userData.testResults?.[testType]) {
-      const userTestData = userData.testResults[testType];
-      mappedData.push({
-        id: userData.userId,
-        rank: userTestData.rank || mappedData.length + 1,
-        username: userData.username,
-        score: userTestData.score || 0,
-        percentile: userTestData.percentile || 0,
-        time: userTestData.time || "N/A",
-        iqScore: userTestData.iqScore,
-        isCurrentUser: true,
-      });
+    if (!hasUserData && userData) {
+      const testResults = userData.TestResults || userData.testResults;
+      const userTestData = testResults?.[testType];
+      
+      if (userTestData) {
+        mappedData.push({
+          id: userData.UserId || userData.userId,
+          rank: userTestData.Rank || userTestData.rank || mappedData.length + 1,
+          username: userData.Username || userData.username || "Unknown",
+          score: userTestData.Score || userTestData.score || 0,
+          percentile: userTestData.Percentile || userTestData.percentile || 0,
+          time: userTestData.AverageTime || userTestData.averageTime || userTestData.BestTime || userTestData.bestTime || userTestData.time || "N/A",
+          iqScore: userTestData.IQScore || userTestData.iqScore,
+          isCurrentUser: true,
+        });
+      }
     }
 
     return mappedData;
@@ -213,7 +236,7 @@ export default function TestSpecificRankTable({ testType, userData, leaderboardD
 
   // Filter based on search query
   const filteredData = sortedData.filter((item) =>
-    item.username.toLowerCase().includes(searchQuery.toLowerCase())
+    item.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Get the sort indicator
@@ -403,9 +426,11 @@ export default function TestSpecificRankTable({ testType, userData, leaderboardD
                         )} flex items-center justify-center shadow-md`}
                       >
                         {user.rank === 1 ? (
-                          <Trophy className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-100" />
+                        ) : user.rank === 2 ? (
+                          <Medal className="w-3 h-3 sm:w-4 sm:h-4 text-gray-100" />
                         ) : (
-                          <Award className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Award className="w-3 h-3 sm:w-4 sm:h-4 text-amber-100" />
                         )}
                       </div>
                     ) : (
@@ -472,19 +497,22 @@ export default function TestSpecificRankTable({ testType, userData, leaderboardD
                 <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <div className={cn(
                     "text-sm sm:text-base font-medium",
-                    parseFloat(user.percentile) <= 1 
+                    parseFloat(user.percentile || 0) <= 1 
                       ? "text-green-600 dark:text-green-400" 
-                      : parseFloat(user.percentile) <= 5 
+                      : parseFloat(user.percentile || 0) <= 5 
                       ? "text-blue-600 dark:text-blue-400"
-                      : parseFloat(user.percentile) <= 10
+                      : parseFloat(user.percentile || 0) <= 10
                       ? "text-purple-600 dark:text-purple-400"
                       : "text-gray-600 dark:text-gray-400"
                   )}>
-                    Top {user.percentile < 1 
-                      ? user.percentile.toFixed(2) 
-                      : user.percentile < 10 
-                      ? user.percentile.toFixed(1) 
-                      : Math.round(user.percentile)}%
+                    {/* Calculate percentile as 100 - percentile to show "top X%" correctly */}
+                    Top {parseFloat(user.percentile || 0) < 0.01 
+                      ? "0.01" 
+                      : parseFloat(user.percentile || 0) < 1 
+                      ? parseFloat(user.percentile || 0).toFixed(2) 
+                      : parseFloat(user.percentile || 0) < 10 
+                      ? parseFloat(user.percentile || 0).toFixed(1) 
+                      : Math.round(parseFloat(user.percentile || 0))}%
                   </div>
                 </td>
 

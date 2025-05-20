@@ -47,16 +47,16 @@ export default function ClientWrapper({ questions }) {
       categoryHistory.push({
         score: scoreValue,
         date: new Date().toISOString(),
-        duration: "15:30", // In a real app, you'd calculate this
-        percentile: Math.round(scoreValue * 0.9), // Example calculation
-        completed: questions?.length || 20,
-        accuracy: `${Math.round(scoreValue)}%`,
+        duration: "-", // Will be populated by backend in real results
+        percentile: 0, // Will be populated by backend in real results
+        completed: questions?.length || 0,
+        accuracy: `-`,
       });
 
       testHistory[category] = categoryHistory;
       localStorage.setItem("testHistory", JSON.stringify(testHistory));
     } catch (error) {
-      console.error("Error saving test results:", error);
+      // Error saving to localStorage - non-critical
     }
   };
 
@@ -92,12 +92,12 @@ export default function ClientWrapper({ questions }) {
         showTimer={testStarted}
         totalSeconds={
           category === "number-logic"
-            ? 25 * 60
+            ? 18 * 60
             : category === "word-logic"
-            ? 30 * 60
+            ? 20 * 60
             : category === "memory"
-            ? 22 * 60
-            : 45 * 60 // mixed test
+            ? 15 * 60
+            : 35 * 60 // mixed test
         }
         onTimeFinish={() => handleTestComplete(0)}
       />

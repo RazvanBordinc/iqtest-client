@@ -64,14 +64,14 @@ const MemoryPairQuestion = memo(function MemoryPairQuestion({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   {pair.map((word, wordIndex) => {
                     const isMissing =
-                      missingIndices[pairIndex]?.includes(wordIndex);
+                      missingIndices && missingIndices[pairIndex] && missingIndices[pairIndex].includes(wordIndex);
                     const inputId = `pair-${pairIndex}-word-${wordIndex}`;
 
                     // Determine if this is the last visible word before a missing word
                     const isLastVisibleBeforeMissing =
                       !isMissing &&
                       wordIndex < pair.length - 1 &&
-                      missingIndices[pairIndex]?.includes(wordIndex + 1);
+                      missingIndices && missingIndices[pairIndex] && missingIndices[pairIndex].includes(wordIndex + 1);
 
                     return (
                       <React.Fragment key={`word-${pairIndex}-${wordIndex}`}>

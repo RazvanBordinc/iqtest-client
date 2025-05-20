@@ -77,6 +77,7 @@ const VerbalTest = ({ onComplete, questions = [] }) => {
         if (userAnswer.type !== "skipped" && userAnswer.value !== null) {
           formattedAnswers.push({
             questionIndex: index,
+            questionId: question.id || question.Id, // Use normalized id property
             value: userAnswer.value,
             type: userAnswer.type
           });
@@ -88,14 +89,11 @@ const VerbalTest = ({ onComplete, questions = [] }) => {
     return formattedAnswers;
   };
 
-  // Handle navigation - Modified to support completion and skipping
-  const handleNext = ({ isCompletion, isSkip } = {}) => {
-    // If skipping, mark the question as skipped
-    if (isSkip && !answers[currentQuestion]) {
-      setAnswers({
-        ...answers,
-        [currentQuestion]: { value: null, type: "skipped" },
-      });
+  // Handle navigation - No skipping allowed
+  const handleNext = ({ isCompletion } = {}) => {
+    // Don't allow proceeding without an answer
+    if (!hasAnswer()) {
+      return;
     }
     
     if (currentQuestion < questions.length - 1) {
@@ -110,10 +108,10 @@ const VerbalTest = ({ onComplete, questions = [] }) => {
     }
   };
 
+  // Disable going back
   const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
+    // No going back functionality - disabled
+    return;
   };
 
   // Get current answer based on question type
@@ -190,12 +188,12 @@ const VerbalTest = ({ onComplete, questions = [] }) => {
           )}
         </motion.div>
 
-        {/* Updated navigation controls with skip functionality */}
+        {/* Updated navigation controls - no skipping, no going back */}
         <NavigationControls
           onPrevious={handlePrevious}
           onNext={handleNext}
-          isPreviousDisabled={currentQuestion === 0}
-          isNextDisabled={false} // Never disable - allow skipping
+          isPreviousDisabled={true} // Always disable previous
+          isNextDisabled={!hasAnswer()} // Disable next if no answer
           isLastQuestion={currentQuestion === questions.length - 1}
           testType="verbal"
           hasAnswer={hasAnswer()}

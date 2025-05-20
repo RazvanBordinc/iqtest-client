@@ -35,11 +35,8 @@ export default function TestStartPage({
 
   // Get time limit in seconds from testType
   const getTimeLimit = () => {
-    if (!testType?.stats?.timeLimit) return 1800; // Default 30 minutes
-
-    const timeLimitStr = testType.stats.timeLimit;
-    const minutes = parseInt(timeLimitStr.match(/(\d+)/)[0], 10);
-    return minutes * 60; // Convert to seconds
+    if (!testType?.stats?.minutes) return 1800; // Default 30 minutes
+    return testType.stats.minutes * 60; // Convert to seconds
   };
 
   // Check authentication
@@ -82,8 +79,6 @@ export default function TestStartPage({
         ? Math.floor((endTime - testStartTime) / 1000)
         : 0;
 
-      console.log(`Test completed in ${calculatedTimeTaken} seconds`);
-
       // Format answers for submission
       const formattedAnswers = formatAnswersForSubmission(answers);
 
@@ -98,7 +93,6 @@ export default function TestStartPage({
       setTestScore(result);
       setTestComplete(true);
     } catch (error) {
-      console.error("Test submission error:", error);
       showError(error.message || "Failed to submit test. Please try again.");
     } finally {
       setIsLoading(false);
@@ -107,11 +101,41 @@ export default function TestStartPage({
 
   // Format answers for backend submission
   const formatAnswersForSubmission = (answers) => {
+    // If answers is already an array (from child components), return as is
+    if (Array.isArray(answers)) {
+      // Check if each answer has required properties
+      const validatedAnswers = answers.map(answer => {
+        // Ensure questionId is a number
+        const questionId = typeof answer.questionId === 'number' ? 
+                          answer.questionId : 
+                          (parseInt(answer.questionId) || 1);
+        
+        // Default to memory-pair for memory test answers
+        const type = answer.type || "memory-pair";
+        
+        // Make sure value is handled properly
+        let value = answer.value;
+        
+        // Memory tests with object values need special handling
+        if (type === "memory-pair" && typeof value === 'object' && value !== null) {
+          value = JSON.stringify(value);
+        }
+        
+        return {
+          questionId,
+          type,
+          value
+        };
+      });
+      
+      return validatedAnswers;
+    }
+    
     // If no answers provided, create answers with null values for all questions
     if (!answers || Object.keys(answers).length === 0) {
       return questions.map((question) => ({
-        questionId: question.id,
-        type: question.type,
+        questionId: question.Id,    // Use capital 'I' for PascalCase
+        type: question.Type,       // Use capital 'T' for PascalCase
         value: null, // null indicates unanswered question
       }));
     }
@@ -123,28 +147,27 @@ export default function TestStartPage({
       // If no answer for this question, return null value
       if (!answer || answer.type === "skipped") {
         return {
-          questionId: question.id,
-          type: question.type,
+          questionId: question.Id,    // Use capital 'I' for PascalCase
+          type: question.Type,       // Use capital 'T' for PascalCase
           value: null,
         };
       }
 
       // Format based on answer type
-      if (question.type === "memory-pair") {
+      if (question.Type === "memory-pair" || question.Type === "memory") {
         // For memory questions, properly format the object
+        // Memory answers come pre-formatted from the MemoryTest component
         return {
-          questionId: question.id,
+          questionId: question.Id,    // Use capital 'I' for PascalCase
           type: "memory-pair",
-          value:
-            typeof answer.value === "object"
-              ? JSON.stringify(answer.value)
-              : answer.value,
+          // Pass the value as-is - it should already be properly formatted
+          value: answer.value,
         };
       } else {
         // For other question types
         return {
-          questionId: question.id,
-          type: answer.type || question.type,
+          questionId: question.Id,    // Use capital 'I' for PascalCase
+          type: answer.type || question.Type,
           value: answer.value,
         };
       }
@@ -155,7 +178,6 @@ export default function TestStartPage({
 
   // Function to handle timer expiration
   const handleTimerExpire = () => {
-    console.log("Test time expired, auto-submitting");
     // Auto-submit is handled by the test components themselves
     // This is just a fallback if needed
   };

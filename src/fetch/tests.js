@@ -6,10 +6,9 @@ import { TEST_TYPES } from "@/components/constants/testTypes";
 // Get test types from constants (they're hardcoded)
 export const getAvailableTests = async () => {
   try {
-    // Can also fetch from backend if needed: const testTypes = await api.get("api/test/types");
+    // Can also fetch from backend if needed: const testTypes = await api.get("/api/test/types");
     return TEST_TYPES;
   } catch (error) {
-    console.error("Failed to fetch test types:", error);
     // Fallback to constants if API fails
     return TEST_TYPES;
   }
@@ -23,21 +22,23 @@ export const getTestById = (testId) => {
 // Submit test answers to backend
 export const submitTest = async (testData) => {
   try {
-    console.log("Submitting test:", testData);
-
-    // Ensure testData includes timeTaken if not already present
-    if (!testData.timeTaken && typeof testData.timeTaken !== "number") {
-      console.warn("No timeTaken value provided in test submission");
+    // Validate answers before submission
+    if (!Array.isArray(testData.answers)) {
+      throw new Error("Invalid test data format - answers must be an array");
     }
 
-    const result = await api.post("api/test/submit", testData);
+    // Check each answer for required properties
+    testData.answers.forEach((answer, index) => {
+      if (!answer.hasOwnProperty('questionId') || 
+          !answer.hasOwnProperty('type') || 
+          (!answer.hasOwnProperty('value') && answer.value !== null)) {
+        throw new Error("Invalid answer format - missing required properties");
+      }
+    });
 
-    // Log the result for debugging
-    console.log("Test submission result:", result);
-
+    const result = await api.post("/api/test/submit", testData);
     return result;
   } catch (error) {
-    console.error("Failed to submit test:", error);
     throw error;
   }
 };
@@ -45,9 +46,8 @@ export const submitTest = async (testData) => {
 // Check test availability
 export const checkTestAvailability = async (testTypeId) => {
   try {
-    return await api.get(`api/test/availability/${testTypeId}`);
+    return await api.get(`/api/test/availability/${testTypeId}`);
   } catch (error) {
-    console.error(`Failed to check test availability for ${testTypeId}:`, error);
     throw error;
   }
 };

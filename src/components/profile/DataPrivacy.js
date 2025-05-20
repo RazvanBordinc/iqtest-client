@@ -1,131 +1,141 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
-import { Download, Trash2 } from "lucide-react";
-import api from "@/fetch/api";
-import { removeCookie } from "@/utils/cookies";
-import { useRouter } from "next/navigation";
-import { showError } from "@/components/shared/ErrorModal";
+import { Shield, Lock, Eye, ArrowDownToLine } from "lucide-react";
 
 const DataPrivacy = () => {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const handleDataExport = async () => {
-    setIsLoading(true);
-    try {
-      const response = await api.get("/userdata/export");
-      const data = response;
-      
-      // Create and download JSON file
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `iqtest-data-${new Date().toISOString()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      showError(error.message || "Failed to export data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDataDelete = async () => {
-    setIsLoading(true);
-    try {
-      await api.delete("/userdata/delete");
-      
-      // Clear all cookies and redirect to home
-      removeCookie("token");
-      removeCookie("refreshToken");
-      removeCookie("userData");
-      localStorage.clear();
-      
-      router.push("/");
-    } catch (error) {
-      showError(error.message || "Failed to delete data");
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="mt-8 p-6 bg-white dark:bg-neutral-800 rounded-lg border-2 border-neutral-200 dark:border-neutral-700">
-      <h3 className="text-lg font-semibold mb-4">Data Privacy</h3>
-      
-      <div className="space-y-4">
-        <div>
-          <button
-            onClick={handleDataExport}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+    <motion.div
+      className="p-6 bg-white dark:bg-neutral-800 rounded-lg border-2 border-neutral-200 dark:border-neutral-700 shadow-lg h-full overflow-y-auto flex flex-col"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h3 className="text-lg font-semibold mb-4 flex items-center">
+        <Shield className="w-5 h-5 mr-2 text-purple-500" />
+        Data Privacy & Security
+      </h3>
+
+      <div className="space-y-6 flex-grow">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <motion.div
+            className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/30"
+            whileHover={{
+              y: -5,
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            }}
           >
-            <Download className="w-4 h-4" />
-            Export My Data
-          </button>
-          <p className="text-sm text-neutral-500 mt-1">
-            Download all your data in JSON format
-          </p>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-800/30 rounded-full flex items-center justify-center mb-3">
+                <Lock className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                Secure Storage
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                All your data is encrypted and stored securely on our protected
+                servers
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30"
+            whileHover={{
+              y: -5,
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-800/30 rounded-full flex items-center justify-center mb-3">
+                <Eye className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                Privacy First
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                We never share your personal information with third parties
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30"
+            whileHover={{
+              y: -5,
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-800/30 rounded-full flex items-center justify-center mb-3">
+                <ArrowDownToLine className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                Data Ownership
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                You maintain full ownership and control of your data and test
+                results
+              </p>
+            </div>
+          </motion.div>
         </div>
 
-        <div>
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete My Account
-          </button>
-          <p className="text-sm text-neutral-500 mt-1">
-            Permanently delete your account and all data
+        {/* Data Control Section */}
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <h4 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+            <Shield className="w-4 h-4 mr-2 text-purple-500" />
+            Your Data Controls
+          </h4>
+
+          <div className="space-y-3">
+            <div className="flex items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 mr-2"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Your test results are used to calculate global averages and
+                percentiles.
+              </p>
+            </div>
+
+            <div className="flex items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 mr-2"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Your results are stored anonymously to protect your privacy.
+              </p>
+            </div>
+
+            <div className="flex items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 mr-2"></div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                You can delete your account and all associated data at any time.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Privacy Policy Link */}
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            For more information, please read our{" "}
+            <a
+              href="/privacy-policy"
+              className="text-purple-600 dark:text-purple-400 hover:underline font-medium"
+            >
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a
+              href="/terms"
+              className="text-purple-600 dark:text-purple-400 hover:underline font-medium"
+            >
+              Terms of Service
+            </a>
+            .
           </p>
         </div>
       </div>
-
-      {showDeleteConfirm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-        >
-          <motion.div
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            className="bg-white dark:bg-neutral-800 p-6 rounded-lg max-w-md w-full mx-4"
-          >
-            <h4 className="text-lg font-semibold mb-4">
-              Are you sure you want to delete your account?
-            </h4>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-              This action cannot be undone. All your data, test results, and
-              leaderboard entries will be permanently deleted.
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={handleDataDelete}
-                disabled={isLoading}
-                className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-              >
-                Yes, Delete Everything
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isLoading}
-                className="flex-1 bg-neutral-200 dark:bg-neutral-700 px-4 py-2 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </div>
+    </motion.div>
   );
 };
 

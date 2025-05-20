@@ -3,7 +3,7 @@ import { setCookie, removeCookie, getCookie } from "@/utils/cookies";
 
 export const checkUsername = async (username) => {
   try {
-    const response = await api.post("api/auth/check-username", { username });
+    const response = await api.post("/api/auth/check-username", { username });
     return response;
   } catch (error) {
     console.error("Username check failed:", error);
@@ -13,7 +13,7 @@ export const checkUsername = async (username) => {
 
 export const createUser = async (userData) => {
   try {
-    const response = await api.post("api/auth/create-user", userData);
+    const response = await api.post("/api/auth/create-user", userData);
 
     // Store token and user data in cookies if available
     if (response.token) {
@@ -39,7 +39,7 @@ export const createUser = async (userData) => {
 
 export const loginWithPassword = async (credentials) => {
   try {
-    const response = await api.post("api/auth/login-with-password", credentials);
+    const response = await api.post("/api/auth/login-with-password", credentials);
 
     // Store token and user data in cookies
     if (response.token) {
@@ -59,13 +59,18 @@ export const loginWithPassword = async (credentials) => {
     return response;
   } catch (error) {
     console.error("Login failed:", error);
+    // Add more context to the error
+    if (error.status === 400 && error.message.includes("Invalid credentials")) {
+      // This could be either wrong password or non-existent user
+      error.isInvalidCredentials = true;
+    }
     throw error;
   }
 };
 
 export const register = async (userData) => {
   try {
-    const response = await api.post("api/auth/register", userData);
+    const response = await api.post("/api/auth/register", userData);
 
     // Store token and user data in cookies if available
     if (response.token) {
@@ -86,7 +91,7 @@ export const register = async (userData) => {
 
 export const login = async (credentials) => {
   try {
-    const response = await api.post("api/auth/login", credentials);
+    const response = await api.post("/api/auth/login", credentials);
 
     // Store token and user data in cookies
     if (response.token) {
@@ -107,7 +112,7 @@ export const login = async (credentials) => {
 
 export const disconnect = async () => {
   try {
-    await api.post("api/auth/disconnect");
+    await api.post("/api/auth/disconnect");
     
     // Clear all cookies
     removeCookie("token");

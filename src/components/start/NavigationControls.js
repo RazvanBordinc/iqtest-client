@@ -35,6 +35,24 @@ const NavigationControls = memo(function NavigationControls({
   hasAnswer = false,
   enableKeyboard = true,
 }) {
+  // Custom click handler for next/finish button to handle animations
+  const handleNextClick = useCallback(() => {
+    if (isNextDisabled) return;
+
+    // If it's the last question and animation handler is provided, use animated completion
+    if (
+      isLastQuestion &&
+      onAnimationComplete &&
+      typeof onAnimationComplete === "function"
+    ) {
+      // Animation will be handled by the parent component that receives the event
+      onNext({ isCompletion: true, isSkip: !hasAnswer });
+    } else {
+      // Normal navigation, including skip
+      onNext({ isCompletion: false, isSkip: !hasAnswer });
+    }
+  }, [isNextDisabled, isLastQuestion, onAnimationComplete, onNext, hasAnswer]);
+
   // Add keyboard event handler
   useEffect(() => {
     if (!enableKeyboard) return;
@@ -97,23 +115,15 @@ const NavigationControls = memo(function NavigationControls({
 
   const getNextButtonClass = () => {
     if (isNextDisabled) {
-      return `px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gray-300 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed transition-all duration-200`;
+      return `px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gray-300 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed transition-all duration-200 opacity-50`;
     }
     
-    // Different styling when answer is selected vs skipping
-    if (hasAnswer) {
-      return `px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r ${gradient} text-white transition-all duration-200 hover:shadow-md cursor-pointer overflow-hidden`;
-    } else {
-      // Skip button style when no answer selected
-      return `px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r from-gray-500 to-gray-600 dark:from-gray-600 dark:to-gray-700 text-white transition-all duration-200 hover:shadow-md cursor-pointer overflow-hidden`;
-    }
+    // Use gradient when enabled
+    return `px-6 py-3 rounded-lg flex items-center gap-2 relative bg-gradient-to-r ${gradient} text-white transition-all duration-200 hover:shadow-md cursor-pointer overflow-hidden`;
   };
 
   // Determine which text to use for the next button
   const getNextButtonText = () => {
-    if (!hasAnswer && !isLastQuestion) {
-      return "Skip";
-    }
     if (isLastQuestion) {
       return finishText;
     }
@@ -122,43 +132,31 @@ const NavigationControls = memo(function NavigationControls({
 
   // Get icon for next button
   const getNextButtonIcon = () => {
-    if (!hasAnswer && !isLastQuestion) {
-      return <SkipForward className="w-5 h-5" />;
-    }
     if (isLastQuestion) {
       return <CheckCircle className="w-5 h-5" />;
     }
     return <ArrowRight className="w-5 h-5" />;
   };
 
-  // Custom click handler for next/finish button to handle animations
-  const handleNextClick = useCallback(() => {
-    if (isNextDisabled) return;
-
-    // If it's the last question and animation handler is provided, use animated completion
-    if (
-      isLastQuestion &&
-      onAnimationComplete &&
-      typeof onAnimationComplete === "function"
-    ) {
-      // Animation will be handled by the parent component that receives the event
-      onNext({ isCompletion: true, isSkip: !hasAnswer });
-    } else {
-      // Normal navigation, including skip
-      onNext({ isCompletion: false, isSkip: !hasAnswer });
-    }
-  }, [isNextDisabled, isLastQuestion, onAnimationComplete, onNext, hasAnswer]);
-
   return (
     <div className="flex flex-col gap-4 mt-8 w-full">
       {/* Keyboard hint */}
-      {enableKeyboard && (
+      {enableKeyboard && hasAnswer && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center text-sm text-gray-500 dark:text-gray-400"
         >
-          Press <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">Enter</kbd> to {hasAnswer ? "continue" : "skip"}
+          Press <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">Enter</kbd> to continue
+        </motion.div>
+      )}
+      {enableKeyboard && !hasAnswer && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center text-sm text-orange-500 dark:text-orange-400"
+        >
+          Please answer the question to continue
         </motion.div>
       )}
 
@@ -208,14 +206,14 @@ const NavigationControls = memo(function NavigationControls({
         </motion.button>
       </div>
 
-      {/* Skip hint when no answer */}
+      {/* Mandatory answer hint when no answer */}
       {!hasAnswer && !isLastQuestion && (
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center text-sm text-gray-500 dark:text-gray-400 italic"
+          className="text-center text-sm text-red-500 dark:text-red-400 italic font-medium"
         >
-          Not sure? You can skip this question and come back later
+          You must answer this question to continue
         </motion.p>
       )}
     </div>

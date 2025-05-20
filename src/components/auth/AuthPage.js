@@ -61,13 +61,21 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       const response = await checkUsername(username);
-      // In production, exists is null, so we always go to details step
-      const userExists = response.exists ?? false;
+      // In production, exists is null for security, so we show password step
+      // and let the server determine if it's login or registration
+      const userExists = response.exists ?? null;
       setUserExists(userExists);
-      if (userExists) {
+      
+      if (userExists === true) {
+        // Definitely exists - show login
         setStep("login");
-      } else {
+      } else if (userExists === false) {
+        // Definitely doesn't exist - show details for registration
         setStep("details");
+      } else {
+        // Production mode - can't determine, so show password step
+        // This step will try to login first, then create account if needed
+        setStep("password");
       }
     } catch (error) {
       showError("Failed to check username. Please try again.");
@@ -92,20 +100,40 @@ export default function AuthPage() {
     setStep("password");
   };
 
-  // Handle password submission (for new users)
+  // Handle password submission (for new users or production mode)
   const handlePasswordSubmit = async () => {
     if (!password.trim()) {
       setPasswordError("Password is required");
-      return;
-    }
-    if (password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
       return;
     }
     setPasswordError("");
 
     setIsLoading(true);
     try {
+      // If userExists is null (production mode), try login first
+      if (userExists === null) {
+        try {
+          // Try to login first
+          await loginWithPassword({ email: `${username}@iqtest.local`, password });
+          router.push("/tests");
+          return;
+        } catch (loginError) {
+          // Login failed - check if it's invalid credentials
+          if (loginError.isInvalidCredentials || loginError.message.includes("Invalid credentials")) {
+            // Could be wrong password or non-existent user
+            // Show a generic message and let them try again or create account
+            setPasswordError("Invalid credentials. Try again or create a new account.");
+            // Add option to create new account
+            setStep("details");
+          } else {
+            // Other error
+            showError(loginError.message || "Login failed. Please try again.");
+          }
+          return;
+        }
+      }
+      
+      // Otherwise, create new user (we have country and age)
       await createUser({ username, country, age: parseInt(age), password });
       router.push("/tests");
     } catch (error) {
@@ -286,7 +314,7 @@ export default function AuthPage() {
               </motion.div>
             )}
 
-            {/* Password Step (for new users) */}
+            {/* Password Step (for production mode - handles both login and registration) */}
             {step === "password" && (
               <motion.div
                 key="password"
@@ -298,10 +326,10 @@ export default function AuthPage() {
               >
                 <div className="text-center mb-8">
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    Create a password
+                    {userExists === null ? `Welcome, ${username}!` : 'Create a password'}
                   </h1>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Keep your account secure
+                    {userExists === null ? 'Enter your password to continue' : 'Keep your account secure'}
                   </p>
                 </div>
 
@@ -324,7 +352,7 @@ export default function AuthPage() {
                           ? "border-red-500"
                           : "border-gray-300 dark:border-gray-700"
                       } bg-white dark:bg-gray-800 text-gray-900 dark:text-white`}
-                      placeholder="Create a password (8+ characters)"
+                      placeholder={userExists === null ? "Enter your password" : "Create a password (8+ characters)"}
                       autoFocus
                     />
                     {passwordError && (
@@ -334,7 +362,7 @@ export default function AuthPage() {
 
                   <div className="flex gap-4">
                     <button
-                      onClick={() => setStep("details")}
+                      onClick={() => setStep(userExists === null ? "username" : "details")}
                       className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
                     >
                       Back
@@ -343,7 +371,7 @@ export default function AuthPage() {
                       onClick={handlePasswordSubmit}
                       className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
                     >
-                      Create Account
+                      {userExists === null ? 'Continue' : 'Create Account'}
                     </button>
                   </div>
                 </div>

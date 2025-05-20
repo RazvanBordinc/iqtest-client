@@ -25,7 +25,7 @@ export default function TestInstructions({ category, onStart }) {
         "For others, you'll need to type in the correct answer",
         "Work as quickly and accurately as possible",
       ],
-      time: "25 minutes",
+      time: "18 minutes",
       questions: 24,
     },
     "word-logic": {
@@ -41,7 +41,7 @@ export default function TestInstructions({ category, onStart }) {
         "Others will ask you to complete words or phrases",
         "Focus on understanding the relationships between concepts",
       ],
-      time: "30 minutes",
+      time: "20 minutes",
       questions: 28,
     },
     memory: {
@@ -57,7 +57,7 @@ export default function TestInstructions({ category, onStart }) {
         "The test gets progressively more challenging",
         "Try to create mental associations to improve recall",
       ],
-      time: "22 minutes",
+      time: "15 minutes",
       questions: 20,
     },
     mixed: {
@@ -73,7 +73,7 @@ export default function TestInstructions({ category, onStart }) {
         "Questions vary in type and difficulty",
         "Provides the most comprehensive assessment of your abilities",
       ],
-      time: "45 minutes",
+      time: "35 minutes",
       questions: 40,
     },
   };

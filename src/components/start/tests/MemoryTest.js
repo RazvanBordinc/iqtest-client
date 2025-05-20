@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, Eye } from "lucide-react";
+import { Brain, Eye, Clock } from "lucide-react";
 import MemoryPairQuestion from "../questions/MemoryPairQuestion";
 import NavigationControls from "../NavigationControls";
 import TestProgressBar from "../TestProgressBar";
@@ -13,8 +13,12 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
   const [currentSet, setCurrentSet] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timer, setTimer] = useState(20); // Countdown timer for memorization phase
+  const [recallTimer, setRecallTimer] = useState(30); // Timer for recall phase
   const [errorState, setErrorState] = useState(false);
   const [currentSetData, setCurrentSetData] = useState(null);
+  
+  // Default recall time in seconds - how long users have to recall pairs
+  const DEFAULT_RECALL_TIME = 45;
   
   // Effect to handle timer expiration
   useEffect(() => {
@@ -33,8 +37,11 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
     return () => clearInterval(interval);
   }, [answers, onComplete]);
 
-  // Extract memory sets from questions
-  const memorySets = questions.filter((q) => q.type === "memory-pair");
+  // Extract memory sets from questions (handle both camelCase and PascalCase property names)
+  const memorySets = questions.filter((q) => {
+    const questionType = (q.type || q.Type || "").toLowerCase();
+    return questionType === "memory-pair" || questionType === "memory";
+  });
 
   // Set current memory set data
   useEffect(() => {
@@ -49,8 +56,10 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
   useEffect(() => {
     if (phase === "memorization" && timer > 0 && currentSetData) {
       // Use the memorization time from the question
-      if (timer === 20 && currentSetData.memorizationTime) {
-        setTimer(currentSetData.memorizationTime);
+      if (timer === 20) {
+        // Use memorizationTime from question or fallback to default
+        const memTime = currentSetData.memorizationTime || currentSetData.MemorizationTime || 15;
+        setTimer(memTime);
       }
 
       const countdown = setInterval(() => {
@@ -58,6 +67,9 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
           if (prev <= 1) {
             // Move to recall phase when timer reaches 0
             setPhase("recall");
+            // Reset recall timer when timer expires and we enter recall phase
+            // Use the default recall time
+            setRecallTimer(DEFAULT_RECALL_TIME); 
             return 0;
           }
           return prev - 1;
@@ -67,6 +79,40 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
       return () => clearInterval(countdown);
     }
   }, [phase, timer, currentSetData]);
+
+  // Timer for recall phase
+  useEffect(() => {
+    if (phase === "recall") {
+      // Start recall phase timer
+      
+      // If the timer is not set for some reason, reset it
+      if (recallTimer <= 0) {
+        // Reset invalid recall timer
+        setRecallTimer(DEFAULT_RECALL_TIME);
+        return;
+      }
+      
+      const countdown = setInterval(() => {
+        setRecallTimer((prev) => {
+          // Log every 10 seconds to verify timer is working
+          if (prev % 10 === 0) {
+            // Periodic timer update
+          }
+          
+          if (prev <= 1) {
+            // Move to next set or complete test
+            // Timer expired, proceed to next set
+            handleNext();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(countdown);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   // Reset timer when moving to new set
   useEffect(() => {
@@ -91,40 +137,51 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
     });
   };
 
-  // Handle navigation - now with skip functionality
-  const handleNext = ({ isSkip } = {}) => {
+  // Handle navigation - no skipping allowed
+  const handleNext = () => {
     if (phase === "memorization") {
-      // Skip timer and move to recall phase
+      // Move to recall phase
       setPhase("recall");
+      // Reset recall timer when entering recall phase
+      setRecallTimer(DEFAULT_RECALL_TIME);
     } else if (phase === "recall") {
-      // Mark as skipped if no answers provided
-      if (isSkip && !answers[currentSet]) {
-        setAnswers({
-          ...answers,
-          [currentSet]: { skipped: true },
-        });
+      // Don't allow proceeding unless all answers are provided
+      if (!areAllAnswersFilled()) {
+        return;
       }
       
       if (currentSet < memorySets.length - 1) {
         // Move to next memory set
         setCurrentSet(currentSet + 1);
         setPhase("memorization");
-        setTimer(memorySets[currentSet + 1].memorizationTime || 20);
+        const nextSet = memorySets[currentSet + 1];
+        setTimer(nextSet.memorizationTime || nextSet.MemorizationTime || 15);
+        // When moving to next set, reset the recall timer also for safety
+        setRecallTimer(DEFAULT_RECALL_TIME);
       } else {
         // Test completed - send answers to parent
         if (onComplete) {
           // Format the memory test answers to match expected backend format
-          const formattedAnswers = {};
+          // The backend expects an array of answer objects with questionId, type, and value
+          const formattedAnswers = [];
 
           // Convert from set-based answers to question-based answers
           Object.entries(answers).forEach(([setIndex, setAnswers]) => {
             // Each set corresponds to a question
-            const questionId = memorySets[parseInt(setIndex)].id;
-            if (!setAnswers.skipped) {
-              formattedAnswers[questionId] = {
+            const question = memorySets[parseInt(setIndex)];
+            const questionId = question.id || question.Id;
+            
+            if (questionId) {
+              // Create a proper AnswerDto object as expected by the backend
+              // Convert questionId to a number if possible
+              const numericId = parseInt(questionId);
+              
+              formattedAnswers.push({
+                questionId: isNaN(numericId) ? 1 : numericId, // Ensure it's a valid number as backend expects
                 type: "memory-pair",
-                value: setAnswers,
-              };
+                // We need to serialize this manually since the backend expects a specific format
+                value: typeof setAnswers === 'object' ? JSON.stringify(setAnswers) : setAnswers,
+              });
             }
           });
 
@@ -134,12 +191,10 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
     }
   };
 
+  // Disable going back
   const handlePrevious = () => {
-    // Previous usually disabled in memory tests, but implementation for consistency
-    if (phase === "recall" && currentSet > 0) {
-      setCurrentSet(currentSet - 1);
-      setPhase("recall"); // Stay in recall phase for previous set
-    }
+    // No going back functionality - completely disabled
+    return;
   };
 
   // Check if all required answers are filled for current set
@@ -313,10 +368,30 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
+              {/* Recall timer display */}
+              <div className="mb-6 text-center">
+                <div className="flex items-center justify-center gap-3">
+                  <Clock className="w-5 h-5 text-amber-500" />
+                  <motion.div
+                    className="text-xl font-bold text-amber-600 dark:text-amber-400"
+                    key={recallTimer}
+                    initial={{ scale: 1.2 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {Math.floor(recallTimer / 60)}:
+                    {(recallTimer % 60).toString().padStart(2, '0')}
+                  </motion.div>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  Time remaining to complete this set
+                </p>
+              </div>
+
               <MemoryPairQuestion
-                questionText={currentSetData.text}
-                pairs={currentSetData.pairs}
-                missingIndices={currentSetData.missingIndices}
+                questionText={currentSetData.text || currentSetData.Text || "Fill in the missing words"}
+                pairs={currentSetData.pairs || currentSetData.Pairs || []}
+                missingIndices={currentSetData.missingIndices || currentSetData.MissingIndices || []}
                 userAnswers={answers[currentSet] || {}}
                 onAnswerChange={handleAnswerChange}
                 questionNumber={currentSet}
@@ -326,12 +401,12 @@ const MemoryTest = ({ onComplete, questions = [] }) => {
           )}
         </AnimatePresence>
 
-        {/* Navigation with skip functionality */}
+        {/* Navigation - no skipping, no going back */}
         <NavigationControls
           onPrevious={handlePrevious}
           onNext={handleNext}
-          isPreviousDisabled={currentSet === 0 || isMemorizationPhase}
-          isNextDisabled={false} // Allow skipping
+          isPreviousDisabled={true} // Always disable previous button
+          isNextDisabled={phase === "recall" && !areAllAnswersFilled()} // Only enable next in recall phase if all answers filled
           isLastQuestion={
             currentSet === memorySets.length - 1 && phase === "recall"
           }
