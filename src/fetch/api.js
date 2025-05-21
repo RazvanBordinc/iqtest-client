@@ -330,13 +330,52 @@ export const clientFetch = async (endpoint, options = {}, retryCount = 0) => {
         } catch (proxyError) {
           console.error('Built-in proxy error:', proxyError);
         }
+        
+        // For critical endpoints, also try the direct API endpoint
+        if (path === 'auth/check-username' || path === 'test/types' || path === 'health') {
+          console.log('Critical endpoint detected, trying direct API endpoint');
+          
+          // Use the hardcoded direct API endpoint
+          const directApiUrl = `/api/direct/${path}`;
+          console.log('Trying direct API URL:', directApiUrl);
+          
+          try {
+            const directApiResponse = await fetch(directApiUrl, {
+              ...options,
+              headers: createHeaders(options.headers),
+              credentials: "include", // Include cookies
+            });
+            
+            if (directApiResponse.ok) {
+              console.log('Direct API endpoint successful!');
+              return await handleResponse(directApiResponse);
+            } else {
+              console.warn('Direct API endpoint failed:', directApiResponse.status, directApiResponse.statusText);
+            }
+          } catch (directApiError) {
+            console.error('Direct API endpoint error:', directApiError);
+          }
+        }
       }
       
       // Strategy 2: Try direct backend access
       console.log('Strategy 2: Trying direct backend access');
       
+      // Use a different backend URL based on retry count to avoid hitting the same rate limits
+      let backendUrl = DIRECT_BACKEND_URL;
+      
+      // If we're still seeing issues, try using the "public" domain for the backend
+      // Vercel might have connection issues with certain domains
+      if (retryCount > 0) {
+        // Try appending ".app" to domain as a last resort if we have issues
+        if (backendUrl.includes("onrender.com") && !backendUrl.includes(".app")) {
+          backendUrl = backendUrl.replace("onrender.com", "onrender.app");
+          console.log("Using alternative domain:", backendUrl);
+        }
+      }
+      
       // Construct direct URL to backend using the environment variable
-      const directBackendUrl = `${DIRECT_BACKEND_URL}/api/${path}`;
+      const directBackendUrl = `${backendUrl}/api/${path}`;
       console.log('Trying direct backend URL:', directBackendUrl);
       
       try {

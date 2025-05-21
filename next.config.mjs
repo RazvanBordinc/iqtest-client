@@ -34,26 +34,34 @@ const nextConfig = {
         
     console.log('Backend URL for rewrites:', backendUrl);
     
-    // Simplify rewrite configuration to avoid Vercel edge cases
-    return {
-      // Fallback routes - only processed if none of the beforeFiles routes match
-      fallback: [
-        // Forward all API requests to the backend except health
-        {
-          source: '/api/:path*',
-          destination: `${backendUrl}/api/:path*`,
-        }
-      ],
-      
-      // beforeFiles routes - processed before Next.js routing
-      beforeFiles: [
-        // Local health endpoint always takes precedence
-        {
-          source: '/api/health',
-          destination: '/api/health',
-        }
-      ]
-    };
+    // Configure a simple, explicit rewrite system for Vercel
+    const rewrites = [];
+    
+    // Add local API routes first (these are implemented in Next.js)
+    rewrites.push({
+      source: '/api/health',
+      destination: '/api/health'
+    });
+    
+    // Our custom proxy implementation route
+    rewrites.push({
+      source: '/api/proxy/:path*',
+      destination: '/api/proxy/:path*'
+    });
+    
+    // Our direct API implementation route
+    rewrites.push({
+      source: '/api/direct/:path*',
+      destination: '/api/direct/:path*'
+    });
+    
+    // Default backend proxy for all other API routes
+    rewrites.push({
+      source: '/api/:path*',
+      destination: `${backendUrl}/api/:path*`
+    });
+    
+    return rewrites;
   },
   // Enable production optimizations
   reactStrictMode: true,
