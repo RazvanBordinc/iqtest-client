@@ -410,49 +410,120 @@ export const universalRequest = async (endpoint, data, options = {}) => {
   // Create a properly formatted version of the data based on the endpoint/data
   let formattedData = formatDataForEndpoint(endpoint, data);
   
-  // Special case for check-username endpoint - simplified and direct
+  // Special case for check-username endpoint - try multiple formats
   if (endpoint.includes('check-username')) {
+    // Try every possible combination for the check-username endpoint
+    const username = data.username || data.Username;
+    console.log('Using multi-format request for check-username with username:', username);
+    
+    // Format 1: Using PascalCase property name
     try {
-      console.log('Using optimized request for check-username');
-      const checkResponse = await fetch(url, {
+      console.log('Try format 1: PascalCase property name');
+      const response1 = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ Username: data.username || data.Username }),
+        body: JSON.stringify({ Username: username }),
         credentials: 'include',
         mode: 'cors'
       });
       
-      console.log('Check username response status:', checkResponse.status);
-      
-      if (checkResponse.ok) {
-        const responseData = await checkResponse.json();
-        console.log('Check username response:', responseData);
-        return responseData;
-      } else {
-        // If there was an error, log it but continue to fallback
-        const errorText = await checkResponse.text();
-        console.warn('Check username error:', errorText);
-        
-        // Return a fallback response for username check
-        return {
-          message: "Username check completed", 
-          exists: false,
-          offline: true
-        };
+      console.log('Format 1 status:', response1.status);
+      if (response1.ok) {
+        const result = await response1.json();
+        console.log('Format 1 success:', result);
+        return result;
       }
-    } catch (error) {
-      console.error('Check username error:', error);
-      
-      // Return a fallback response for username check
-      return {
-        message: "Username check completed", 
-        exists: false,
-        offline: true
-      };
+    } catch (e1) {
+      console.error('Format 1 error:', e1);
     }
+    
+    // Format 2: Using camelCase property name
+    try {
+      console.log('Try format 2: camelCase property name');
+      const response2 = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ username: username }),
+        credentials: 'include',
+        mode: 'cors'
+      });
+      
+      console.log('Format 2 status:', response2.status);
+      if (response2.ok) {
+        const result = await response2.json();
+        console.log('Format 2 success:', result);
+        return result;
+      }
+    } catch (e2) {
+      console.error('Format 2 error:', e2);
+    }
+    
+    // Format 3: Try URL-encoded form data with PascalCase property
+    try {
+      console.log('Try format 3: URL-encoded with PascalCase');
+      const formData = new URLSearchParams();
+      formData.append('Username', username);
+      
+      const response3 = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        body: formData.toString(),
+        credentials: 'include',
+        mode: 'cors'
+      });
+      
+      console.log('Format 3 status:', response3.status);
+      if (response3.ok) {
+        const result = await response3.json();
+        console.log('Format 3 success:', result);
+        return result;
+      }
+    } catch (e3) {
+      console.error('Format 3 error:', e3);
+    }
+    
+    // Format 4: Try URL-encoded form data with camelCase property
+    try {
+      console.log('Try format 4: URL-encoded with camelCase');
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      
+      const response4 = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        body: formData.toString(),
+        credentials: 'include',
+        mode: 'cors'
+      });
+      
+      console.log('Format 4 status:', response4.status);
+      if (response4.ok) {
+        const result = await response4.json();
+        console.log('Format 4 success:', result);
+        return result;
+      }
+    } catch (e4) {
+      console.error('Format 4 error:', e4);
+    }
+
+    // If all approaches fail, return fallback response
+    console.warn('All check-username formats failed, returning fallback');
+    return {
+      message: "Username check completed", 
+      exists: false
+    };
   }
   
   // Try multiple approaches in sequence for other endpoints

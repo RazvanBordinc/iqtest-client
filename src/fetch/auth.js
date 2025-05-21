@@ -1,5 +1,6 @@
 import api, { normalizeEndpoint } from "./api";
 import { setCookie, removeCookie, getCookie } from "@/utils/cookies";
+import { checkUsernameTryAllApproaches } from './checkUsername';
 
 // Helper function to get the correct endpoint path
 const getEndpoint = (path) => {
@@ -11,43 +12,20 @@ export const checkUsername = async (username) => {
   // Debug information
   console.log('Checking username:', username);
   
+  // The server validation requires a username of at least 3 characters
+  // Let's add this validation on the client side
+  if (!username || username.length < 3) {
+    console.warn("Username must be at least 3 characters long");
+    return { 
+      message: "Username is too short", 
+      exists: false,
+      isInvalid: true 
+    };
+  }
+  
+  // Use the specialized function that tries 10 different approaches
   try {
-    // The server validation requires a username of at least 3 characters
-    // Let's add this validation on the client side
-    if (!username || username.length < 3) {
-      console.warn("Username must be at least 3 characters long");
-      return { 
-        message: "Username is too short", 
-        exists: false,
-        isInvalid: true 
-      };
-    }
-    
-    const endpoint = getEndpoint('/auth/check-username');
-    
-    // Use direct fetch to ensure proper format
-    const response = await fetch(`${api.baseUrl}/api/auth/check-username`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ Username: username }),
-      credentials: 'include'
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data;
-    } else {
-      const errorText = await response.text();
-      console.error(`Username check failed with status ${response.status}:`, errorText);
-      
-      // Return a dummy response to continue the flow
-      return { 
-        message: "Username check completed", 
-        exists: false 
-      };
-    }
+    return await checkUsernameTryAllApproaches(username);
   } catch (error) {
     console.error("Username check failed:", error);
     
