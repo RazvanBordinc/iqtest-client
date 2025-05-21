@@ -78,6 +78,21 @@ export const checkTestAvailability = async (testTypeId) => {
     const endpoint = getEndpoint(`/test/availability/${testTypeId}`);
     return await api.get(endpoint);
   } catch (error) {
+    // For timeouts and connection errors, provide a fallback response
+    if (error.message?.includes('timeout') || 
+        error.message?.includes('fetch') || 
+        error.message?.includes('network') ||
+        error.status === 0) {
+      console.warn(`Test availability check failed for ${testTypeId}, using fallback`);
+      return {
+        canTake: true,
+        timeUntilNext: 0,
+        message: "Test available (backend unavailable)",
+        isFallback: true
+      };
+    }
+    
+    // For other errors, let the component handle it
     throw error;
   }
 };
