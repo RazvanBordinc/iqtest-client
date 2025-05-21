@@ -470,9 +470,6 @@ function prepareRequestBody(body) {
   // If body is null or undefined, return it as is
   if (body == null) return body;
   
-  // Log the original request body for debugging
-  console.log('Original request body:', JSON.stringify(body));
-  
   // Simple types don't need processing
   if (typeof body !== 'object' || Array.isArray(body)) return body;
   
@@ -485,9 +482,6 @@ function prepareRequestBody(body) {
   for (const [key, value] of Object.entries(body)) {
     processedBody[key] = value;
   }
-  
-  // Log the processed request body for debugging
-  console.log('Processed request body:', JSON.stringify(processedBody));
   return processedBody;
 }
 

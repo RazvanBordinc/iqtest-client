@@ -449,9 +449,14 @@ export default function AuthPage() {
                     </button>
                     <button
                       onClick={handlePasswordSubmit}
-                      className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                      disabled={isLoading}
+                      className={`flex-1 py-3 px-4 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 ${
+                        isLoading 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white'
+                      }`}
                     >
-                      {userExists === null ? 'Continue' : 'Create Account'}
+                      {isLoading ? 'Processing...' : (userExists === null ? 'Continue' : 'Create Account')}
                     </button>
                   </div>
                 </div>
@@ -517,9 +522,14 @@ export default function AuthPage() {
                     </button>
                     <button
                       onClick={handleLogin}
-                      className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                      disabled={isLoading}
+                      className={`flex-1 py-3 px-4 font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 ${
+                        isLoading 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white'
+                      }`}
                     >
-                      Sign In
+                      {isLoading ? 'Signing In...' : 'Sign In'}
                     </button>
                   </div>
                 </div>
