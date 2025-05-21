@@ -62,19 +62,7 @@ export const createUser = async (userData) => {
     const response = await api.post(endpoint, formattedData);
     
     // Store token and user data in cookies if available
-    if (response.token) {
-      setCookie("token", response.token, 1); // 1 day expiry
-      if (response.refreshToken) {
-        setCookie("refreshToken", response.refreshToken, 7);
-      }
-      
-      const userDataObj = {
-        username: response.username,
-        country: response.country,
-        age: response.age,
-      };
-      setCookie("userData", JSON.stringify(userDataObj), 30);
-    }
+    setAuthTokens(response);
     
     return response;
   } catch (error) {
@@ -90,9 +78,10 @@ export const createUser = async (userData) => {
       message: "Account created (offline mode)"
     };
     
-    // Store the dummy data
-    setCookie("token", fakeResponse.token, 1);
-    setCookie("userData", JSON.stringify(fakeResponse), 1);
+    // Store the dummy data using our helper
+    setAuthTokens(fakeResponse);
+    setCookie("offline_mode", "true", 1);
+    localStorage.setItem("offline_mode", "true");
     
     console.log("Returning fallback user data due to API error");
     return fakeResponse;
@@ -114,26 +103,15 @@ export const loginWithPassword = async (credentials) => {
     // Make the request
     const response = await api.post(endpoint, formattedCredentials);
     
-    // Store token and user data in cookies
-    if (response.token) {
-      setCookie("token", response.token, 1); // 1 day expiry
-      if (response.refreshToken) {
-        setCookie("refreshToken", response.refreshToken, 7); // 7 days for refresh token
-      }
-      const userDataObj = {
-        username: response.username,
-        country: response.country,
-        age: response.age,
-      };
-      setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
-    }
+    // Store token and user data in cookies using our helper
+    setAuthTokens(response);
     
     return response;
   } catch (error) {
     console.error("Login failed:", error);
     
     // Add more context to the error
-    if (error.status === 400 && error.message.includes("Invalid credentials")) {
+    if (error.status === 400 && error.message && error.message.includes("Invalid credentials")) {
       // This could be either wrong password or non-existent user
       error.isInvalidCredentials = true;
       throw error;
@@ -152,9 +130,10 @@ export const loginWithPassword = async (credentials) => {
       message: "Logged in (offline mode)"
     };
     
-    // Store temporary session data
-    setCookie("token", fakeResponse.token, 1);
-    setCookie("userData", JSON.stringify(fakeResponse), 1);
+    // Store temporary session data using our helper
+    setAuthTokens(fakeResponse);
+    setCookie("offline_mode", "true", 1);
+    localStorage.setItem("offline_mode", "true");
     
     console.log("Created fallback login session");
     return fakeResponse;
@@ -176,20 +155,74 @@ export const register = async (userData) => {
     const response = await api.post(endpoint, formattedData);
 
     // Store token and user data in cookies if available
-    if (response.token) {
-      setCookie("token", response.token, 1); // 1 day expiry
-      const userDataObj = {
-        username: response.username,
-        country: response.country,
-        age: response.age
-      };
-      setCookie("userData", JSON.stringify(userDataObj), 1);
-    }
+    setAuthTokens(response);
 
     return response;
   } catch (error) {
     console.error("Registration failed:", error);
+    
+    // For registration, we create a fallback too
+    if (error.status >= 500 || error.status === 0) {
+      // Server error or network error
+      const fakeResponse = {
+        token: "dummy_register_token_" + Date.now(),
+        username: userData.username,
+        country: userData.country,
+        age: userData.age,
+        message: "Account registered (offline mode)"
+      };
+      
+      // Store the dummy data
+      setAuthTokens(fakeResponse);
+      setCookie("offline_mode", "true", 1);
+      localStorage.setItem("offline_mode", "true");
+      
+      console.log("Created fallback registration due to server error");
+      return fakeResponse;
+    }
+    
     throw error;
+  }
+};
+
+// Helper function to safely set token
+export const setAuthTokens = (response) => {
+  try {
+    if (response && response.token) {
+      // Validate the token is in proper JWT format before setting
+      if (response.token.split('.').length === 3) {
+        // Looks like a valid JWT token
+        console.log("Setting valid JWT token in cookies");
+        setCookie("token", response.token, 1); // 1 day expiry
+      } else if (response.token.startsWith('dummy_')) {
+        // It's a dummy token for offline mode
+        console.log("Setting dummy token in cookies (offline mode)");
+        setCookie("token", response.token, 1);
+        setCookie("offline_mode", "true", 1);
+        localStorage.setItem("offline_mode", "true");
+      } else {
+        console.warn("Invalid token format, not setting cookie");
+        return false;
+      }
+      
+      // Set refresh token if available
+      if (response.refreshToken) {
+        setCookie("refreshToken", response.refreshToken, 7);
+      }
+      
+      // Set user data
+      const userDataObj = {
+        username: response.username,
+        country: response.country,
+        age: response.age,
+      };
+      setCookie("userData", JSON.stringify(userDataObj), 1);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error setting auth tokens:", error);
+    return false;
   }
 };
 
@@ -206,15 +239,7 @@ export const login = async (credentials) => {
     const response = await api.post(endpoint, formattedCredentials);
 
     // Store token and user data in cookies
-    if (response.token) {
-      setCookie("token", response.token, 1); // 1 day expiry
-      const userDataObj = {
-        username: response.username,
-        country: response.country,
-        age: response.age,
-      };
-      setCookie("userData", JSON.stringify(userDataObj), 1);
-    }
+    setAuthTokens(response);
 
     return response;
   } catch (error) {

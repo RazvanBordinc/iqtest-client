@@ -28,8 +28,29 @@ export const createHeaders = (additionalHeaders = {}) => {
     try {
       const { getCookie } = require("@/utils/cookies");
       const token = getCookie("token");
+      
       if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+        // Check if it's a dummy/fallback token
+        if (token.startsWith('dummy_')) {
+          // Use a special header for fallback tokens
+          headers["X-Fallback-Auth"] = "true";
+          headers["Authorization"] = `Bearer ${token}`;
+        } 
+        // Check if it's a valid JWT format (3 parts separated by dots)
+        else if (token.split('.').length === 3) {
+          headers["Authorization"] = `Bearer ${token}`;
+        } 
+        // Invalid token format - don't set the header
+        else {
+          console.warn("Found invalid token format in cookie, not sending Authorization header");
+        }
+      }
+      
+      // Add offline mode header if applicable
+      const isOffline = getCookie("offline_mode") === "true" || 
+                        localStorage.getItem("offline_mode") === "true";
+      if (isOffline) {
+        headers["X-Offline-Mode"] = "true";
       }
     } catch (error) {
       console.error('Error getting auth token from cookies:', error);
