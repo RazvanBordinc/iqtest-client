@@ -134,8 +134,16 @@ const logger = {
   exception: (error, meta = {}) => {
     const message = error?.message || 'Unknown error';
     const stack = error?.stack || new Error().stack;
+    const name = error?.name || 'Error';
+    const code = error?.code || 'UNKNOWN';
     
-    return logger.error(message, { ...meta, stack });
+    return logger.error(message, { 
+      ...meta, 
+      stack,
+      errorName: name,
+      errorCode: code,
+      timestamp: new Date().toISOString()
+    });
   },
   
   // Log user actions (for analytics)

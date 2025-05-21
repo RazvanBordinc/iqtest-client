@@ -64,7 +64,12 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://your-backend-on-render.onrender.com/:path*"
+      "destination": "https://iqtest-server-tkhl.onrender.com/:path*"
     }
-  ]
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "/api",
+    "NEXT_PUBLIC_DIRECT_BACKEND_URL": "https://iqtest-server-tkhl.onrender.com",
+    "NEXT_SERVER_API_URL": "https://iqtest-server-tkhl.onrender.com"
+  }
 }
