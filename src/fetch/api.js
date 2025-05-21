@@ -423,7 +423,6 @@ function formatDataForEndpoint(endpoint, data) {
     return {
       Username: data.username || data.Username,
       Password: data.password || data.Password,
-      Email: data.email || data.Email,
       Country: data.country || data.Country,
       Age: data.age || data.Age
     };
@@ -432,7 +431,7 @@ function formatDataForEndpoint(endpoint, data) {
   if (endpoint.includes('login')) {
     // Login endpoints
     return {
-      Email: data.email || data.Email,
+      Username: data.username || data.Username,
       Password: data.password || data.Password
     };
   }

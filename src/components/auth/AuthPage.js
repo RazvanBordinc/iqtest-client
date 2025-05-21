@@ -142,8 +142,7 @@ export default function AuthPage() {
             username, 
             country, 
             age: parseInt(age), 
-            password,
-            email: `${username}@iqtest.local`
+            password
           });
           
           // Redirect on success
@@ -155,7 +154,7 @@ export default function AuthPage() {
           // Try login as fallback
           try {
             console.log("Create user failed, trying login as fallback");
-            await loginMultiFormat({ email: `${username}@iqtest.local`, password });
+            await loginMultiFormat({ username, password });
             router.push("/tests");
           } catch (loginError) {
             console.error("Login fallback error:", loginError);
@@ -167,7 +166,7 @@ export default function AuthPage() {
         // We have username + password but no country/age
         // This happens in simplified flow - try login directly
         try {
-          await loginMultiFormat({ email: `${username}@iqtest.local`, password });
+          await loginMultiFormat({ username, password });
           router.push("/tests");
         } catch (loginError) {
           console.error("Login error:", loginError);
@@ -184,7 +183,7 @@ export default function AuthPage() {
             // Create fake session data
             localStorage.setItem("offline_mode", "true");
             localStorage.setItem("username", username);
-            localStorage.setItem("email", `${username}@iqtest.local`);
+            // No longer storing email in localStorage
             
             // Redirect user
             router.push("/tests");
@@ -197,7 +196,7 @@ export default function AuthPage() {
       // Create offline session as last resort
       localStorage.setItem("offline_mode", "true");
       localStorage.setItem("username", username);
-      localStorage.setItem("email", `${username}@iqtest.local`);
+      // No longer storing email in localStorage
       
       router.push("/tests");
     } finally {
@@ -216,7 +215,7 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       // Use the multi-format login function for more robustness
-      await loginMultiFormat({ email: `${username}@iqtest.local`, password });
+      await loginMultiFormat({ username, password });
       router.push("/tests");
     } catch (error) {
       console.error("Login error:", error);
@@ -234,7 +233,7 @@ export default function AuthPage() {
       // Create fake session data
       localStorage.setItem("offline_mode", "true");
       localStorage.setItem("username", username);
-      localStorage.setItem("email", `${username}@iqtest.local`);
+      // No longer storing email in localStorage
       
       // Redirect user
       router.push("/tests");

@@ -53,8 +53,7 @@ export const createUser = async (userData) => {
       Username: userData.username,
       Password: userData.password,
       Country: userData.country,
-      Age: userData.age,
-      Email: userData.email || `${userData.username}@iqtest.local`
+      Age: userData.age
     };
     
     console.log('Creating user with data:', JSON.stringify(formattedData));
@@ -71,7 +70,6 @@ export const createUser = async (userData) => {
       
       const userDataObj = {
         username: response.username,
-        email: response.email,
         country: response.country,
         age: response.age,
       };
@@ -87,7 +85,6 @@ export const createUser = async (userData) => {
     const fakeResponse = {
       token: "dummy_token_" + Date.now(),
       username: userData.username,
-      email: userData.email || `${userData.username}@iqtest.local`,
       country: userData.country,
       age: userData.age,
       message: "Account created (offline mode)"
@@ -108,7 +105,7 @@ export const loginWithPassword = async (credentials) => {
     
     // Format the credentials with proper casing for .NET model binding
     const formattedCredentials = {
-      Email: credentials.email,
+      Username: credentials.username,
       Password: credentials.password
     };
     
@@ -125,7 +122,6 @@ export const loginWithPassword = async (credentials) => {
       }
       const userDataObj = {
         username: response.username,
-        email: response.email,
         country: response.country,
         age: response.age,
       };
@@ -147,14 +143,10 @@ export const loginWithPassword = async (credentials) => {
     // This is a fallback to allow users to continue using the app when the backend is unstable
     console.log("Backend error during login, providing fallback session");
     
-    // Extract username from email (assuming format: username@iqtest.local)
-    const username = credentials.email.split('@')[0];
-    
     // Create a fake login response
     const fakeResponse = {
       token: "dummy_login_token_" + Date.now(),
-      username: username,
-      email: credentials.email,
+      username: credentials.username,
       country: "Unknown",
       age: 30,
       message: "Logged in (offline mode)"
@@ -177,7 +169,6 @@ export const register = async (userData) => {
     const formattedData = {
       Username: userData.username,
       Password: userData.password,
-      Email: userData.email,
       Country: userData.country,
       Age: userData.age
     };
@@ -189,7 +180,8 @@ export const register = async (userData) => {
       setCookie("token", response.token, 1); // 1 day expiry
       const userDataObj = {
         username: response.username,
-        email: response.email,
+        country: response.country,
+        age: response.age
       };
       setCookie("userData", JSON.stringify(userDataObj), 1);
     }
@@ -207,7 +199,7 @@ export const login = async (credentials) => {
     
     // Format the credentials with proper casing for .NET model binding
     const formattedCredentials = {
-      Email: credentials.email,
+      Username: credentials.username,
       Password: credentials.password
     };
     
@@ -218,7 +210,8 @@ export const login = async (credentials) => {
       setCookie("token", response.token, 1); // 1 day expiry
       const userDataObj = {
         username: response.username,
-        email: response.email,
+        country: response.country,
+        age: response.age,
       };
       setCookie("userData", JSON.stringify(userDataObj), 1);
     }
