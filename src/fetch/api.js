@@ -1,9 +1,15 @@
 // src/fetch/api.js
 
-// Use environment variables for API URLs
+// Use environment variables for API URLs with fallbacks for production
 const API_URL = typeof window === "undefined"
-  ? process.env.NEXT_SERVER_API_URL || "http://backend:5164"  // Server-side from env
+  ? (process.env.NEXT_SERVER_API_URL || 
+     (process.env.NODE_ENV === 'production' 
+       ? (process.env.BACKEND_API_URL || 'https://iqtest-server.onrender.com') 
+       : 'http://backend:5164'))  // Server-side from env
   : (process.env.NEXT_PUBLIC_API_URL || "/api"); // Client-side from env
+
+// Log API configuration for debugging
+console.log('API_URL configured as:', API_URL);
 
 // Create headers with auth token if available
 export const createHeaders = (additionalHeaders = {}) => {
@@ -129,21 +135,54 @@ const notifyBackendStatusListeners = () => {
   });
 };
 
-// Client-side fetch function with backend status check
+// Client-side fetch function with backend status check and improved URL construction
 export const clientFetch = async (endpoint, options = {}) => {
-  // Simplify URL construction to prevent double 'api' paths
+  // Improved URL construction to prevent double 'api' paths
   let url;
   
   // First, clean the endpoint by removing any leading slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   
-  // If API_URL is /api and we're getting an API endpoint, 
-  // we need to avoid creating /api/api/...
-  if (API_URL === '/api' && cleanEndpoint.startsWith('api/')) {
-    url = `${API_URL}/${cleanEndpoint.substring(4)}`;
+  // Handle different API_URL configurations consistently
+  if (API_URL === '/api') {
+    // If API_URL is the relative '/api' path (typical in browser)
+    if (cleanEndpoint.startsWith('api/')) {
+      // Avoid /api/api/ by removing the api/ prefix from the endpoint
+      url = `${API_URL}/${cleanEndpoint.substring(4)}`;
+    } else {
+      // Normal case for relative path - just append
+      url = `${API_URL}/${cleanEndpoint}`;
+    }
+  } else if (API_URL.endsWith('/api')) {
+    // If API_URL ends with /api (could be a full URL)
+    if (cleanEndpoint.startsWith('api/')) {
+      // Avoid duplicating /api by removing api/ from the endpoint
+      url = `${API_URL}/${cleanEndpoint.substring(4)}`;
+    } else {
+      // Normal case - just append
+      url = `${API_URL}/${cleanEndpoint}`;
+    }
+  } else if (API_URL.endsWith('/')) {
+    // If API_URL ends with a slash but doesn't end with /api
+    if (cleanEndpoint.startsWith('api/')) {
+      // Keep the api/ prefix since it's not in the base URL
+      url = `${API_URL}${cleanEndpoint}`;
+    } else {
+      // Add the api/ prefix since it's not in either part
+      url = `${API_URL}api/${cleanEndpoint}`;
+    }
   } else {
-    url = `${API_URL}/${cleanEndpoint}`;
+    // If API_URL doesn't end with a slash and doesn't end with /api
+    if (cleanEndpoint.startsWith('api/')) {
+      // Keep the api/ prefix since it's not in the base URL
+      url = `${API_URL}/${cleanEndpoint}`;
+    } else {
+      // Add the api/ prefix since it's not in either part
+      url = `${API_URL}/api/${cleanEndpoint}`;
+    }
   }
+
+  console.log('Client-side API request to URL:', url);
 
   const fetchOptions = {
     ...options,
@@ -158,6 +197,8 @@ export const clientFetch = async (endpoint, options = {}) => {
     const response = await fetch(url, fetchOptions);
 
     if (!response.ok) {
+      console.error(`Client-side API request failed: ${response.status} ${response.statusText} for URL: ${url}`);
+      
       if (response.status === 401) {
         // Immediately redirect to home for auth errors
         if (window.location.pathname !== "/" && window.location.pathname !== "/auth") {
@@ -178,6 +219,7 @@ export const clientFetch = async (endpoint, options = {}) => {
 
     return await handleResponse(response);
   } catch (error) {
+    console.error('Client-side API request error:', error);
     throw error;
   }
 };
@@ -189,7 +231,7 @@ export const serverFetch = async (endpoint, options = {}) => {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
-  // Simplified URL construction to prevent double 'api' paths
+  // Simplified URL construction with a more robust approach
   let url;
   
   // First, clean the endpoint by removing any leading slash
@@ -198,24 +240,38 @@ export const serverFetch = async (endpoint, options = {}) => {
   // Server-side should use NEXT_SERVER_API_URL, which should point directly to the backend
   // Example: http://backend:5164
   if (API_URL.includes('http')) {
-    // For full URLs (server-side), ensure no duplicated 'api' path segment
-    // If endpoint already starts with 'api/' but API_URL already contains /api at the end
-    if (cleanEndpoint.startsWith('api/') && API_URL.endsWith('/api')) {
-      // Remove 'api/' from the beginning of the endpoint
-      url = `${API_URL}/${cleanEndpoint.substring(4)}`;
+    // For full URLs (server-side), use a simpler approach to avoid path issues
+    // Make sure the URL has a trailing slash for proper path joining
+    const baseUrl = API_URL.endsWith('/') ? API_URL : `${API_URL}/`;
+    
+    // If endpoint starts with 'api/' and we're adding it to a URL that already has an API path,
+    // extract just the part after 'api/'
+    if (cleanEndpoint.startsWith('api/') && 
+        (baseUrl.endsWith('/api/') || baseUrl.includes('/api/'))) {
+      url = `${baseUrl}${cleanEndpoint.substring(4)}`;
+    } else if (!cleanEndpoint.startsWith('api/') && 
+               !baseUrl.endsWith('/api/') && 
+               !baseUrl.endsWith('/api')) {
+      // If neither the baseUrl ends with /api nor the endpoint starts with api/,
+      // we need to add the /api prefix
+      url = `${baseUrl}api/${cleanEndpoint}`;
     } else {
-      // Normal case - direct to backend without '/api' prefix
-      url = `${API_URL}/${cleanEndpoint}`;
+      // In all other cases, just join them
+      url = `${baseUrl}${cleanEndpoint}`;
     }
   } else {
     // For relative URLs (should not happen server-side but just in case)
-    // Check if both API_URL and endpoint contain 'api'
-    if (API_URL === '/api' && cleanEndpoint.startsWith('api/')) {
-      url = `${API_URL}/${cleanEndpoint.substring(4)}`;
+    // Prefer a predictable API path construction
+    const baseUrl = API_URL.endsWith('/') ? API_URL : `${API_URL}/`;
+    
+    if (cleanEndpoint.startsWith('api/') && baseUrl === '/api/') {
+      url = `${baseUrl}${cleanEndpoint.substring(4)}`;
     } else {
-      url = `${API_URL}/${cleanEndpoint}`;
+      url = `${baseUrl}${cleanEndpoint}`;
     }
   }
+
+  console.log('Server-side API request to URL:', url);
 
   const headers = {
     "Content-Type": "application/json",
@@ -234,6 +290,7 @@ export const serverFetch = async (endpoint, options = {}) => {
     });
 
     if (!response.ok) {
+      console.error(`Server-side API request failed: ${response.status} ${response.statusText}`);
       const errorData = await response.json().catch(() => null);
       throw new Error(
         errorData?.message || `Server error: ${response.statusText}`
@@ -242,6 +299,7 @@ export const serverFetch = async (endpoint, options = {}) => {
 
     return await handleResponse(response);
   } catch (error) {
+    console.error('Server-side API request error:', error);
     throw error;
   }
 };
@@ -262,7 +320,7 @@ async function handleResponse(response) {
 }
 
 // Helper function to normalize API paths and prevent '/api/api/' issues
-const normalizeEndpoint = (endpoint) => {
+export const normalizeEndpoint = (endpoint) => {
   // First, ensure endpoint starts without a slash for consistent handling
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
   

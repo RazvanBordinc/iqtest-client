@@ -1,15 +1,42 @@
 // src/fetch/tests.js
 
-import api from "./api";
+import api, { normalizeEndpoint } from "./api";
 import { TEST_TYPES } from "@/components/constants/testTypes";
+
+// Helper function to get the correct endpoint path
+const getEndpoint = (path) => {
+  // Remove the api prefix if needed
+  const normalizedPath = normalizeEndpoint(path);
+  // For server-side rendering and special cases
+  return normalizedPath;
+};
 
 // Get test types from constants (they're hardcoded)
 export const getAvailableTests = async () => {
   try {
-    // Can also fetch from backend if needed: const testTypes = await api.get("/api/test/types");
+    // First try to get test types from the API
+    const endpoint = getEndpoint("/test/types");
+    console.log('Fetching test types from endpoint:', endpoint);
+    
+    try {
+      const apiTestTypes = await api.get(endpoint);
+      console.log('Test types from API:', apiTestTypes);
+      
+      // If we got a valid response with at least one test type, use it
+      if (Array.isArray(apiTestTypes) && apiTestTypes.length > 0) {
+        return apiTestTypes;
+      } else {
+        console.warn('API returned empty or invalid test types, using fallback');
+      }
+    } catch (apiError) {
+      console.error('Error fetching test types from API, using fallback:', apiError);
+    }
+    
+    // Fallback to constants if API fails or returns empty
     return TEST_TYPES;
   } catch (error) {
-    // Fallback to constants if API fails
+    console.error('Complete failure in getAvailableTests, using hardcoded fallback:', error);
+    // Fallback to constants if everything fails
     return TEST_TYPES;
   }
 };
@@ -19,17 +46,6 @@ export const getTestById = (testId) => {
   return TEST_TYPES.find((test) => test.id === testId) || null;
 };
 
-// Helper function to get the correct endpoint path based on API_URL
-const getEndpoint = (path) => {
-  // If API_URL is already '/api', don't prefix paths with '/api'
-  if (api.baseUrl === '/api') {
-    // Remove leading '/api' if present
-    return path.startsWith('/api/') ? path.substring(4) : path;
-  }
-  
-  // Otherwise, ensure path starts with '/api'
-  return path.startsWith('/api/') ? path : `/api${path}`;
-};
 
 // Submit test answers to backend
 export const submitTest = async (testData) => {

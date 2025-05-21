@@ -1,15 +1,9 @@
-import api from "./api";
+import api, { normalizeEndpoint } from "./api";
 
-// Helper function to get the correct endpoint path based on API_URL
+// Helper function to get the correct endpoint path
 const getEndpoint = (path) => {
-  // If API_URL is already '/api', don't prefix paths with '/api'
-  if (api.baseUrl === '/api') {
-    // Remove leading '/api' if present
-    return path.startsWith('/api/') ? path.substring(4) : path;
-  }
-  
-  // Otherwise, ensure path starts with '/api'
-  return path.startsWith('/api/') ? path : `/api${path}`;
+  // Use the normalizeEndpoint function to handle API paths consistently
+  return normalizeEndpoint(path);
 };
 
 export const getTestTypeLeaderboard = async (testTypeId, page = 1, pageSize = 10) => {

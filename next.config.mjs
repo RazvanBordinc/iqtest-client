@@ -13,12 +13,16 @@ const nextConfig = {
   
   // Configure API routes to be proxied to the backend
   async rewrites() {
+    console.log('Environment:', process.env.NODE_ENV);
+    
     // Get the backend URL for proxying API requests
     const backendUrl = process.env.NEXT_SERVER_API_URL || 
       (process.env.NODE_ENV === 'production'
-        ? process.env.BACKEND_API_URL
+        ? (process.env.BACKEND_API_URL || 'https://iqtest-server.onrender.com')
         : 'http://backend:5164');
         
+    console.log('Backend URL for rewrites:', backendUrl);
+    
     return [
       // Special rule to exclude /api/health - keep local implementation
       {
@@ -29,8 +33,8 @@ const nextConfig = {
       // Proxy all API requests to the backend, ensuring we don't double up on /api
       {
         source: '/api/:path*',
-        // Avoid duplicating the /api prefix when the backend URL already contains it
-        destination: `${backendUrl}${backendUrl.endsWith('/api') ? '/' : '/api/'}:path*`,
+        // Simplified destination without complex condition for safer path construction
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },

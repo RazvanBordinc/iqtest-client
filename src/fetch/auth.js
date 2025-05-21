@@ -1,17 +1,10 @@
-import api from "./api";
+import api, { normalizeEndpoint } from "./api";
 import { setCookie, removeCookie, getCookie } from "@/utils/cookies";
 
-// Helper function to get the correct endpoint path based on API_URL
+// Helper function to get the correct endpoint path
 const getEndpoint = (path) => {
-  // If API_URL is already '/api', don't prefix paths with '/api'
-  // This prevents double '/api/api/' issues
-  if (api.baseUrl === '/api') {
-    // Remove leading '/api' if present
-    return path.startsWith('/api/') ? path.substring(4) : path;
-  }
-  
-  // Otherwise, ensure path starts with '/api'
-  return path.startsWith('/api/') ? path : `/api${path}`;
+  // Use the normalizeEndpoint function to handle API paths consistently
+  return normalizeEndpoint(path);
 };
 
 export const checkUsername = async (username) => {
