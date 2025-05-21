@@ -10,6 +10,29 @@ const nextConfig = {
         ? process.env.BACKEND_API_URL  // Use a production fallback if available
         : 'http://backend:5164')       // Use Docker service name for local dev
   },
+  
+  // Configure API routes to be proxied to the backend
+  async rewrites() {
+    // Get the backend URL for proxying API requests
+    const backendUrl = process.env.NEXT_SERVER_API_URL || 
+      (process.env.NODE_ENV === 'production'
+        ? process.env.BACKEND_API_URL
+        : 'http://backend:5164');
+        
+    return [
+      // Proxy all API requests to the backend
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+      
+      // Special rule to exclude /api/health - keep local implementation
+      {
+        source: '/api/health',
+        destination: '/api/health',
+      },
+    ];
+  },
   // Enable production optimizations
   reactStrictMode: true,
   poweredByHeader: false,
@@ -26,6 +49,21 @@ const nextConfig = {
   // Ensure favicon and static files are handled correctly
   webpack(config) {
     return config;
+  },
+  
+  // API rewrites configuration - proxy requests to backend
+  async rewrites() {
+    const backendUrl = process.env.NEXT_SERVER_API_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? process.env.BACKEND_API_URL 
+        : 'http://backend:5164');
+        
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/:path*`,
+      },
+    ];
   },
   
   // Static asset configuration
