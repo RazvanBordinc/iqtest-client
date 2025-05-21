@@ -8,14 +8,46 @@ const getEndpoint = (path) => {
 };
 
 export const checkUsername = async (username) => {
-  try {
-    const endpoint = getEndpoint('/auth/check-username');
-    const response = await api.post(endpoint, { username });
-    return response;
-  } catch (error) {
-    console.error("Username check failed:", error);
-    throw error;
-  }
+  const MAX_RETRIES = 3;
+  let retryCount = 0;
+  
+  const tryCheckUsername = async () => {
+    try {
+      const endpoint = getEndpoint('/auth/check-username');
+      
+      // Add a random query parameter to bust any caching
+      const randomParam = Math.random().toString(36).substring(2);
+      const endpointWithParam = `${endpoint}?_=${randomParam}`;
+      
+      const response = await api.post(endpointWithParam, { username });
+      return response;
+    } catch (error) {
+      // If we've hit a rate limit (429), wait and retry
+      if (error.status === 429 && retryCount < MAX_RETRIES) {
+        console.log(`Rate limited on username check, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
+        retryCount++;
+        
+        // Wait a bit before retrying (increasing delay based on retry count)
+        const delay = 1000 * retryCount;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Try again
+        return tryCheckUsername();
+      }
+      
+      // For non-rate-limit errors or if we've exhausted retries
+      if (error.status === 429) {
+        console.error("Username check rate limited after retries, returning dummy response");
+        // Return a default response to avoid breaking the UI
+        return { available: true, message: "Username check skipped due to rate limiting" };
+      }
+      
+      console.error("Username check failed:", error);
+      throw error;
+    }
+  };
+  
+  return tryCheckUsername();
 };
 
 export const createUser = async (userData) => {

@@ -53,7 +53,14 @@ export const clientFetch = async (endpoint, options = {}) => {
   };
 
   try {
+    // Add timeout to avoid hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    fetchOptions.signal = controller.signal;
+    
     const response = await fetch(url, fetchOptions);
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       return await handleResponse(response);
@@ -72,6 +79,21 @@ export const clientFetch = async (endpoint, options = {}) => {
       throw new Error("Authentication required");
     }
     
+    // Handle rate limiting errors (429 Too Many Requests)
+    if (response.status === 429) {
+      const error = new Error("Rate limit exceeded. Please try again later.");
+      error.status = 429;
+      error.isRateLimit = true;
+      
+      // Try to extract the retry-after header if present
+      const retryAfter = response.headers.get('Retry-After');
+      if (retryAfter) {
+        error.retryAfter = parseInt(retryAfter, 10);
+      }
+      
+      throw error;
+    }
+    
     // Handle other error responses
     let errorMessage;
     try {
@@ -85,6 +107,14 @@ export const clientFetch = async (endpoint, options = {}) => {
     error.status = response.status;
     throw error;
   } catch (error) {
+    // Handle abort errors
+    if (error.name === 'AbortError') {
+      console.error('Request timed out after 10 seconds');
+      const timeoutError = new Error('Request timed out. Please try again later.');
+      timeoutError.status = 408; // Request Timeout
+      throw timeoutError;
+    }
+    
     console.error('Client-side API request error:', error);
     throw error;
   }
