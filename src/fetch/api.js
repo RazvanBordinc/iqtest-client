@@ -100,12 +100,13 @@ export const clientFetch = async (endpoint, options = {}) => {
   }
 
   try {
-    // Add timeout to avoid hanging requests - extended for cold start scenarios
+    // Enhanced timeout handling for Render free tier cold starts
     const controller = new AbortController();
     
-    // Use longer timeout for auth endpoints that might trigger cold start
+    // Use longer timeouts for cold start scenarios
     const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('/test/');
-    const timeoutDuration = isAuthEndpoint ? 65000 : 15000; // 65 seconds for auth/test, 15 for others
+    const isCriticalEndpoint = isAuthEndpoint || endpoint.includes('/health') || endpoint.includes('/wake');
+    const timeoutDuration = isCriticalEndpoint ? 90000 : 30000; // 90s for critical, 30s for others
     
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
     
@@ -252,14 +253,56 @@ export const clientFetch = async (endpoint, options = {}) => {
     error.responseText = responseText; // Include the raw response for debugging
     throw error;
   } catch (error) {
-    // Handle abort errors
+    // Handle abort errors with server wake-up logic
     if (error.name === 'AbortError') {
       logger.warn('Request timed out', {
         event: 'api_timeout',
         endpoint,
         method: fetchOptions.method || 'GET',
-        timeout: '15000ms'
+        timeout: `${timeoutDuration}ms`
       });
+      
+      // Try server wake-up for critical endpoints
+      if (isCriticalEndpoint && !endpoint.includes('/wake')) {
+        try {
+          logger.info('Attempting server wake-up after timeout', {
+            event: 'wake_up_attempt',
+            endpoint,
+            reason: 'timeout'
+          });
+          
+          const { wakeUpServer } = await import('@/utils/serverWakeup');
+          const wakeResult = await wakeUpServer();
+          
+          if (wakeResult.success) {
+            // Retry the original request once
+            logger.info('Retrying request after successful wake-up', {
+              event: 'retry_after_wake',
+              endpoint
+            });
+            
+            const retryController = new AbortController();
+            const retryTimeoutId = setTimeout(() => retryController.abort(), 30000);
+            
+            const retryResponse = await fetch(url, {
+              ...fetchOptions,
+              signal: retryController.signal
+            });
+            
+            clearTimeout(retryTimeoutId);
+            
+            if (retryResponse.ok) {
+              return await handleResponse(retryResponse);
+            }
+          }
+        } catch (wakeError) {
+          logger.warn('Server wake-up failed', {
+            event: 'wake_up_failed',
+            endpoint,
+            error: wakeError.message
+          });
+        }
+      }
       
       // For specific auth endpoints, return a fallback response
       if (isAuthEndpoint && endpoint.includes('check-username')) {
@@ -274,8 +317,9 @@ export const clientFetch = async (endpoint, options = {}) => {
         };
       }
       
-      const timeoutError = new Error('Request timed out. Please try again later.');
+      const timeoutError = new Error('Server is starting up. This may take up to 60 seconds on first visit.');
       timeoutError.status = 408; // Request Timeout
+      timeoutError.isServerSleep = true;
       throw timeoutError;
     }
     
@@ -452,6 +496,47 @@ export const normalizeEndpoint = (endpoint) => {
   return cleanEndpoint;
 };
 
+// Retry wrapper for API calls with exponential backoff
+export const withRetry = async (fn, options = {}) => {
+  const {
+    maxRetries = 3,
+    baseDelay = 1000,
+    maxDelay = 10000,
+    retryCondition = (error) => error.isServerSleep || error.status === 408 || error.status === 503
+  } = options;
+
+  let lastError;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry if this is the last attempt or error doesn't meet retry condition
+      if (attempt === maxRetries || !retryCondition(error)) {
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+      
+      logger.info('Retrying API call after error', {
+        event: 'api_retry',
+        attempt: attempt + 1,
+        maxRetries,
+        delay: `${delay}ms`,
+        error: error.message,
+        status: error.status
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError;
+};
+
 // Constructs a complete URL to the backend API
 function constructUrl(endpoint) {
   // First, clean the endpoint by removing any leading slash
@@ -575,6 +660,12 @@ const api = {
   get: (endpoint, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
+    
+    // Use retry wrapper for client-side requests
+    if (!isServer && options.retry !== false) {
+      return withRetry(() => fetchFunction(endpoint, { ...options, method: "GET" }));
+    }
+    
     return fetchFunction(endpoint, { ...options, method: "GET" });
   },
 
@@ -589,11 +680,18 @@ const api = {
       ? formatDataForEndpoint(endpoint, body)
       : prepareRequestBody(body);
     
-    return fetchFunction(endpoint, {
+    const fetchOptions = {
       ...options,
       method: "POST",
       body: JSON.stringify(processedBody),
-    });
+    };
+    
+    // Use retry wrapper for client-side requests
+    if (!isServer && options.retry !== false) {
+      return withRetry(() => fetchFunction(endpoint, fetchOptions));
+    }
+    
+    return fetchFunction(endpoint, fetchOptions);
   },
 
   put: (endpoint, body, options = {}) => {
@@ -603,16 +701,29 @@ const api = {
     // Process the body for proper .NET model binding
     const processedBody = prepareRequestBody(body);
     
-    return fetchFunction(endpoint, {
+    const fetchOptions = {
       ...options,
       method: "PUT",
       body: JSON.stringify(processedBody),
-    });
+    };
+    
+    // Use retry wrapper for client-side requests
+    if (!isServer && options.retry !== false) {
+      return withRetry(() => fetchFunction(endpoint, fetchOptions));
+    }
+    
+    return fetchFunction(endpoint, fetchOptions);
   },
 
   delete: (endpoint, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
+    
+    // Use retry wrapper for client-side requests
+    if (!isServer && options.retry !== false) {
+      return withRetry(() => fetchFunction(endpoint, { ...options, method: "DELETE" }));
+    }
+    
     return fetchFunction(endpoint, { ...options, method: "DELETE" });
   },
   

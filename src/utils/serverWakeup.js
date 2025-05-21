@@ -4,14 +4,17 @@ import logger from '@/utils/logger';
 const BACKEND_URL = process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com';
 
 // Wake up the server and return status
-export const wakeUpServer = async (onProgress = null) => {
+export const wakeUpServer = async (onProgress = null, options = {}) => {
   const startTime = Date.now();
-  const maxAttempts = 12; // Try for up to 60 seconds (12 attempts * 5 second intervals)
+  const maxAttempts = options.maxAttempts || 15; // Try for up to 75 seconds
+  const useHealthEndpoint = options.useHealthEndpoint !== false; // Default to true
   let attempt = 0;
   
   logger.info('Starting server wake-up process', {
     event: 'server_wake_start',
-    backend: BACKEND_URL
+    backend: BACKEND_URL,
+    maxAttempts,
+    useHealthEndpoint
   });
 
   while (attempt < maxAttempts) {
@@ -29,14 +32,22 @@ export const wakeUpServer = async (onProgress = null) => {
         });
       }
 
-      // Try to wake up the server
+      // Try to wake up the server with multiple endpoints
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout per attempt
+      const timeoutMs = Math.min(5000 + (attempt * 1000), 10000); // 5-10 second timeout, increasing
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       
-      const response = await fetch(`${BACKEND_URL}/api/health/wake`, {
+      // Try health endpoint first, then wake endpoint
+      const endpoint = useHealthEndpoint && attempt <= 3 
+        ? `${BACKEND_URL}/api/health` 
+        : `${BACKEND_URL}/api/health/wake`;
+      
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'X-Wake-Request': 'true',
+          'Cache-Control': 'no-cache'
         },
         mode: 'cors',
         credentials: 'include',

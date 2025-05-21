@@ -50,46 +50,62 @@ export const useServerWakeUp = () => {
       'fetch',
       'network',
       'Failed to fetch',
-      'Request timed out'
+      'Request timed out',
+      'Server is starting up',
+      'sleep'
     ];
 
     const errorMessage = error?.message?.toLowerCase() || '';
-    return coldStartIndicators.some(indicator => errorMessage.includes(indicator));
+    const hasServerSleepFlag = error?.isServerSleep === true;
+    const isTimeoutError = error?.status === 408;
+    
+    return hasServerSleepFlag || isTimeoutError || 
+           coldStartIndicators.some(indicator => errorMessage.includes(indicator));
   }, []);
 
   const withServerWakeUp = useCallback(async (apiFunction, ...args) => {
-    try {
-      // Try the API function first
-      return await apiFunction(...args);
-    } catch (error) {
-      // If error indicates cold start, wake up server and retry
-      if (detectColdStartFromError(error)) {
-        logger.info('Cold start detected, attempting server wake-up', {
-          event: 'cold_start_retry',
-          originalError: error.message
-        });
-
-        const wakeUpResult = await checkAndWakeServer(true);
+    let lastError;
+    const maxAttempts = 2; // Original attempt + 1 retry after wake-up
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        // Try the API function
+        return await apiFunction(...args);
+      } catch (error) {
+        lastError = error;
         
-        if (wakeUpResult.success) {
-          // Server is awake, retry the original function
-          logger.info('Server wake-up successful, retrying API call', {
-            event: 'cold_start_retry_success'
+        // If error indicates cold start and this is first attempt, try wake-up
+        if (attempt === 0 && detectColdStartFromError(error)) {
+          logger.info('Cold start detected, attempting server wake-up', {
+            event: 'cold_start_retry',
+            originalError: error.message,
+            status: error.status
           });
-          return await apiFunction(...args);
+
+          const wakeUpResult = await checkAndWakeServer(true);
+          
+          if (wakeUpResult.success) {
+            // Server is awake, continue to retry
+            logger.info('Server wake-up successful, retrying API call', {
+              event: 'cold_start_retry_success'
+            });
+            continue;
+          } else {
+            // Wake-up failed, log but still try one more time
+            logger.warn('Server wake-up failed, but will try API call once more', {
+              event: 'cold_start_retry_failed',
+              wakeUpError: wakeUpResult.error
+            });
+          }
         } else {
-          // Wake-up failed, throw original error
-          logger.warn('Server wake-up failed, throwing original error', {
-            event: 'cold_start_retry_failed',
-            wakeUpError: wakeUpResult.error
-          });
-          throw error;
+          // Not a cold start error or final attempt, break
+          break;
         }
-      } else {
-        // Not a cold start error, throw original error
-        throw error;
       }
     }
+    
+    // All attempts failed, throw the last error
+    throw lastError;
   }, [checkAndWakeServer, detectColdStartFromError]);
 
   return {
