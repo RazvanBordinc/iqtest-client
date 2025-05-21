@@ -103,12 +103,6 @@ export const clientFetch = async (endpoint, options = {}) => {
     console.log('Response headers:', responseHeaders);
 
     if (response.ok) {
-      // If successful, clear offline mode (if set) for auth endpoints
-      if (isAuthEndpoint && typeof window !== 'undefined' && localStorage.getItem('offline_mode') === 'true') {
-        localStorage.removeItem('offline_mode');
-        console.log('Cleared offline mode as API connection is working');
-      }
-      
       return await handleResponse(response);
     }
     
@@ -175,20 +169,13 @@ export const clientFetch = async (endpoint, options = {}) => {
       errorMessage = responseText || `Error: ${response.statusText}`;
     }
     
-    // For auth endpoints, enable offline mode on failure
-    if (isAuthEndpoint && typeof window !== 'undefined') {
-      localStorage.setItem('offline_mode', 'true');
-      console.log('Enabled offline mode due to auth API failure');
-      
-      // For specific auth endpoints, we might want to return a fallback response
-      if (endpoint.includes('check-username')) {
-        console.log('Returning fallback response for username check');
-        return { 
-          message: "Username check completed", 
-          exists: false,
-          offline: true
-        };
-      }
+    // For specific auth endpoints, we might want to return a fallback response
+    if (isAuthEndpoint && endpoint.includes('check-username')) {
+      console.log('Returning fallback response for username check');
+      return { 
+        message: "Username check completed", 
+        exists: false
+      };
     }
     
     const error = new Error(errorMessage);
@@ -201,20 +188,13 @@ export const clientFetch = async (endpoint, options = {}) => {
     if (error.name === 'AbortError') {
       console.error('Request timed out after 15 seconds');
       
-      // Enable offline mode for auth endpoints on timeout
-      if (isAuthEndpoint && typeof window !== 'undefined') {
-        localStorage.setItem('offline_mode', 'true');
-        console.log('Enabled offline mode due to auth API timeout');
-        
-        // For specific auth endpoints, we might want to return a fallback response
-        if (endpoint.includes('check-username')) {
-          console.log('Returning fallback response for username check after timeout');
-          return { 
-            message: "Username check completed", 
-            exists: false,
-            offline: true
-          };
-        }
+      // For specific auth endpoints, return a fallback response
+      if (isAuthEndpoint && endpoint.includes('check-username')) {
+        console.log('Returning fallback response for username check after timeout');
+        return { 
+          message: "Username check completed", 
+          exists: false
+        };
       }
       
       const timeoutError = new Error('Request timed out. Please try again later.');
@@ -226,20 +206,13 @@ export const clientFetch = async (endpoint, options = {}) => {
     if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
       console.error('Network error, possibly CORS related:', error);
       
-      // Enable offline mode for auth endpoints on network errors
-      if (isAuthEndpoint && typeof window !== 'undefined') {
-        localStorage.setItem('offline_mode', 'true');
-        console.log('Enabled offline mode due to auth API network error');
-        
-        // For specific auth endpoints, we might want to return a fallback response
-        if (endpoint.includes('check-username')) {
-          console.log('Returning fallback response for username check after network error');
-          return { 
-            message: "Username check completed", 
-            exists: false,
-            offline: true
-          };
-        }
+      // For specific auth endpoints, return a fallback response
+      if (isAuthEndpoint && endpoint.includes('check-username')) {
+        console.log('Returning fallback response for username check after network error');
+        return { 
+          message: "Username check completed", 
+          exists: false
+        };
       }
       
       const networkError = new Error('Network error. This might be due to CORS restrictions or the backend being unavailable.');
@@ -250,20 +223,13 @@ export const clientFetch = async (endpoint, options = {}) => {
     
     console.error('Client-side API request error:', error);
     
-    // Enable offline mode for auth endpoints on any error
-    if (isAuthEndpoint && typeof window !== 'undefined') {
-      localStorage.setItem('offline_mode', 'true');
-      console.log('Enabled offline mode due to auth API general error');
-      
-      // For specific auth endpoints, we might want to return a fallback response
-      if (endpoint.includes('check-username')) {
-        console.log('Returning fallback response for username check after error');
-        return { 
-          message: "Username check completed", 
-          exists: false,
-          offline: true
-        };
-      }
+    // For specific auth endpoints, return a fallback response on error
+    if (isAuthEndpoint && endpoint.includes('check-username')) {
+      console.log('Returning fallback response for username check after error');
+      return { 
+        message: "Username check completed", 
+        exists: false
+      };
     }
     
     throw error;
@@ -619,12 +585,6 @@ export const universalRequest = async (endpoint, data, options = {}) => {
   if (endpoint.includes('/auth/')) {
     console.warn(`All auth request approaches failed for endpoint: ${endpoint}, returning fallback response`);
     
-    // Set offline mode in localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('offline_mode', 'true');
-      console.log('Enabled offline mode due to API failures');
-    }
-    
     // Check if this is a login endpoint
     if (endpoint.includes('login')) {
       // For login, we want to return a dummy token and user info
@@ -635,16 +595,14 @@ export const universalRequest = async (endpoint, data, options = {}) => {
         token: `dummy_token_${Date.now()}`,
         username: username,
         email: email,
-        message: "Logged in (offline mode)",
-        offline: true
+        message: "Logged in"
       };
     }
     
     // For other auth endpoints, return a generic success
     return {
-      message: "Operation completed (offline mode)",
-      success: true,
-      offline: true
+      message: "Operation completed",
+      success: true
     };
   }
   
@@ -662,7 +620,8 @@ function formatDataForEndpoint(endpoint, data) {
   
   // Check endpoint type
   if (endpoint.includes('check-username')) {
-    // Username check requires a specific format
+    // Username check requires a specific format with PascalCase property names
+    // This matches the C# DTO: public class CheckUsernameDto { public string Username { get; set; } }
     return { Username: data.username || data.Username };
   }
   

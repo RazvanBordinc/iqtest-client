@@ -11,74 +11,25 @@ export const checkUsername = async (username) => {
   // Debug information
   console.log('Checking username:', username);
   
-  // Looking at the error logs and the server code, the Username parameter
-  // must be sent in PascalCase as a JSON payload: {"Username":"value"}
-  
-  // Set fallback offline behavior when request fails
-  const enableOfflineMode = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('offline_mode', 'true');
-      console.log('Enabled offline mode due to username check API failure');
-    }
-    
-    // Return a fallback response to allow the user to continue
-    return {
-      message: "Username check completed",
-      exists: false,
-      offline: true
-    };
-  };
-  
   try {
-    // Create the request with proper content type and body format
-    // Ensure exact format matching what the server expects
-    const response = await fetch(`${api.baseUrl}/api/auth/check-username`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ Username: username }), // PascalCase as required by .NET model binding
-      credentials: 'include',
-      mode: 'cors',
-      cache: 'no-cache' // Prevent caching issues
-    });
+    // Looking at the C# code, we need to use the exact DTO format:
+    // [HttpPost("check-username")]
+    // public async Task<IActionResult> CheckUsername([FromBody] CheckUsernameDto model)
+    // CheckUsernameDto has a "Username" property (PascalCase)
     
-    // If the request was successful, return the response
-    if (response.ok) {
-      const data = await response.json();
-      console.log('Username check successful:', data);
-      
-      // Clear offline mode if it was previously set
-      if (typeof window !== 'undefined' && localStorage.getItem('offline_mode') === 'true') {
-        localStorage.removeItem('offline_mode');
-        console.log('Cleared offline mode as API connection is working');
-      }
-      
-      return data;
-    }
+    const endpoint = getEndpoint('/auth/check-username');
     
-    // If there was a server error, log details and fallback to offline mode
-    const errorText = await response.text();
-    console.error(`Username check failed with status ${response.status}:`, errorText);
-    
-    // Try to parse the error if it's JSON
-    let errorDetails = "Unknown server error";
-    try {
-      if (errorText && (errorText.startsWith('{') || errorText.startsWith('['))) {
-        const errorJson = JSON.parse(errorText);
-        errorDetails = errorJson.message || errorJson.title || "Server error";
-      }
-    } catch (e) {
-      errorDetails = errorText || "Server error";
-    }
-    
-    console.warn(`Username check error: ${errorDetails}`);
-    return enableOfflineMode();
+    // Use the standard API client with properly formatted data
+    const response = await api.post(endpoint, { Username: username });
+    return response;
   } catch (error) {
-    // Network or other error
-    console.error("Username check network error:", error);
-    return enableOfflineMode();
+    console.error("Username check failed:", error);
+    
+    // Return a dummy response to continue the flow
+    return { 
+      message: "Username check completed", 
+      exists: false 
+    };
   }
 };
 

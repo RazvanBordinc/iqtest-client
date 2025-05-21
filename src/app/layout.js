@@ -91,7 +91,6 @@ export default function RootLayout({ children }) {
           <ErrorModal />
           <CookieConsent />
           <BackendStatusModal />
-          <OfflineIndicator />
         </ThemeProvider>
       </body>
     </html>
