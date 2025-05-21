@@ -9,21 +9,51 @@ export default function OfflineIndicator() {
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // Check if we're in offline mode
-    const offlineMode = localStorage.getItem('offline_mode') === 'true';
-    setIsOffline(offlineMode);
+    // Initial check for offline mode
+    const checkOfflineMode = () => {
+      const offlineMode = localStorage.getItem('offline_mode') === 'true';
+      setIsOffline(offlineMode);
+      
+      if (offlineMode && !showBanner) {
+        setShowBanner(true);
+      }
+    };
     
-    // Only show banner if we're offline
-    if (offlineMode) {
-      setShowBanner(true);
-      
-      // Auto-hide banner after 5 seconds
-      const timerId = setTimeout(() => {
+    // Check immediately
+    checkOfflineMode();
+    
+    // Set up interval to check for offline mode changes
+    const intervalId = setInterval(checkOfflineMode, 2000);
+    
+    // Set up banner auto-hide
+    let bannerTimerId;
+    if (showBanner) {
+      bannerTimerId = setTimeout(() => {
         setShowBanner(false);
-      }, 5000);
-      
-      return () => clearTimeout(timerId);
+      }, 8000);
     }
+    
+    return () => {
+      clearInterval(intervalId);
+      if (bannerTimerId) clearTimeout(bannerTimerId);
+    };
+  }, [showBanner]);
+
+  // Listen for storage events to detect offline mode changes
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'offline_mode') {
+        const newOfflineMode = e.newValue === 'true';
+        setIsOffline(newOfflineMode);
+        
+        if (newOfflineMode) {
+          setShowBanner(true);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   if (!isOffline) {
@@ -32,7 +62,7 @@ export default function OfflineIndicator() {
 
   return (
     <>
-      {/* Fixed indicator that always shows */}
+      {/* Fixed indicator that always shows when offline */}
       <div className="fixed bottom-4 right-4 z-50">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}

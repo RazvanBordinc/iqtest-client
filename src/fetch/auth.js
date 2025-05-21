@@ -8,142 +8,78 @@ const getEndpoint = (path) => {
 };
 
 export const checkUsername = async (username) => {
-  const MAX_RETRIES = 3;
-  let retryCount = 0;
+  // Debug information
+  console.log('Checking username:', username);
   
-  const tryCheckUsername = async () => {
-    try {
-      const endpoint = getEndpoint('/auth/check-username');
-      
-      // Debug information
-      console.log('Checking username:', username);
-      
-      // Try multiple approaches for the request
-      
-      // Approach 1: URL encoded form
-      try {
-        console.log('Trying URL encoded form approach');
-        const formData = new URLSearchParams();
-        formData.append('Username', username);
-        
-        const directResponse = await fetch(`${api.baseUrl}/api/auth/check-username`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData.toString(),
-          credentials: 'include',
-          mode: 'cors'
-        });
-        
-        console.log('Form approach status:', directResponse.status);
-        if (directResponse.ok) {
-          // If successful, parse response and return
-          const responseData = await directResponse.json();
-          return responseData;
-        } else {
-          const errorText = await directResponse.text();
-          console.log('Form approach error text:', errorText);
-        }
-      } catch (formError) {
-        console.error('Form approach error:', formError);
-      }
-      
-      // Approach 2: Query string
-      try {
-        console.log('Trying query string approach');
-        const queryUrl = `${api.baseUrl}/api/auth/check-username?username=${encodeURIComponent(username)}`;
-        const queryResponse = await fetch(queryUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
-        
-        console.log('Query approach status:', queryResponse.status);
-        if (queryResponse.ok) {
-          // If successful, parse response and return
-          const responseData = await queryResponse.json();
-          return responseData;
-        } else {
-          const errorText = await queryResponse.text();
-          console.log('Query approach error text:', errorText);
-        }
-      } catch (queryError) {
-        console.error('Query approach error:', queryError);
-      }
-      
-      // Approach 3: Simplified JSON
-      try {
-        console.log('Trying simplified JSON approach');
-        const simplifiedResponse = await fetch(`${api.baseUrl}/api/auth/check-username`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ username: username }), // Using lowercase to match potential casing issues
-          credentials: 'include',
-          mode: 'cors'
-        });
-        
-        console.log('Simplified JSON approach status:', simplifiedResponse.status);
-        if (simplifiedResponse.ok) {
-          // If successful, parse response and return
-          const responseData = await simplifiedResponse.json();
-          return responseData;
-        } else {
-          const errorText = await simplifiedResponse.text();
-          console.log('Simplified JSON approach error text:', errorText);
-        }
-      } catch (jsonError) {
-        console.error('Simplified JSON approach error:', jsonError);
-      }
-      
-      // Fallback to the original approach as last resort
-      try {
-        console.log('Falling back to original approach with PascalCase');
-        const response = await api.post(endpoint, { Username: username });
-        return response;
-      } catch (apiError) {
-        console.error('Original approach error:', apiError);
-      }
-      
-      // If all approaches fail, return a dummy success response
-      console.warn("All username check approaches failed, returning dummy response");
-      return { 
-        message: "Username check completed", 
-        exists: false 
-      };
-    } catch (error) {
-      // If we've hit a rate limit (429), wait and retry
-      if (error.status === 429 && retryCount < MAX_RETRIES) {
-        console.log(`Rate limited on username check, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
-        retryCount++;
-        
-        // Wait a bit before retrying (increasing delay based on retry count)
-        const delay = 1000 * retryCount;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        // Try again
-        return tryCheckUsername();
-      }
-      
-      console.error("Username check failed:", error);
-      
-      // Return a dummy response to prevent UI breaking in production
-      // This allows the user to continue the flow even if username check fails
-      console.log("Returning dummy successful response to avoid blocking the user");
-      return { 
-        message: "Username check completed", 
-        exists: false 
-      };
+  // Looking at the error logs and the server code, the Username parameter
+  // must be sent in PascalCase as a JSON payload: {"Username":"value"}
+  
+  // Set fallback offline behavior when request fails
+  const enableOfflineMode = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('offline_mode', 'true');
+      console.log('Enabled offline mode due to username check API failure');
     }
+    
+    // Return a fallback response to allow the user to continue
+    return {
+      message: "Username check completed",
+      exists: false,
+      offline: true
+    };
   };
   
-  return tryCheckUsername();
+  try {
+    // Create the request with proper content type and body format
+    // Ensure exact format matching what the server expects
+    const response = await fetch(`${api.baseUrl}/api/auth/check-username`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ Username: username }), // PascalCase as required by .NET model binding
+      credentials: 'include',
+      mode: 'cors',
+      cache: 'no-cache' // Prevent caching issues
+    });
+    
+    // If the request was successful, return the response
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Username check successful:', data);
+      
+      // Clear offline mode if it was previously set
+      if (typeof window !== 'undefined' && localStorage.getItem('offline_mode') === 'true') {
+        localStorage.removeItem('offline_mode');
+        console.log('Cleared offline mode as API connection is working');
+      }
+      
+      return data;
+    }
+    
+    // If there was a server error, log details and fallback to offline mode
+    const errorText = await response.text();
+    console.error(`Username check failed with status ${response.status}:`, errorText);
+    
+    // Try to parse the error if it's JSON
+    let errorDetails = "Unknown server error";
+    try {
+      if (errorText && (errorText.startsWith('{') || errorText.startsWith('['))) {
+        const errorJson = JSON.parse(errorText);
+        errorDetails = errorJson.message || errorJson.title || "Server error";
+      }
+    } catch (e) {
+      errorDetails = errorText || "Server error";
+    }
+    
+    console.warn(`Username check error: ${errorDetails}`);
+    return enableOfflineMode();
+  } catch (error) {
+    // Network or other error
+    console.error("Username check network error:", error);
+    return enableOfflineMode();
+  }
 };
 
 export const createUser = async (userData) => {
