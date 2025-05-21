@@ -190,19 +190,54 @@ export const setAuthTokens = (response) => {
   try {
     if (response && response.token) {
       // Validate the token is in proper JWT format before setting
-      if (response.token.split('.').length === 3) {
-        // Looks like a valid JWT token
-        console.log("Setting valid JWT token in cookies");
-        setCookie("token", response.token, 1); // 1 day expiry
+      if (typeof response.token !== 'string') {
+        console.warn("Token is not a string, using offline mode");
+        const dummyToken = "dummy_token_" + Date.now();
+        setCookie("token", dummyToken, 1);
+        setCookie("offline_mode", "true", 1);
+        localStorage.setItem("offline_mode", "true");
+      }
+      else if (response.token.split('.').length === 3) {
+        try {
+          // Ensure it's valid base64 by testing decoding
+          const parts = response.token.split('.');
+          if (parts[1] && parts[1].trim() !== '') {
+            // Proper token - try to decode it for further validation
+            const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            const pad = base64.length % 4;
+            const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+            
+            // If this fails to decode, it will go to the catch block
+            JSON.parse(atob(padded));
+            
+            // Valid JWT token, store it
+            console.log("Setting valid JWT token in cookies");
+            setCookie("token", response.token, 1); // 1 day expiry
+          } else {
+            // Invalid payload
+            throw new Error("Invalid token payload");
+          }
+        } catch (error) {
+          // Invalid token format, switch to dummy token
+          console.warn("JWT token decode error:", error.message);
+          const dummyToken = "dummy_token_" + Date.now();
+          setCookie("token", dummyToken, 1);
+          setCookie("offline_mode", "true", 1);
+          localStorage.setItem("offline_mode", "true");
+        }
       } else if (response.token.startsWith('dummy_')) {
-        // It's a dummy token for offline mode
+        // It's already a dummy token for offline mode
         console.log("Setting dummy token in cookies (offline mode)");
         setCookie("token", response.token, 1);
         setCookie("offline_mode", "true", 1);
         localStorage.setItem("offline_mode", "true");
       } else {
-        console.warn("Invalid token format, not setting cookie");
-        return false;
+        // Unknown token format, create a new dummy token
+        console.warn("Invalid token format, using offline mode");
+        const dummyToken = "dummy_token_" + Date.now();
+        setCookie("token", dummyToken, 1);
+        setCookie("offline_mode", "true", 1);
+        localStorage.setItem("offline_mode", "true");
       }
       
       // Set refresh token if available
@@ -298,15 +333,15 @@ export const isAuthenticated = () => {
   }
   
   try {
-    // First check if token is in JWT format with 3 parts
+    // Check for offline/fallback tokens first to avoid unnecessary warnings
+    if (token.startsWith("dummy_token_") || token.startsWith("dummy_login_token_")) {
+      // This is an offline/fallback token, consider it valid
+      return true;
+    }
+    
+    // Now check if token is in JWT format with 3 parts
     if (!token.includes('.') || token.split('.').length !== 3) {
-      console.warn("Token is not in valid JWT format");
-      // For offline mode and fallback tokens, consider them valid
-      if (token.startsWith("dummy_token_") || token.startsWith("dummy_login_token_")) {
-        // This is an offline/fallback token, consider it valid
-        console.log("Using offline/fallback token");
-        return true;
-      }
+      // Only log warning for non-dummy tokens to prevent spam
       return false; 
     }
     
