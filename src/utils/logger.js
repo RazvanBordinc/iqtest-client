@@ -3,6 +3,7 @@
 /**
  * Centralized logging utility for the IQ Test frontend application
  * This integrates with Vercel's logging system when deployed
+ * Provides comprehensive logging capabilities for monitoring and debugging
  */
 
 const LOG_LEVELS = {
