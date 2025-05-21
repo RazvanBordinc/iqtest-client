@@ -78,7 +78,13 @@ export default function AuthPage() {
         setStep("password");
       }
     } catch (error) {
-      showError("Failed to check username. Please try again.");
+      console.error("Username check error details:", error);
+      // Provide a more specific error message if possible
+      if (error.data && error.data.errors && error.data.errors.Username) {
+        showError(`Username validation failed: ${error.data.errors.Username[0]}`);
+      } else {
+        showError("Failed to check username. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

@@ -96,15 +96,31 @@ export const clientFetch = async (endpoint, options = {}) => {
     
     // Handle other error responses
     let errorMessage;
+    let errorData;
     try {
-      const errorData = await response.json();
+      errorData = await response.json();
       errorMessage = errorData?.message || `Error: ${response.statusText}`;
+      
+      // For 400 Bad Request errors, provide more detailed information
+      if (response.status === 400) {
+        console.warn('Bad Request details:', errorData);
+        
+        // If we have model validation errors, format them nicely
+        if (errorData.errors) {
+          const validationErrors = Object.entries(errorData.errors)
+            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+            .join('; ');
+          
+          errorMessage = `Validation failed: ${validationErrors}`;
+        }
+      }
     } catch (e) {
       errorMessage = `Error: ${response.statusText}`;
     }
     
     const error = new Error(errorMessage);
     error.status = response.status;
+    error.data = errorData; // Attach the complete error data for more context
     throw error;
   } catch (error) {
     // Handle abort errors

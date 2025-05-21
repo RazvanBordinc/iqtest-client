@@ -15,11 +15,9 @@ export const checkUsername = async (username) => {
     try {
       const endpoint = getEndpoint('/auth/check-username');
       
-      // Add a random query parameter to bust any caching
-      const randomParam = Math.random().toString(36).substring(2);
-      const endpointWithParam = `${endpoint}?_=${randomParam}`;
-      
-      const response = await api.post(endpointWithParam, { username });
+      // Send the username in the request body following the DTO structure
+      // Remove the query parameter approach that was causing the 400 Bad Request
+      const response = await api.post(endpoint, { username });
       return response;
     } catch (error) {
       // If we've hit a rate limit (429), wait and retry
