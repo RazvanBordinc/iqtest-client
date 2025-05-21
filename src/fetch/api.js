@@ -1,4 +1,5 @@
 // src/fetch/api.js
+import logger from '@/utils/logger';
 
 // DIRECT BACKEND ACCESS CONFIGURATION
 // Always use the direct backend URL instead of proxying through Next.js
@@ -9,8 +10,11 @@ const BACKEND_URL = typeof window === "undefined"
   : (process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com');
 
 // Log configuration for debugging
-console.log('Backend URL configured as:', BACKEND_URL);
-console.log('Environment:', process.env.NODE_ENV || 'development');
+logger.info('Backend configuration initialized', {
+  backendUrl: BACKEND_URL,
+  environment: process.env.NODE_ENV || 'development',
+  isServer: typeof window === "undefined" 
+});
 
 // Backend status tracking (simplified implementation to maintain compatibility)
 let backendStatusListeners = [];
@@ -102,32 +106,59 @@ export const clientFetch = async (endpoint, options = {}) => {
     
     fetchOptions.signal = controller.signal;
     
-    // Detailed logging for debugging network issues
-    console.log('Fetch request options:', JSON.stringify({
-      method: fetchOptions.method,
-      headers: fetchOptions.headers,
-      body: fetchOptions.body,
+    // Log the API request
+    logger.api(endpoint, 0, {
+      method: fetchOptions.method || 'GET',
+      url,
+      event: 'api_request_start',
+      headers: { 
+        // Only log non-sensitive headers
+        ...(fetchOptions.headers?.['Content-Type'] && { 'Content-Type': fetchOptions.headers['Content-Type'] }),
+        ...(fetchOptions.headers?.['X-Offline-Mode'] && { 'X-Offline-Mode': fetchOptions.headers['X-Offline-Mode'] }),
+      },
+      // Don't log body for privacy
+      hasBody: !!fetchOptions.body,
       credentials: fetchOptions.credentials,
       mode: fetchOptions.mode
-    }));
+    });
     
     // Perform the actual fetch
+    const startTime = performance.now();
     const response = await fetch(url, fetchOptions);
+    const duration = performance.now() - startTime;
     clearTimeout(timeoutId);
     
-    // Log response headers for debugging
+    // Log response details
     const responseHeaders = {};
     response.headers.forEach((value, key) => {
-      responseHeaders[key] = value;
+      // Only collect non-sensitive headers
+      if (['content-type', 'cache-control', 'date'].includes(key.toLowerCase())) {
+        responseHeaders[key] = value;
+      }
     });
-    console.log('Response status:', response.status, response.statusText);
-    console.log('Response headers:', responseHeaders);
+    
+    // Log the successful response
+    logger.api(endpoint, response.status, {
+      method: fetchOptions.method || 'GET',
+      event: 'api_response_received',
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+      duration: `${Math.round(duration)}ms`
+    });
 
     if (response.ok) {
       return await handleResponse(response);
     }
     
-    console.warn(`Client-side API request failed: ${response.status} ${response.statusText} for URL: ${url}`);
+    // Log error response
+    logger.api(endpoint, response.status, {
+      method: fetchOptions.method || 'GET',
+      event: 'api_request_error',
+      status: response.status,
+      statusText: response.statusText,
+      url: url.split('?')[0] // Exclude query params for privacy
+    });
     
     // Handle authentication errors
     if (response.status === 401) {
@@ -135,6 +166,11 @@ export const clientFetch = async (endpoint, options = {}) => {
       if (typeof window !== 'undefined' && 
           window.location.pathname !== "/" && 
           window.location.pathname !== "/auth") {
+        logger.info('Authentication required, redirecting to auth page', {
+          event: 'auth_redirect',
+          from: window.location.pathname,
+          status: 401
+        });
         window.location.href = "/auth";
       }
       throw new Error("Authentication required");
@@ -142,12 +178,19 @@ export const clientFetch = async (endpoint, options = {}) => {
     
     // Handle rate limiting errors (429 Too Many Requests)
     if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After');
+      
+      logger.warn('Rate limit exceeded', {
+        event: 'rate_limit',
+        endpoint,
+        retryAfter: retryAfter || 'unknown'
+      });
+      
       const error = new Error("Rate limit exceeded. Please try again later.");
       error.status = 429;
       error.isRateLimit = true;
       
       // Try to extract the retry-after header if present
-      const retryAfter = response.headers.get('Retry-After');
       if (retryAfter) {
         error.retryAfter = parseInt(retryAfter, 10);
       }
@@ -157,7 +200,6 @@ export const clientFetch = async (endpoint, options = {}) => {
     
     // Get entire response text first for debugging
     const responseText = await response.text();
-    console.log('Raw response text:', responseText);
     
     // Try to parse as JSON
     let errorMessage;
@@ -207,11 +249,20 @@ export const clientFetch = async (endpoint, options = {}) => {
   } catch (error) {
     // Handle abort errors
     if (error.name === 'AbortError') {
-      console.error('Request timed out after 15 seconds');
+      logger.warn('Request timed out', {
+        event: 'api_timeout',
+        endpoint,
+        method: fetchOptions.method || 'GET',
+        timeout: '15000ms'
+      });
       
       // For specific auth endpoints, return a fallback response
       if (isAuthEndpoint && endpoint.includes('check-username')) {
-        console.log('Returning fallback response for username check after timeout');
+        logger.info('Returning fallback response for username check after timeout', {
+          event: 'fallback_response',
+          endpoint,
+          reason: 'timeout'
+        });
         return { 
           message: "Username check completed", 
           exists: false
@@ -225,11 +276,21 @@ export const clientFetch = async (endpoint, options = {}) => {
     
     // For network errors (like CORS), provide more context
     if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
-      console.error('Network error, possibly CORS related:', error);
+      logger.error('Network error detected', {
+        event: 'network_error',
+        endpoint,
+        method: fetchOptions.method || 'GET',
+        message: error.message,
+        possibleCause: 'CORS or backend unavailable'
+      });
       
       // For specific auth endpoints, return a fallback response
       if (isAuthEndpoint && endpoint.includes('check-username')) {
-        console.log('Returning fallback response for username check after network error');
+        logger.info('Returning fallback response for username check after network error', {
+          event: 'fallback_response',
+          endpoint,
+          reason: 'network_error'
+        });
         return { 
           message: "Username check completed", 
           exists: false
@@ -242,7 +303,12 @@ export const clientFetch = async (endpoint, options = {}) => {
       throw networkError;
     }
     
-    console.error('Client-side API request error:', error);
+    // Generic error handling
+    logger.exception(error, {
+      event: 'api_request_exception',
+      endpoint,
+      method: fetchOptions.method || 'GET'
+    });
     
     // For specific auth endpoints, return a fallback response on error
     if (isAuthEndpoint && endpoint.includes('check-username')) {
@@ -298,17 +364,43 @@ export const serverFetch = async (endpoint, options = {}) => {
   }
 
   try {
+    // Log the server-side API request
+    logger.api(endpoint, 0, {
+      method: options.method || 'GET',
+      url: url.split('?')[0], // Exclude query params for privacy
+      event: 'server_api_request_start',
+      isServer: true
+    });
+    
+    const startTime = Date.now(); // Use Date.now() on server-side
     const response = await fetch(url, {
       ...options,
       headers,
       cache: options.cache || "no-store",
+    });
+    const duration = Date.now() - startTime;
+
+    // Log the response
+    logger.api(endpoint, response.status, {
+      method: options.method || 'GET',
+      event: 'server_api_response',
+      status: response.status,
+      statusText: response.statusText,
+      duration: `${duration}ms`,
+      isServer: true
     });
 
     if (response.ok) {
       return await handleResponse(response);
     }
 
-    console.error(`Server-side API request failed: ${response.status} ${response.statusText}`);
+    // Log the error response
+    logger.error(`Server API error: ${response.status}`, {
+      event: 'server_api_error',
+      endpoint,
+      status: response.status,
+      statusText: response.statusText
+    });
     
     // Try to get error details from response
     let errorMessage;
@@ -330,7 +422,13 @@ export const serverFetch = async (endpoint, options = {}) => {
     error.data = errorData;
     throw error;
   } catch (error) {
-    console.error('Server-side API request error:', error);
+    // Log the server-side API error
+    logger.exception(error, {
+      event: 'server_api_exception',
+      endpoint,
+      method: options.method || 'GET',
+      isServer: true
+    });
     throw error;
   }
 };
@@ -421,6 +519,12 @@ export const addBackendStatusListener = (callback) => {
 
 // Check backend status (compatibility function - always returns true with direct access)
 export const checkBackendStatus = async () => {
+  // Log the health check
+  logger.info('Backend health check', {
+    event: 'backend_health_check',
+    assumeActive: true,
+    directBackendAccess: true
+  });
   return true; // Backend is always considered active with direct access
 };
 
