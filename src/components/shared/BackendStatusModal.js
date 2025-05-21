@@ -11,62 +11,73 @@ export default function BackendStatusModal() {
   const [estimatedTimeLeft, setEstimatedTimeLeft] = useState(60);
   const [checkingStatus, setCheckingStatus] = useState(false);
   
-  // Listen for backend status changes
+  // Check backend status directly on mount
   useEffect(() => {
     let timerInterval = null;
     let checkInterval = null;
     
     const checkBackendStatus = async () => {
       setCheckingStatus(true);
-      const isActive = await api.checkBackendStatus();
-      setCheckingStatus(false);
       
-      if (isActive) {
-        // Backend is active, hide modal
-        setShowModal(false);
-        clearInterval(timerInterval);
+      try {
+        // Directly check backend health endpoint
+        const response = await fetch(`${api.baseUrl}/api/health`, { 
+          method: 'GET',
+          cache: 'no-store',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          // Backend is active, hide modal
+          setShowModal(false);
+          clearInterval(timerInterval);
+          clearInterval(checkInterval);
+        } else {
+          // Backend returned error status, show modal
+          setShowModal(true);
+        }
+      } catch (error) {
+        // Connection error, backend might be starting up
+        console.warn('Backend connection error:', error);
+        setShowModal(true);
+      } finally {
+        setCheckingStatus(false);
       }
     };
-    
-    // Set up status listener
-    const unsubscribe = api.addBackendStatusListener(({ isActive, spinUpInProgress }) => {
-      setShowModal(spinUpInProgress && !isActive);
-      
-      if (spinUpInProgress && !isActive) {
-        // Start countdown timer
-        if (!timerInterval) {
-          setTimerInSeconds(60);
-          timerInterval = setInterval(() => {
-            setTimerInSeconds(prev => {
-              if (prev <= 1) {
-                // When timer reaches 0, check status again
-                checkBackendStatus();
-                return 60; // Reset timer
-              }
-              return prev - 1;
-            });
-          }, 1000);
-          
-          // Also check status periodically
-          checkInterval = setInterval(() => {
-            checkBackendStatus();
-          }, 5000); // Check every 5 seconds
-        }
-      } else {
-        // Clear intervals when not needed
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-        if (checkInterval) {
-          clearInterval(checkInterval);
-          checkInterval = null;
-        }
+
+    // Set up status listener (Using the compatibility adapter)
+    const unsubscribe = api.addBackendStatusListener(({ isActive }) => {
+      // With direct access, isActive should always be true
+      // But we'll do a real check to make sure
+      if (!isActive) {
+        checkBackendStatus();
       }
     });
     
     // Initial check
     checkBackendStatus();
+    
+    // Set up regular checks if the modal is shown
+    if (showModal) {
+      // Start countdown timer
+      setTimerInSeconds(60);
+      timerInterval = setInterval(() => {
+        setTimerInSeconds(prev => {
+          if (prev <= 1) {
+            // When timer reaches 0, check status again
+            checkBackendStatus();
+            return 60; // Reset timer
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      // Also check status periodically
+      checkInterval = setInterval(() => {
+        checkBackendStatus();
+      }, 5000); // Check every 5 seconds
+    }
     
     return () => {
       unsubscribe();

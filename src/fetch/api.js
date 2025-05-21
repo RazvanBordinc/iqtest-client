@@ -12,6 +12,10 @@ const BACKEND_URL = typeof window === "undefined"
 console.log('Backend URL configured as:', BACKEND_URL);
 console.log('Environment:', process.env.NODE_ENV || 'development');
 
+// Backend status tracking (simplified implementation to maintain compatibility)
+let backendStatusListeners = [];
+let isBackendActive = true; // Assume backend is always active with direct access
+
 // Create headers with auth token if available
 export const createHeaders = (additionalHeaders = {}) => {
   const headers = {
@@ -174,6 +178,21 @@ async function handleResponse(response) {
   return await response.text();
 }
 
+// Add a status change listener (compatibility function)
+export const addBackendStatusListener = (callback) => {
+  backendStatusListeners.push(callback);
+  // Immediately notify with current status (always active with direct backend)
+  callback({ isActive: true, spinUpInProgress: false });
+  return () => {
+    backendStatusListeners = backendStatusListeners.filter(cb => cb !== callback);
+  };
+};
+
+// Check backend status (compatibility function - always returns true with direct access)
+export const checkBackendStatus = async () => {
+  return true; // Backend is always considered active with direct access
+};
+
 // Main API object
 const api = {
   get: (endpoint, options = {}) => {
@@ -206,7 +225,12 @@ const api = {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
     return fetchFunction(endpoint, { ...options, method: "DELETE" });
-  }
+  },
+  
+  // Add back the status functions for backwards compatibility
+  addBackendStatusListener,
+  checkBackendStatus,
+  baseUrl: BACKEND_URL
 };
 
 export default api;
