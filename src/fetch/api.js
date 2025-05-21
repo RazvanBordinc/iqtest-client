@@ -261,6 +261,9 @@ export const serverFetch = async (endpoint, options = {}) => {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  // Add a special header for direct backend access to help with rate limiting
+  headers["X-Direct-Backend-Fallback"] = "true";
+
   // Process request body if present for .NET model binding
   if (options.body && typeof options.body === 'string') {
     try {
@@ -400,287 +403,6 @@ export const checkBackendStatus = async () => {
   return true; // Backend is always considered active with direct access
 };
 
-// Universal request function that tries multiple formats and approaches
-export const universalRequest = async (endpoint, data, options = {}) => {
-  const url = constructUrl(endpoint);
-  const method = options.method || 'POST';
-  
-  console.log(`Starting universal request to ${url} with method ${method}`);
-  
-  // Create a properly formatted version of the data based on the endpoint/data
-  let formattedData = formatDataForEndpoint(endpoint, data);
-  
-  // Special case for check-username endpoint - try multiple formats
-  if (endpoint.includes('check-username')) {
-    // Try every possible combination for the check-username endpoint
-    const username = data.username || data.Username;
-    console.log('Using multi-format request for check-username with username:', username);
-    
-    // Format 1: Using PascalCase property name
-    try {
-      console.log('Try format 1: PascalCase property name');
-      const response1 = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ Username: username }),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Format 1 status:', response1.status);
-      if (response1.ok) {
-        const result = await response1.json();
-        console.log('Format 1 success:', result);
-        return result;
-      }
-    } catch (e1) {
-      console.error('Format 1 error:', e1);
-    }
-    
-    // Format 2: Using camelCase property name
-    try {
-      console.log('Try format 2: camelCase property name');
-      const response2 = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ username: username }),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Format 2 status:', response2.status);
-      if (response2.ok) {
-        const result = await response2.json();
-        console.log('Format 2 success:', result);
-        return result;
-      }
-    } catch (e2) {
-      console.error('Format 2 error:', e2);
-    }
-    
-    // Format 3: Try URL-encoded form data with PascalCase property
-    try {
-      console.log('Try format 3: URL-encoded with PascalCase');
-      const formData = new URLSearchParams();
-      formData.append('Username', username);
-      
-      const response3 = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        body: formData.toString(),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Format 3 status:', response3.status);
-      if (response3.ok) {
-        const result = await response3.json();
-        console.log('Format 3 success:', result);
-        return result;
-      }
-    } catch (e3) {
-      console.error('Format 3 error:', e3);
-    }
-    
-    // Format 4: Try URL-encoded form data with camelCase property
-    try {
-      console.log('Try format 4: URL-encoded with camelCase');
-      const formData = new URLSearchParams();
-      formData.append('username', username);
-      
-      const response4 = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        body: formData.toString(),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Format 4 status:', response4.status);
-      if (response4.ok) {
-        const result = await response4.json();
-        console.log('Format 4 success:', result);
-        return result;
-      }
-    } catch (e4) {
-      console.error('Format 4 error:', e4);
-    }
-
-    // If all approaches fail, return fallback response
-    console.warn('All check-username formats failed, returning fallback');
-    return {
-      message: "Username check completed", 
-      exists: false
-    };
-  }
-  
-  // Try multiple approaches in sequence for other endpoints
-  
-  // Approach 1: Standard JSON with properly formatted data
-  try {
-    console.log('Trying properly formatted JSON approach');
-    const formattedResponse = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers
-      },
-      body: JSON.stringify(formattedData),
-      credentials: 'include',
-      mode: 'cors'
-    });
-    
-    console.log('Formatted JSON status:', formattedResponse.status);
-    
-    if (formattedResponse.ok) {
-      try {
-        const responseData = await formattedResponse.json();
-        console.log('Formatted JSON response:', responseData);
-        return responseData;
-      } catch (parseError) {
-        const text = await formattedResponse.text();
-        console.log('Formatted response (text):', text);
-        return { message: text, success: true };
-      }
-    } else {
-      const errorText = await formattedResponse.text();
-      console.log('Formatted JSON error text:', errorText);
-    }
-  } catch (formattedError) {
-    console.error('Formatted JSON error:', formattedError);
-  }
-  
-  // Approach 2: Form URL encoded
-  try {
-    console.log('Trying form URL encoded approach');
-    const formData = new URLSearchParams();
-    
-    // Add all fields to form data (with proper formatting)
-    Object.entries(formattedData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        formData.append(key, value.toString());
-      }
-    });
-    
-    const formResponse = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-        ...options.headers
-      },
-      body: formData.toString(),
-      credentials: 'include',
-      mode: 'cors'
-    });
-    
-    console.log('Form URL encoded status:', formResponse.status);
-    
-    if (formResponse.ok) {
-      try {
-        const responseData = await formResponse.json();
-        console.log('Form URL encoded response:', responseData);
-        return responseData;
-      } catch (parseError) {
-        const text = await formResponse.text();
-        console.log('Form URL encoded response (text):', text);
-        return { message: text, success: true };
-      }
-    } else {
-      const errorText = await formResponse.text();
-      console.log('Form URL encoded error text:', errorText);
-    }
-  } catch (formError) {
-    console.error('Form URL encoded error:', formError);
-  }
-  
-  // Approach 3: Query string (GET only)
-  if (method === 'GET') {
-    try {
-      console.log('Trying query string approach');
-      
-      // Build query string
-      const queryParams = new URLSearchParams();
-      Object.entries(formattedData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          queryParams.append(key, value.toString());
-        }
-      });
-      
-      const queryUrl = `${url}?${queryParams.toString()}`;
-      const queryResponse = await fetch(queryUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          ...options.headers
-        },
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Query approach status:', queryResponse.status);
-      
-      if (queryResponse.ok) {
-        try {
-          const responseData = await queryResponse.json();
-          console.log('Query approach response:', responseData);
-          return responseData;
-        } catch (parseError) {
-          const text = await queryResponse.text();
-          console.log('Query approach response (text):', text);
-          return { message: text, success: true };
-        }
-      } else {
-        const errorText = await queryResponse.text();
-        console.log('Query approach error text:', errorText);
-      }
-    } catch (queryError) {
-      console.error('Query approach error:', queryError);
-    }
-  }
-  
-  // If all approaches fail and it's an auth endpoint, return a fallback response
-  if (endpoint.includes('/auth/')) {
-    console.warn(`All auth request approaches failed for endpoint: ${endpoint}, returning fallback response`);
-    
-    // Check if this is a login endpoint
-    if (endpoint.includes('login')) {
-      // For login, we want to return a dummy token and user info
-      const email = data.email || data.Email || '';
-      const username = email.split('@')[0];
-      
-      return {
-        token: `dummy_token_${Date.now()}`,
-        username: username,
-        email: email,
-        message: "Logged in"
-      };
-    }
-    
-    // For other auth endpoints, return a generic success
-    return {
-      message: "Operation completed",
-      success: true
-    };
-  }
-  
-  // For non-auth endpoints, throw an error
-  throw new Error(`All request approaches failed for endpoint: ${endpoint}`);
-};
-
 // Helper function to format data based on the endpoint
 function formatDataForEndpoint(endpoint, data) {
   // Handle null or undefined data
@@ -735,16 +457,14 @@ const api = {
 
   post: (endpoint, body, options = {}) => {
     const isServer = typeof window === "undefined";
-    
-    // For auth-related endpoints, use the universal request function to try multiple approaches
-    if (endpoint.includes('/auth/')) {
-      return universalRequest(endpoint, body, { method: 'POST', ...options });
-    }
-    
     const fetchFunction = isServer ? serverFetch : clientFetch;
     
     // Process the body for proper .NET model binding
-    const processedBody = prepareRequestBody(body);
+    // For auth endpoints, ensure proper casing
+    const isAuthEndpoint = endpoint.includes('/auth/');
+    const processedBody = isAuthEndpoint 
+      ? formatDataForEndpoint(endpoint, body)
+      : prepareRequestBody(body);
     
     return fetchFunction(endpoint, {
       ...options,
@@ -772,9 +492,6 @@ const api = {
     const fetchFunction = isServer ? serverFetch : clientFetch;
     return fetchFunction(endpoint, { ...options, method: "DELETE" });
   },
-  
-  // Direct access to the universal request function
-  universal: universalRequest,
   
   // Export the normalizeEndpoint function for backward compatibility
   normalizeEndpoint,

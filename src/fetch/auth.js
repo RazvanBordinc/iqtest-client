@@ -1,6 +1,5 @@
 import api, { normalizeEndpoint } from "./api";
 import { setCookie, removeCookie, getCookie } from "@/utils/cookies";
-import { checkUsernameTryAllApproaches } from './checkUsername';
 
 // Helper function to get the correct endpoint path
 const getEndpoint = (path) => {
@@ -23,9 +22,17 @@ export const checkUsername = async (username) => {
     };
   }
   
-  // Use the specialized function that tries 10 different approaches
+  // Use a single, simple approach that matches the backend model
   try {
-    return await checkUsernameTryAllApproaches(username);
+    const endpoint = getEndpoint('/auth/check-username');
+    console.log('Making username check request to:', endpoint);
+    
+    const response = await api.post(endpoint, {
+      Username: username
+    });
+    
+    console.log('Username check response:', response);
+    return response;
   } catch (error) {
     console.error("Username check failed:", error);
     
@@ -50,210 +57,28 @@ export const createUser = async (userData) => {
       Email: userData.email || `${userData.username}@iqtest.local`
     };
     
-    // Also create a lowercase version for testing
-    const lowercaseData = {
-      username: userData.username,
-      password: userData.password,
-      country: userData.country,
-      age: userData.age,
-      email: userData.email || `${userData.username}@iqtest.local`
-    };
-    
     console.log('Creating user with data:', JSON.stringify(formattedData));
     
-    // Approach 1: Standard JSON with PascalCase
-    try {
-      console.log('Trying PascalCase JSON approach');
-      const pascalResponse = await fetch(`${api.baseUrl}/api/auth/create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(formattedData),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('PascalCase JSON status:', pascalResponse.status);
-      if (pascalResponse.ok) {
-        const responseData = await pascalResponse.json();
-        console.log('PascalCase JSON response:', responseData);
-        
-        // Handle successful response
-        if (responseData && responseData.token) {
-          console.log('PascalCase approach successful, using response');
-          
-          // Store token and user data in cookies
-          setCookie("token", responseData.token, 1); // 1 day expiry
-          if (responseData.refreshToken) {
-            setCookie("refreshToken", responseData.refreshToken, 7);
-          }
-          
-          const userDataObj = {
-            username: responseData.username,
-            email: responseData.email,
-            country: responseData.country,
-            age: responseData.age,
-          };
-          setCookie("userData", JSON.stringify(userDataObj), 30);
-          
-          return responseData;
-        }
-      } else {
-        const errorText = await pascalResponse.text();
-        console.log('PascalCase JSON error text:', errorText);
-      }
-    } catch (pascalError) {
-      console.error('PascalCase JSON error:', pascalError);
-    }
+    // Make the request
+    const response = await api.post(endpoint, formattedData);
     
-    // Approach 2: Standard JSON with camelCase
-    try {
-      console.log('Trying camelCase JSON approach');
-      const camelResponse = await fetch(`${api.baseUrl}/api/auth/create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(lowercaseData),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('camelCase JSON status:', camelResponse.status);
-      if (camelResponse.ok) {
-        const responseData = await camelResponse.json();
-        console.log('camelCase JSON response:', responseData);
-        
-        // Handle successful response
-        if (responseData && responseData.token) {
-          console.log('camelCase approach successful, using response');
-          
-          // Store token and user data in cookies
-          setCookie("token", responseData.token, 1);
-          if (responseData.refreshToken) {
-            setCookie("refreshToken", responseData.refreshToken, 7);
-          }
-          
-          const userDataObj = {
-            username: responseData.username,
-            email: responseData.email,
-            country: responseData.country,
-            age: responseData.age,
-          };
-          setCookie("userData", JSON.stringify(userDataObj), 30);
-          
-          return responseData;
-        }
-      } else {
-        const errorText = await camelResponse.text();
-        console.log('camelCase JSON error text:', errorText);
-      }
-    } catch (camelError) {
-      console.error('camelCase JSON error:', camelError);
-    }
-    
-    // Approach 3: Form URL encoded
-    try {
-      console.log('Trying form URL encoded approach');
-      const formData = new URLSearchParams();
-      
-      // Add all fields to form data
-      Object.entries(formattedData).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-      
-      const formResponse = await fetch(`${api.baseUrl}/api/auth/create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        body: formData.toString(),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Form URL encoded status:', formResponse.status);
-      if (formResponse.ok) {
-        const responseData = await formResponse.json();
-        console.log('Form URL encoded response:', responseData);
-        
-        // Handle successful response
-        if (responseData && responseData.token) {
-          console.log('Form URL encoded approach successful, using response');
-          
-          // Store token and user data in cookies
-          setCookie("token", responseData.token, 1);
-          if (responseData.refreshToken) {
-            setCookie("refreshToken", responseData.refreshToken, 7);
-          }
-          
-          const userDataObj = {
-            username: responseData.username,
-            email: responseData.email,
-            country: responseData.country,
-            age: responseData.age,
-          };
-          setCookie("userData", JSON.stringify(userDataObj), 30);
-          
-          return responseData;
-        }
-      } else {
-        const errorText = await formResponse.text();
-        console.log('Form URL encoded error text:', errorText);
-      }
-    } catch (formError) {
-      console.error('Form URL encoded error:', formError);
-    }
-    
-    // Fall back to API client if all direct fetch approaches fail
-    try {
-      console.log('Falling back to API client with PascalCase');
-      const response = await api.post(endpoint, formattedData);
-      
-      // Store token and user data in cookies if available
-      if (response.token) {
-        setCookie("token", response.token, 1); // 1 day expiry
-        if (response.refreshToken) {
-          setCookie("refreshToken", response.refreshToken, 7); // 7 days for refresh token
-        }
-        const userDataObj = {
-          username: response.username,
-          email: response.email,
-          country: response.country,
-          age: response.age,
-        };
-        setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
+    // Store token and user data in cookies if available
+    if (response.token) {
+      setCookie("token", response.token, 1); // 1 day expiry
+      if (response.refreshToken) {
+        setCookie("refreshToken", response.refreshToken, 7);
       }
       
-      return response;
-    } catch (apiError) {
-      console.error('API client error:', apiError);
+      const userDataObj = {
+        username: response.username,
+        email: response.email,
+        country: response.country,
+        age: response.age,
+      };
+      setCookie("userData", JSON.stringify(userDataObj), 30);
     }
     
-    // If all approaches fail, return a dummy success response
-    console.warn("All user creation approaches failed, returning dummy response");
-    
-    // Create a fake response to let users continue in production
-    // This is not ideal but prevents blocking users completely
-    const fakeResponse = {
-      token: "dummy_token_" + Date.now(),
-      username: userData.username,
-      email: userData.email || `${userData.username}@iqtest.local`,
-      country: userData.country,
-      age: userData.age,
-      message: "Account created (offline mode)"
-    };
-    
-    // Store the dummy data
-    setCookie("token", fakeResponse.token, 1);
-    setCookie("userData", JSON.stringify(fakeResponse), 1);
-    
-    console.log("Returning fallback user data due to API error");
-    return fakeResponse;
+    return response;
   } catch (error) {
     console.error("User creation failed:", error);
     
@@ -287,255 +112,27 @@ export const loginWithPassword = async (credentials) => {
       Password: credentials.password
     };
     
-    // Also create a lowercase version for testing
-    const lowercaseCredentials = {
-      email: credentials.email,
-      password: credentials.password
-    };
-    
     console.log('Attempting login with credentials:', JSON.stringify(formattedCredentials));
     
-    // Approach 1: Standard JSON with PascalCase
-    try {
-      console.log('Trying PascalCase JSON login approach');
-      const pascalResponse = await fetch(`${api.baseUrl}/api/auth/login-with-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(formattedCredentials),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('PascalCase JSON login status:', pascalResponse.status);
-      if (pascalResponse.ok) {
-        const responseData = await pascalResponse.json();
-        console.log('PascalCase JSON login response:', responseData);
-        
-        // Handle successful response
-        if (responseData && responseData.token) {
-          console.log('PascalCase login approach successful, using response');
-          
-          // Store token and user data in cookies
-          setCookie("token", responseData.token, 1); // 1 day expiry
-          if (responseData.refreshToken) {
-            setCookie("refreshToken", responseData.refreshToken, 7);
-          }
-          
-          const userDataObj = {
-            username: responseData.username,
-            email: responseData.email,
-            country: responseData.country,
-            age: responseData.age,
-          };
-          setCookie("userData", JSON.stringify(userDataObj), 30);
-          
-          return responseData;
-        }
-      } else {
-        const errorText = await pascalResponse.text();
-        console.log('PascalCase JSON login error text:', errorText);
+    // Make the request
+    const response = await api.post(endpoint, formattedCredentials);
+    
+    // Store token and user data in cookies
+    if (response.token) {
+      setCookie("token", response.token, 1); // 1 day expiry
+      if (response.refreshToken) {
+        setCookie("refreshToken", response.refreshToken, 7); // 7 days for refresh token
       }
-    } catch (pascalError) {
-      console.error('PascalCase JSON login error:', pascalError);
+      const userDataObj = {
+        username: response.username,
+        email: response.email,
+        country: response.country,
+        age: response.age,
+      };
+      setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
     }
     
-    // Approach 2: Standard JSON with camelCase
-    try {
-      console.log('Trying camelCase JSON login approach');
-      const camelResponse = await fetch(`${api.baseUrl}/api/auth/login-with-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(lowercaseCredentials),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('camelCase JSON login status:', camelResponse.status);
-      if (camelResponse.ok) {
-        const responseData = await camelResponse.json();
-        console.log('camelCase JSON login response:', responseData);
-        
-        // Handle successful response
-        if (responseData && responseData.token) {
-          console.log('camelCase login approach successful, using response');
-          
-          // Store token and user data in cookies
-          setCookie("token", responseData.token, 1);
-          if (responseData.refreshToken) {
-            setCookie("refreshToken", responseData.refreshToken, 7);
-          }
-          
-          const userDataObj = {
-            username: responseData.username,
-            email: responseData.email,
-            country: responseData.country,
-            age: responseData.age,
-          };
-          setCookie("userData", JSON.stringify(userDataObj), 30);
-          
-          return responseData;
-        }
-      } else {
-        const errorText = await camelResponse.text();
-        console.log('camelCase JSON login error text:', errorText);
-      }
-    } catch (camelError) {
-      console.error('camelCase JSON login error:', camelError);
-    }
-    
-    // Approach 3: Form URL encoded
-    try {
-      console.log('Trying form URL encoded login approach');
-      const formData = new URLSearchParams();
-      
-      // Add credentials to form data
-      formData.append('Email', credentials.email);
-      formData.append('Password', credentials.password);
-      
-      const formResponse = await fetch(`${api.baseUrl}/api/auth/login-with-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        body: formData.toString(),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Form URL encoded login status:', formResponse.status);
-      if (formResponse.ok) {
-        const responseData = await formResponse.json();
-        console.log('Form URL encoded login response:', responseData);
-        
-        // Handle successful response
-        if (responseData && responseData.token) {
-          console.log('Form URL encoded login approach successful, using response');
-          
-          // Store token and user data in cookies
-          setCookie("token", responseData.token, 1);
-          if (responseData.refreshToken) {
-            setCookie("refreshToken", responseData.refreshToken, 7);
-          }
-          
-          const userDataObj = {
-            username: responseData.username,
-            email: responseData.email,
-            country: responseData.country,
-            age: responseData.age,
-          };
-          setCookie("userData", JSON.stringify(userDataObj), 30);
-          
-          return responseData;
-        }
-      } else {
-        const errorText = await formResponse.text();
-        console.log('Form URL encoded login error text:', errorText);
-      }
-    } catch (formError) {
-      console.error('Form URL encoded login error:', formError);
-    }
-    
-    // Approach 4: Try regular login endpoint as fallback
-    try {
-      console.log('Trying regular login endpoint as fallback');
-      const regularLoginResponse = await fetch(`${api.baseUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(formattedCredentials),
-        credentials: 'include',
-        mode: 'cors'
-      });
-      
-      console.log('Regular login endpoint status:', regularLoginResponse.status);
-      if (regularLoginResponse.ok) {
-        const responseData = await regularLoginResponse.json();
-        console.log('Regular login endpoint response:', responseData);
-        
-        // Handle successful response
-        if (responseData && responseData.token) {
-          console.log('Regular login endpoint approach successful, using response');
-          
-          // Store token and user data in cookies
-          setCookie("token", responseData.token, 1);
-          if (responseData.refreshToken) {
-            setCookie("refreshToken", responseData.refreshToken, 7);
-          }
-          
-          const userDataObj = {
-            username: responseData.username,
-            email: responseData.email,
-            country: responseData.country,
-            age: responseData.age,
-          };
-          setCookie("userData", JSON.stringify(userDataObj), 30);
-          
-          return responseData;
-        }
-      } else {
-        const errorText = await regularLoginResponse.text();
-        console.log('Regular login endpoint error text:', errorText);
-      }
-    } catch (regularLoginError) {
-      console.error('Regular login endpoint error:', regularLoginError);
-    }
-    
-    // Fall back to API client if all direct fetch approaches fail
-    try {
-      console.log('Falling back to API client with PascalCase');
-      const response = await api.post(endpoint, formattedCredentials);
-      
-      // Store token and user data in cookies
-      if (response.token) {
-        setCookie("token", response.token, 1); // 1 day expiry
-        if (response.refreshToken) {
-          setCookie("refreshToken", response.refreshToken, 7); // 7 days for refresh token
-        }
-        const userDataObj = {
-          username: response.username,
-          email: response.email,
-          country: response.country,
-          age: response.age,
-        };
-        setCookie("userData", JSON.stringify(userDataObj), 30); // 30 days for preferences
-      }
-      
-      return response;
-    } catch (apiError) {
-      console.error('API client login error:', apiError);
-    }
-    
-    // If all approaches fail, create an offline session
-    console.log("All login approaches failed, providing fallback session");
-    
-    // Extract username from email (assuming format: username@iqtest.local)
-    const username = credentials.email.split('@')[0];
-    
-    // Create a fake login response
-    const fakeResponse = {
-      token: "dummy_login_token_" + Date.now(),
-      username: username,
-      email: credentials.email,
-      country: "Unknown",
-      age: 30,
-      message: "Logged in (offline mode)"
-    };
-    
-    // Store temporary session data
-    setCookie("token", fakeResponse.token, 1);
-    setCookie("userData", JSON.stringify(fakeResponse), 1);
-    
-    console.log("Created fallback login session");
-    return fakeResponse;
+    return response;
   } catch (error) {
     console.error("Login failed:", error);
     
@@ -543,6 +140,7 @@ export const loginWithPassword = async (credentials) => {
     if (error.status === 400 && error.message.includes("Invalid credentials")) {
       // This could be either wrong password or non-existent user
       error.isInvalidCredentials = true;
+      throw error;
     }
     
     // If this is a non-specific login error for existing users, create a temporary session
