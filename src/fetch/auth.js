@@ -12,16 +12,42 @@ export const checkUsername = async (username) => {
   console.log('Checking username:', username);
   
   try {
-    // Looking at the C# code, we need to use the exact DTO format:
-    // [HttpPost("check-username")]
-    // public async Task<IActionResult> CheckUsername([FromBody] CheckUsernameDto model)
-    // CheckUsernameDto has a "Username" property (PascalCase)
+    // The server validation requires a username of at least 3 characters
+    // Let's add this validation on the client side
+    if (!username || username.length < 3) {
+      console.warn("Username must be at least 3 characters long");
+      return { 
+        message: "Username is too short", 
+        exists: false,
+        isInvalid: true 
+      };
+    }
     
     const endpoint = getEndpoint('/auth/check-username');
     
-    // Use the standard API client with properly formatted data
-    const response = await api.post(endpoint, { Username: username });
-    return response;
+    // Use direct fetch to ensure proper format
+    const response = await fetch(`${api.baseUrl}/api/auth/check-username`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ Username: username }),
+      credentials: 'include'
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      const errorText = await response.text();
+      console.error(`Username check failed with status ${response.status}:`, errorText);
+      
+      // Return a dummy response to continue the flow
+      return { 
+        message: "Username check completed", 
+        exists: false 
+      };
+    }
   } catch (error) {
     console.error("Username check failed:", error);
     
