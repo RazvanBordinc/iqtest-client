@@ -16,7 +16,7 @@ export async function GET() {
   // Get the backend URL from environment variables
   const backendUrl = process.env.NEXT_SERVER_API_URL || 
     (process.env.NODE_ENV === 'production' 
-      ? (process.env.BACKEND_API_URL || 'https://iqtest-server.onrender.com')
+      ? (process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com')
       : 'http://backend:5164');
 
   console.log('Health check using backend URL:', backendUrl);

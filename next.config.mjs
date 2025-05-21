@@ -7,8 +7,19 @@ const nextConfig = {
     // For server-side: default to Docker service for local dev, or API URL for prod
     NEXT_SERVER_API_URL: process.env.NEXT_SERVER_API_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? process.env.BACKEND_API_URL  // Use a production fallback if available
-        : 'http://backend:5164')       // Use Docker service name for local dev
+        ? (process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com')  // Use production URL with fallback
+        : 'http://backend:5164'),      // Use Docker service name for local dev
+    
+    // Add a direct backend URL for client-side fallback
+    NEXT_PUBLIC_DIRECT_BACKEND_URL: process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com',
+    
+    // Add deployment info for debugging
+    NEXT_PUBLIC_DEPLOYMENT_INFO: JSON.stringify({
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      backend: process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com',
+      frontend: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+    })
   },
   
   // Configure API routes to be proxied to the backend
@@ -18,25 +29,46 @@ const nextConfig = {
     // Get the backend URL for proxying API requests
     const backendUrl = process.env.NEXT_SERVER_API_URL || 
       (process.env.NODE_ENV === 'production'
-        ? (process.env.BACKEND_API_URL || 'https://iqtest-server.onrender.com')
+        ? (process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com') // Updated default
         : 'http://backend:5164');
         
     console.log('Backend URL for rewrites:', backendUrl);
     
-    return [
-      // Special rule to exclude /api/health - keep local implementation
-      {
-        source: '/api/health',
-        destination: '/api/health',
-      },
-      
-      // Proxy all API requests to the backend, ensuring we don't double up on /api
-      {
-        source: '/api/:path*',
-        // Simplified destination without complex condition for safer path construction
-        destination: `${backendUrl}/api/:path*`,
-      },
-    ];
+    // Handle both production and development environments
+    if (process.env.NODE_ENV === 'production') {
+      // In production (Vercel), use a hybrid approach with rewrites and fallbacks
+      return [
+        // Local health endpoint always takes precedence
+        {
+          source: '/api/health',
+          destination: '/api/health',
+        },
+        
+        // Forward all API requests to the backend
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        },
+        
+        // Add a fallback for direct access without /api prefix for development tools
+        {
+          source: '/_next/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        }
+      ];
+    } else {
+      // In development (local), use a simpler approach
+      return [
+        {
+          source: '/api/health',
+          destination: '/api/health',
+        },
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        }
+      ];
+    }
   },
   // Enable production optimizations
   reactStrictMode: true,
