@@ -56,7 +56,7 @@ export default function OfflineIndicator() {
             <div className="flex items-center gap-2 text-amber-800">
               <CloudOff className="h-5 w-5" />
               <p>
-                <span className="font-bold">Offline Mode Active:</span> Some features may be limited and your progress won't be saved to the server.
+                <span className="font-bold">Offline Mode Active:</span> Some features may be limited and your progress won&apos;t be saved to the server.
               </p>
             </div>
             <button
