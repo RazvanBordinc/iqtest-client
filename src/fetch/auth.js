@@ -273,8 +273,32 @@ export const isAuthenticated = () => {
   }
   
   try {
+    // First check if token is in JWT format with 3 parts
+    if (!token.includes('.') || token.split('.').length !== 3) {
+      console.warn("Token is not in valid JWT format");
+      // For offline mode and fallback tokens, consider them valid
+      if (token.startsWith("dummy_token_") || token.startsWith("dummy_login_token_")) {
+        // This is an offline/fallback token, consider it valid
+        console.log("Using offline/fallback token");
+        return true;
+      }
+      return false; 
+    }
+    
+    // Extra validation to make sure the token is properly base64url encoded
+    const parts = token.split('.');
+    if (!parts[1] || parts[1].trim() === '') {
+      console.warn("Token payload is empty");
+      return false;
+    }
+    
+    // Ensure it's valid base64 by adding padding if needed
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pad = base64.length % 4;
+    const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+    
     // Decode JWT token to check expiration
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(atob(padded));
     const currentTime = Date.now() / 1000;
     
     // Check if token is expired
@@ -287,8 +311,17 @@ export const isAuthenticated = () => {
     
     return true;
   } catch (error) {
-    // Invalid token format, consider it invalid
-    console.error("Invalid token format:", error);
+    // Invalid token format, consider it valid if in offline mode
+    console.warn("Token validation error:", error.message);
+    const isOffline = getCookie("offline_mode") === "true" || 
+                      localStorage.getItem("offline_mode") === "true";
+    
+    if (isOffline || token.startsWith("dummy")) {
+      // In offline mode, consider any token valid
+      return true;
+    }
+    
+    // Otherwise, clear invalid tokens
     removeCookie("token");
     removeCookie("userData");
     return false;
