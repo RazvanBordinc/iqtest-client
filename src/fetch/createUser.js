@@ -15,7 +15,6 @@ export async function createUserMultiFormat(userData) {
   const formattedData = {
     Username: userData.username,
     Password: userData.password,
-    Email: userData.email || `${userData.username}@iqtest.local`,
     Country: userData.country,
     Age: userData.age
   };
@@ -24,7 +23,6 @@ export async function createUserMultiFormat(userData) {
   const lowercaseData = {
     username: userData.username,
     password: userData.password,
-    email: userData.email || `${userData.username}@iqtest.local`,
     country: userData.country,
     age: userData.age
   };
@@ -60,7 +58,6 @@ export async function createUserMultiFormat(userData) {
         
         const userDataObj = {
           username: data.username,
-          email: data.email,
           country: data.country,
           age: data.age
         };
@@ -106,7 +103,6 @@ export async function createUserMultiFormat(userData) {
         
         const userDataObj = {
           username: data.username,
-          email: data.email,
           country: data.country,
           age: data.age
         };
@@ -161,7 +157,6 @@ export async function createUserMultiFormat(userData) {
         
         const userDataObj = {
           username: data.username,
-          email: data.email,
           country: data.country,
           age: data.age
         };
@@ -207,7 +202,6 @@ export async function createUserMultiFormat(userData) {
         
         const userDataObj = {
           username: data.username,
-          email: data.email,
           country: data.country,
           age: data.age
         };
@@ -255,7 +249,6 @@ export async function createUserMultiFormat(userData) {
         
         const userDataObj = {
           username: data.username,
-          email: data.email,
           country: data.country,
           age: data.age
         };
@@ -303,7 +296,6 @@ export async function createUserMultiFormat(userData) {
         
         const userDataObj = {
           username: data.username,
-          email: data.email,
           country: data.country,
           age: data.age
         };
@@ -326,7 +318,6 @@ export async function createUserMultiFormat(userData) {
   const offlineUser = {
     token: "dummy_token_" + Date.now(),
     username: userData.username,
-    email: userData.email || `${userData.username}@iqtest.local`,
     country: userData.country,
     age: userData.age,
     message: "User created in offline mode"
@@ -338,7 +329,6 @@ export async function createUserMultiFormat(userData) {
   
   const userDataObj = {
     username: offlineUser.username,
-    email: offlineUser.email,
     country: offlineUser.country,
     age: offlineUser.age
   };
