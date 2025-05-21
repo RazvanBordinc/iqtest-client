@@ -1,16 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    // For client-side: default to relative path for API proxy
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
-    
     // For server-side: default to Docker service for local dev, or API URL for prod
     NEXT_SERVER_API_URL: process.env.NEXT_SERVER_API_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? (process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com')  // Use production URL with fallback
-        : 'http://backend:5164'),      // Use Docker service name for local dev
+        ? (process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com')
+        : 'http://backend:5164'),
     
-    // Add a direct backend URL for client-side fallback
+    // Direct backend URL for client-side direct access
     NEXT_PUBLIC_DIRECT_BACKEND_URL: process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com',
     
     // Add deployment info for debugging
@@ -22,47 +19,8 @@ const nextConfig = {
     })
   },
   
-  // Configure API routes to be proxied to the backend
-  async rewrites() {
-    console.log('Environment:', process.env.NODE_ENV);
-    
-    // Get the backend URL for proxying API requests
-    const backendUrl = process.env.NEXT_SERVER_API_URL || 
-      (process.env.NODE_ENV === 'production'
-        ? (process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com') // Updated default
-        : 'http://backend:5164');
-        
-    console.log('Backend URL for rewrites:', backendUrl);
-    
-    // Configure a simple, explicit rewrite system for Vercel
-    const rewrites = [];
-    
-    // Add local API routes first (these are implemented in Next.js)
-    rewrites.push({
-      source: '/api/health',
-      destination: '/api/health'
-    });
-    
-    // Our custom proxy implementation route
-    rewrites.push({
-      source: '/api/proxy/:path*',
-      destination: '/api/proxy/:path*'
-    });
-    
-    // Our direct API implementation route
-    rewrites.push({
-      source: '/api/direct/:path*',
-      destination: '/api/direct/:path*'
-    });
-    
-    // Default backend proxy for all other API routes
-    rewrites.push({
-      source: '/api/:path*',
-      destination: `${backendUrl}/api/:path*`
-    });
-    
-    return rewrites;
-  },
+  // Note: No rewrites - using direct backend access instead
+  
   // Enable production optimizations
   reactStrictMode: true,
   poweredByHeader: false,
