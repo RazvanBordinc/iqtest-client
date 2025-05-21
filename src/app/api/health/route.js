@@ -21,19 +21,25 @@ export async function GET() {
 
   console.log('Health check using backend URL:', backendUrl);
 
-  // Try to connect to the backend health endpoint
+  // Try multiple methods to connect to the backend
   let backendStatus = 'unknown';
   let backendError = null;
+  
+  // Try the fastest method first - direct backend health check
   try {
-    // Make a request to the backend health endpoint with a short timeout
-    const backendHealthUrl = `${backendUrl}/api/health`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    console.log('Attempting direct health check to:', `${backendUrl}/api/health`);
     
-    const backendResponse = await fetch(backendHealthUrl, {
+    // Make a request to the backend health endpoint with a short timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const backendResponse = await fetch(`${backendUrl}/api/health`, {
       method: 'GET',
       cache: 'no-store',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Health-Check': 'true'
+      },
       signal: controller.signal,
       next: { revalidate: 0 },
     });
@@ -50,13 +56,52 @@ export async function GET() {
         backendStatus = 'degraded';
       }
     } else {
-      backendStatus = 'down';
+      console.warn(`Direct health check failed with status ${backendResponse.status}. Trying alternative method...`);
+      backendStatus = 'potentially-down';
       backendError = `HTTP ${backendResponse.status}: ${backendResponse.statusText}`;
+      
+      // Try with test types as a fallback
+      try {
+        const testTypesResponse = await fetch(`${backendUrl}/api/test/types`, {
+          method: 'GET',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+        });
+        
+        if (testTypesResponse.ok) {
+          backendStatus = 'up';
+          backendError = null;
+        } else {
+          backendStatus = 'down';
+          backendError = `Test types check failed: ${testTypesResponse.status}`;
+        }
+      } catch (fallbackError) {
+        // Keep the status from the first attempt
+        console.error('Fallback health check failed:', fallbackError);
+      }
     }
   } catch (error) {
     backendStatus = 'down';
     backendError = error.message || 'Unable to reach backend';
     console.error('Backend health check failed:', error);
+    
+    // One more attempt with test endpoint
+    try {
+      const testResponse = await fetch(`${backendUrl}/api/test/types`, {
+        method: 'GET',
+        cache: 'no-store',
+        next: { revalidate: 0 },
+        signal: AbortSignal.timeout(5000),
+      });
+      
+      if (testResponse.ok) {
+        backendStatus = 'up';
+        backendError = null;
+      }
+    } catch (testError) {
+      // If this fails too, we've already set status to down
+      console.error('Test endpoint check failed too:', testError);
+    }
   }
 
   return NextResponse.json(

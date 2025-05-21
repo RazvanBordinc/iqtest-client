@@ -293,29 +293,60 @@ export const clientFetch = async (endpoint, options = {}, retryCount = 0) => {
       throw new Error("Authentication required");
     }
     
-    // If we're in Vercel production and the proxy API request failed with 404,
-    // try a direct backend request as a fallback
-    if (isVercelProduction && response.status === 404 && retryCount < MAX_RETRIES) {
-      console.log('Attempting direct backend access as fallback (retry attempt: ' + (retryCount + 1) + ')');
+    // If the proxy API request failed with 404 (and we're under the retry limit),
+    // try fallback strategies
+    if (response.status === 404 && retryCount < MAX_RETRIES) {
+      console.log('API proxy returned 404, trying fallback strategies (attempt ' + (retryCount + 1) + ')');
       
-      // For endpoints like /api/auth/check-username, we need to extract the real endpoint path
-      let directEndpoint = cleanEndpoint;
+      // For endpoints like /api/auth/check-username, extract the real endpoint path
+      let path = cleanEndpoint;
       
-      // If the direct endpoint starts with 'api/', remove it to avoid double api/
-      if (directEndpoint.startsWith('api/')) {
-        directEndpoint = directEndpoint.substring(4);
+      // If the path starts with 'api/', remove it to avoid double api/
+      if (path.startsWith('api/')) {
+        path = path.substring(4);
       }
       
-      // Construct direct URL to backend using the environment variable
-      const directBackendUrl = `${DIRECT_BACKEND_URL}/api/${directEndpoint}`;
+      // Strategy 1: Try the built-in proxy route (most reliable, but requires extra route)
+      if (retryCount === 0) {
+        console.log('Strategy 1: Trying built-in Next.js API proxy route');
+        
+        // Build the proxy URL using our custom API route handler
+        const proxyUrl = `/api/proxy/${path}`;
+        console.log('Trying proxy URL:', proxyUrl);
+        
+        try {
+          const proxyResponse = await fetch(proxyUrl, {
+            ...options,
+            headers: createHeaders(options.headers),
+            credentials: "include", // Include cookies
+          });
+          
+          if (proxyResponse.ok) {
+            console.log('Built-in proxy successful!');
+            return await handleResponse(proxyResponse);
+          } else {
+            console.warn('Built-in proxy failed:', proxyResponse.status, proxyResponse.statusText);
+          }
+        } catch (proxyError) {
+          console.error('Built-in proxy error:', proxyError);
+        }
+      }
       
+      // Strategy 2: Try direct backend access
+      console.log('Strategy 2: Trying direct backend access');
+      
+      // Construct direct URL to backend using the environment variable
+      const directBackendUrl = `${DIRECT_BACKEND_URL}/api/${path}`;
       console.log('Trying direct backend URL:', directBackendUrl);
       
       try {
         // Create new options for direct backend access
         const directOptions = {
           ...options,
-          headers: createHeaders(options.headers),
+          headers: {
+            ...createHeaders(options.headers),
+            'X-Direct-Backend-Fallback': 'true',
+          },
           mode: 'cors', // Allow CORS for direct backend access
           credentials: "include", // Include cookies
         };
@@ -325,6 +356,24 @@ export const clientFetch = async (endpoint, options = {}, retryCount = 0) => {
         if (directResponse.ok) {
           console.log('Direct backend access successful!');
           return await handleResponse(directResponse);
+        } else if (directResponse.status === 429) {
+          // Handle rate limiting (429 Too Many Requests)
+          console.warn('Rate limited by backend. Waiting before retry...');
+          
+          // Wait for a bit before retrying (exponential backoff based on retry count)
+          const backoffTime = Math.min(1000 * Math.pow(2, retryCount), 5000);
+          console.log(`Waiting ${backoffTime}ms before retrying...`);
+          
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+          
+          // Retry with increased backoff
+          if (retryCount < MAX_RETRIES - 1) {
+            console.log(`Retrying after backoff (attempt ${retryCount + 2})...`);
+            return clientFetch(endpoint, options, retryCount + 1);
+          }
+          
+          // If we're on the last retry, fall through to the error handler
+          console.warn('Direct backend access failed after backoff:', directResponse.status, directResponse.statusText);
         } else {
           console.warn('Direct backend access failed:', directResponse.status, directResponse.statusText);
         }
@@ -332,9 +381,13 @@ export const clientFetch = async (endpoint, options = {}, retryCount = 0) => {
         console.error('Direct backend access error:', directError);
       }
       
-      // If we're still here, try a slightly different approach for the fallback
-      if (retryCount === 0) {
-        console.log('First retry failed, trying alternative approach...');
+      // Strategy 3: If we're still here and have retries left, try again with a modified approach
+      if (retryCount < MAX_RETRIES - 1) {
+        console.log(`Strategy 3: Trying modified approach (attempt ${retryCount + 2})...`);
+        
+        // Wait a moment before retrying to avoid overwhelming servers
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         return clientFetch(endpoint, options, retryCount + 1);
       }
     }

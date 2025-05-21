@@ -34,41 +34,26 @@ const nextConfig = {
         
     console.log('Backend URL for rewrites:', backendUrl);
     
-    // Handle both production and development environments
-    if (process.env.NODE_ENV === 'production') {
-      // In production (Vercel), use a hybrid approach with rewrites and fallbacks
-      return [
+    // Simplify rewrite configuration to avoid Vercel edge cases
+    return {
+      // Fallback routes - only processed if none of the beforeFiles routes match
+      fallback: [
+        // Forward all API requests to the backend except health
+        {
+          source: '/api/:path*',
+          destination: `${backendUrl}/api/:path*`,
+        }
+      ],
+      
+      // beforeFiles routes - processed before Next.js routing
+      beforeFiles: [
         // Local health endpoint always takes precedence
         {
           source: '/api/health',
           destination: '/api/health',
-        },
-        
-        // Forward all API requests to the backend
-        {
-          source: '/api/:path*',
-          destination: `${backendUrl}/api/:path*`,
-        },
-        
-        // Add a fallback for direct access without /api prefix for development tools
-        {
-          source: '/_next/api/:path*',
-          destination: `${backendUrl}/api/:path*`,
         }
-      ];
-    } else {
-      // In development (local), use a simpler approach
-      return [
-        {
-          source: '/api/health',
-          destination: '/api/health',
-        },
-        {
-          source: '/api/:path*',
-          destination: `${backendUrl}/api/:path*`,
-        }
-      ];
-    }
+      ]
+    };
   },
   // Enable production optimizations
   reactStrictMode: true,
