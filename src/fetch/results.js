@@ -1,8 +1,21 @@
 import api from "./api";
 
+// Helper function to get the correct endpoint path based on API_URL
+const getEndpoint = (path) => {
+  // If API_URL is already '/api', don't prefix paths with '/api'
+  if (api.baseUrl === '/api') {
+    // Remove leading '/api' if present
+    return path.startsWith('/api/') ? path.substring(4) : path;
+  }
+  
+  // Otherwise, ensure path starts with '/api'
+  return path.startsWith('/api/') ? path : `/api${path}`;
+};
+
 export const getUserResults = async () => {
   try {
-    return await api.get("/api/results");
+    const endpoint = getEndpoint("/results");
+    return await api.get(endpoint);
   } catch (error) {
     console.error("Failed to fetch user results:", error);
     throw error;
@@ -11,7 +24,8 @@ export const getUserResults = async () => {
 
 export const getResultById = async (resultId) => {
   try {
-    return await api.get(`/api/results/${resultId}`);
+    const endpoint = getEndpoint(`/results/${resultId}`);
+    return await api.get(endpoint);
   } catch (error) {
     console.error(`Failed to fetch result with ID ${resultId}:`, error);
     throw error;
@@ -20,7 +34,8 @@ export const getResultById = async (resultId) => {
 
 export const getResultsByTestType = async (testTypeId) => {
   try {
-    return await api.get(`/api/results/test-type/${testTypeId}`);
+    const endpoint = getEndpoint(`/results/test-type/${testTypeId}`);
+    return await api.get(endpoint);
   } catch (error) {
     console.error(
       `Failed to fetch results for test type ${testTypeId}:`,

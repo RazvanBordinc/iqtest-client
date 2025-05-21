@@ -1,8 +1,21 @@
 import api from "./api";
 
+// Helper function to get the correct endpoint path based on API_URL
+const getEndpoint = (path) => {
+  // If API_URL is already '/api', don't prefix paths with '/api'
+  if (api.baseUrl === '/api') {
+    // Remove leading '/api' if present
+    return path.startsWith('/api/') ? path.substring(4) : path;
+  }
+  
+  // Otherwise, ensure path starts with '/api'
+  return path.startsWith('/api/') ? path : `/api${path}`;
+};
+
 export async function getProfile() {
   try {
-    return await api.get("/api/profile");
+    const endpoint = getEndpoint("/profile");
+    return await api.get(endpoint);
   } catch (error) {
     console.error("Profile fetch error:", error);
     throw error;
@@ -11,7 +24,8 @@ export async function getProfile() {
 
 export async function updateAge(age) {
   try {
-    return await api.put("/api/profile/age", { age });
+    const endpoint = getEndpoint("/profile/age");
+    return await api.put(endpoint, { age });
   } catch (error) {
     console.error("Age update error:", error);
     throw error;
@@ -20,7 +34,8 @@ export async function updateAge(age) {
 
 export async function updateCountry(country) {
   try {
-    return await api.put("/api/profile/country", { country });
+    const endpoint = getEndpoint("/profile/country");
+    return await api.put(endpoint, { country });
   } catch (error) {
     console.error("Country update error:", error);
     throw error;
@@ -29,11 +44,12 @@ export async function updateCountry(country) {
 
 export async function getTestHistory(page = 1, limit = 5, testType = null) {
   try {
-    let url = `/api/profile/test-history?page=${page}&limit=${limit}`;
+    let path = `/profile/test-history?page=${page}&limit=${limit}`;
     if (testType) {
-      url += `&testType=${testType}`;
+      path += `&testType=${testType}`;
     }
-    const data = await api.get(url);
+    const endpoint = getEndpoint(path);
+    const data = await api.get(endpoint);
     
     // Log the response for debugging
     console.log("Test history API response:", data);

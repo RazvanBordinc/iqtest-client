@@ -60,9 +60,22 @@ const validateQuestions = (questions, testTypeId) => {
   return true;
 };
 
+// Helper function to get the correct endpoint path based on API_URL
+const getEndpoint = (path) => {
+  // If API_URL is already '/api', don't prefix paths with '/api'
+  if (api.baseUrl === '/api') {
+    // Remove leading '/api' if present
+    return path.startsWith('/api/') ? path.substring(4) : path;
+  }
+  
+  // Otherwise, ensure path starts with '/api'
+  return path.startsWith('/api/') ? path : `/api${path}`;
+};
+
 export const getQuestionsByTestType = async (testTypeId) => {
   try {
-    const response = await api.get(`/api/test/questions/${testTypeId}`);
+    const endpoint = getEndpoint(`/test/questions/${testTypeId}`);
+    const response = await api.get(endpoint);
     
     // Normalize the response data to ensure consistent property naming
     const normalizedQuestions = normalizeQuestions(response);

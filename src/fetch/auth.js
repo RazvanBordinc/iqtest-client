@@ -1,9 +1,23 @@
 import api from "./api";
 import { setCookie, removeCookie, getCookie } from "@/utils/cookies";
 
+// Helper function to get the correct endpoint path based on API_URL
+const getEndpoint = (path) => {
+  // If API_URL is already '/api', don't prefix paths with '/api'
+  // This prevents double '/api/api/' issues
+  if (api.baseUrl === '/api') {
+    // Remove leading '/api' if present
+    return path.startsWith('/api/') ? path.substring(4) : path;
+  }
+  
+  // Otherwise, ensure path starts with '/api'
+  return path.startsWith('/api/') ? path : `/api${path}`;
+};
+
 export const checkUsername = async (username) => {
   try {
-    const response = await api.post("/api/auth/check-username", { username });
+    const endpoint = getEndpoint('/auth/check-username');
+    const response = await api.post(endpoint, { username });
     return response;
   } catch (error) {
     console.error("Username check failed:", error);
@@ -13,7 +27,8 @@ export const checkUsername = async (username) => {
 
 export const createUser = async (userData) => {
   try {
-    const response = await api.post("/api/auth/create-user", userData);
+    const endpoint = getEndpoint('/auth/create-user');
+    const response = await api.post(endpoint, userData);
 
     // Store token and user data in cookies if available
     if (response.token) {
@@ -39,7 +54,8 @@ export const createUser = async (userData) => {
 
 export const loginWithPassword = async (credentials) => {
   try {
-    const response = await api.post("/api/auth/login-with-password", credentials);
+    const endpoint = getEndpoint('/auth/login-with-password');
+    const response = await api.post(endpoint, credentials);
 
     // Store token and user data in cookies
     if (response.token) {
@@ -70,7 +86,8 @@ export const loginWithPassword = async (credentials) => {
 
 export const register = async (userData) => {
   try {
-    const response = await api.post("/api/auth/register", userData);
+    const endpoint = getEndpoint('/auth/register');
+    const response = await api.post(endpoint, userData);
 
     // Store token and user data in cookies if available
     if (response.token) {
@@ -91,7 +108,8 @@ export const register = async (userData) => {
 
 export const login = async (credentials) => {
   try {
-    const response = await api.post("/api/auth/login", credentials);
+    const endpoint = getEndpoint('/auth/login');
+    const response = await api.post(endpoint, credentials);
 
     // Store token and user data in cookies
     if (response.token) {
@@ -112,7 +130,8 @@ export const login = async (credentials) => {
 
 export const disconnect = async () => {
   try {
-    await api.post("/api/auth/disconnect");
+    const endpoint = getEndpoint('/auth/disconnect');
+    await api.post(endpoint);
     
     // Clear all cookies
     removeCookie("token");

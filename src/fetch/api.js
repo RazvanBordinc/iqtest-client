@@ -69,7 +69,10 @@ export const checkBackendStatus = async () => {
     if (typeof window !== "undefined") {
       // Client-side: try to contact backend through a lightweight API
       try {
-        const testResponse = await fetch('/api/test/types', {
+        // Construct the URL carefully to avoid double api issue
+        const testTypesUrl = API_URL === '/api' ? '/api/test/types' : `${API_URL}/test/types`;
+        
+        const testResponse = await fetch(testTypesUrl, {
           method: 'GET',
           headers: createHeaders(),
           cache: 'no-store',
@@ -128,16 +131,17 @@ const notifyBackendStatusListeners = () => {
 
 // Client-side fetch function with backend status check
 export const clientFetch = async (endpoint, options = {}) => {
-  // Handle different API URL formats
-  // If API_URL ends with /api and endpoint starts with api/, we need to handle it
+  // Simplify URL construction to prevent double 'api' paths
   let url;
-  if (API_URL.endsWith('/api') && endpoint.startsWith('api/')) {
-    // Remove the duplicate 'api/' from the endpoint
-    const adjustedEndpoint = endpoint.replace(/^api\//, '');
-    url = `${API_URL}/${adjustedEndpoint}`;
+  
+  // First, clean the endpoint by removing any leading slash
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  
+  // If API_URL is /api and we're getting an API endpoint, 
+  // we need to avoid creating /api/api/...
+  if (API_URL === '/api' && cleanEndpoint.startsWith('api/')) {
+    url = `${API_URL}/${cleanEndpoint.substring(4)}`;
   } else {
-    // Normal case - just strip leading slash if present
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
     url = `${API_URL}/${cleanEndpoint}`;
   }
 
@@ -185,17 +189,32 @@ export const serverFetch = async (endpoint, options = {}) => {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
-  // Handle different API URL formats
-  // If API_URL ends with /api and endpoint starts with api/, we need to handle it
+  // Simplified URL construction to prevent double 'api' paths
   let url;
-  if (API_URL.endsWith('/api') && endpoint.startsWith('api/')) {
-    // Remove the duplicate 'api/' from the endpoint
-    const adjustedEndpoint = endpoint.replace(/^api\//, '');
-    url = `${API_URL}/${adjustedEndpoint}`;
+  
+  // First, clean the endpoint by removing any leading slash
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  
+  // Server-side should use NEXT_SERVER_API_URL, which should point directly to the backend
+  // Example: http://backend:5164
+  if (API_URL.includes('http')) {
+    // For full URLs (server-side), ensure no duplicated 'api' path segment
+    // If endpoint already starts with 'api/' but API_URL already contains /api at the end
+    if (cleanEndpoint.startsWith('api/') && API_URL.endsWith('/api')) {
+      // Remove 'api/' from the beginning of the endpoint
+      url = `${API_URL}/${cleanEndpoint.substring(4)}`;
+    } else {
+      // Normal case - direct to backend without '/api' prefix
+      url = `${API_URL}/${cleanEndpoint}`;
+    }
   } else {
-    // Normal case - just strip leading slash if present
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-    url = `${API_URL}/${cleanEndpoint}`;
+    // For relative URLs (should not happen server-side but just in case)
+    // Check if both API_URL and endpoint contain 'api'
+    if (API_URL === '/api' && cleanEndpoint.startsWith('api/')) {
+      url = `${API_URL}/${cleanEndpoint.substring(4)}`;
+    } else {
+      url = `${API_URL}/${cleanEndpoint}`;
+    }
   }
 
   const headers = {
@@ -242,18 +261,36 @@ async function handleResponse(response) {
   return await response.text();
 }
 
+// Helper function to normalize API paths and prevent '/api/api/' issues
+const normalizeEndpoint = (endpoint) => {
+  // First, ensure endpoint starts without a slash for consistent handling
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  
+  // If API_URL is '/api' and endpoint starts with 'api/', remove the duplicate
+  if (API_URL === '/api' && cleanEndpoint.startsWith('api/')) {
+    return cleanEndpoint.substring(4); // Remove the 'api/' prefix
+  }
+  
+  // If we have a full URL in API_URL that ends with /api
+  if (API_URL.includes('http') && API_URL.endsWith('/api') && cleanEndpoint.startsWith('api/')) {
+    return cleanEndpoint.substring(4); // Remove the 'api/' prefix
+  }
+  
+  return cleanEndpoint;
+};
+
 // Main API object
 const api = {
   get: (endpoint, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
-    return fetchFunction(endpoint, { ...options, method: "GET" });
+    return fetchFunction(normalizeEndpoint(endpoint), { ...options, method: "GET" });
   },
 
   post: (endpoint, body, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
-    return fetchFunction(endpoint, {
+    return fetchFunction(normalizeEndpoint(endpoint), {
       ...options,
       method: "POST",
       body: JSON.stringify(body),
@@ -263,7 +300,7 @@ const api = {
   put: (endpoint, body, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
-    return fetchFunction(endpoint, {
+    return fetchFunction(normalizeEndpoint(endpoint), {
       ...options,
       method: "PUT",
       body: JSON.stringify(body),
@@ -273,7 +310,7 @@ const api = {
   delete: (endpoint, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
-    return fetchFunction(endpoint, { ...options, method: "DELETE" });
+    return fetchFunction(normalizeEndpoint(endpoint), { ...options, method: "DELETE" });
   },
   
   checkBackendStatus,
