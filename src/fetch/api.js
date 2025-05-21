@@ -71,12 +71,30 @@ export const clientFetch = async (endpoint, options = {}) => {
   try {
     // Add timeout to avoid hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for deployed environment
     
     fetchOptions.signal = controller.signal;
     
+    // Detailed logging for debugging network issues
+    console.log('Fetch request options:', JSON.stringify({
+      method: fetchOptions.method,
+      headers: fetchOptions.headers,
+      body: fetchOptions.body,
+      credentials: fetchOptions.credentials,
+      mode: fetchOptions.mode
+    }));
+    
+    // Perform the actual fetch
     const response = await fetch(url, fetchOptions);
     clearTimeout(timeoutId);
+    
+    // Log response headers for debugging
+    const responseHeaders = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+    console.log('Response status:', response.status, response.statusText);
+    console.log('Response headers:', responseHeaders);
 
     if (response.ok) {
       return await handleResponse(response);
@@ -110,41 +128,62 @@ export const clientFetch = async (endpoint, options = {}) => {
       throw error;
     }
     
-    // Handle other error responses
+    // Get entire response text first for debugging
+    const responseText = await response.text();
+    console.log('Raw response text:', responseText);
+    
+    // Try to parse as JSON
     let errorMessage;
     let errorData;
     try {
-      errorData = await response.json();
-      errorMessage = errorData?.message || `Error: ${response.statusText}`;
-      
-      // For 400 Bad Request errors, provide more detailed information
-      if (response.status === 400) {
-        console.warn('Bad Request details:', errorData);
+      // Parse the response text if it looks like JSON
+      if (responseText && (responseText.startsWith('{') || responseText.startsWith('['))) {
+        errorData = JSON.parse(responseText);
+        errorMessage = errorData?.message || `Error: ${response.statusText}`;
         
-        // If we have model validation errors, format them nicely
-        if (errorData.errors) {
-          const validationErrors = Object.entries(errorData.errors)
-            .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-            .join('; ');
+        // For 400 Bad Request errors, provide more detailed information
+        if (response.status === 400) {
+          console.warn('Bad Request details:', errorData);
           
-          errorMessage = `Validation failed: ${validationErrors}`;
+          // If we have model validation errors, format them nicely
+          if (errorData.errors) {
+            const validationErrors = Object.entries(errorData.errors)
+              .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+              .join('; ');
+            
+            errorMessage = `Validation failed: ${validationErrors}`;
+          }
         }
+      } else {
+        // If it's not JSON, use the response text as the error message
+        errorMessage = responseText || `Error: ${response.statusText}`;
       }
     } catch (e) {
-      errorMessage = `Error: ${response.statusText}`;
+      console.error('Error parsing response JSON:', e);
+      errorMessage = responseText || `Error: ${response.statusText}`;
     }
     
     const error = new Error(errorMessage);
     error.status = response.status;
     error.data = errorData; // Attach the complete error data for more context
+    error.responseText = responseText; // Include the raw response for debugging
     throw error;
   } catch (error) {
     // Handle abort errors
     if (error.name === 'AbortError') {
-      console.error('Request timed out after 10 seconds');
+      console.error('Request timed out after 15 seconds');
       const timeoutError = new Error('Request timed out. Please try again later.');
       timeoutError.status = 408; // Request Timeout
       throw timeoutError;
+    }
+    
+    // For network errors (like CORS), provide more context
+    if (error.name === 'TypeError' && error.message.includes('NetworkError')) {
+      console.error('Network error, possibly CORS related:', error);
+      const networkError = new Error('Network error. This might be due to CORS restrictions or the backend being unavailable.');
+      networkError.status = 0;
+      networkError.isCorsError = true;
+      throw networkError;
     }
     
     console.error('Client-side API request error:', error);
