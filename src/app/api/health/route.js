@@ -1,8 +1,7 @@
 // src/app/api/health/route.js
 import { NextResponse } from 'next/server';
 
-// This endpoint is used as a fallback health check when the backend is not available
-// It's accessed directly by the frontend health check logic
+// This endpoint provides health status for the frontend and checks backend connectivity
 export async function GET() {
   // Add CORS headers to ensure the response can be accessed from any origin
   const headers = new Headers({
@@ -21,11 +20,10 @@ export async function GET() {
 
   console.log('Health check using backend URL:', backendUrl);
 
-  // Try multiple methods to connect to the backend
+  // Try to connect to the backend
   let backendStatus = 'unknown';
   let backendError = null;
   
-  // Try the fastest method first - direct backend health check
   try {
     console.log('Attempting direct health check to:', `${backendUrl}/api/health`);
     
@@ -84,24 +82,6 @@ export async function GET() {
     backendStatus = 'down';
     backendError = error.message || 'Unable to reach backend';
     console.error('Backend health check failed:', error);
-    
-    // One more attempt with test endpoint
-    try {
-      const testResponse = await fetch(`${backendUrl}/api/test/types`, {
-        method: 'GET',
-        cache: 'no-store',
-        next: { revalidate: 0 },
-        signal: AbortSignal.timeout(5000),
-      });
-      
-      if (testResponse.ok) {
-        backendStatus = 'up';
-        backendError = null;
-      }
-    } catch (testError) {
-      // If this fails too, we've already set status to down
-      console.error('Test endpoint check failed too:', testError);
-    }
   }
 
   return NextResponse.json(

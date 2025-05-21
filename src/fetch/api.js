@@ -5,7 +5,7 @@
 const BACKEND_URL = typeof window === "undefined"
   // Server side - use server environment variable
   ? (process.env.NEXT_SERVER_API_URL || 'http://backend:5164')
-  // Client side - use client environment variable
+  // Client side - use client environment variable with fallback
   : (process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com');
 
 // Log configuration for debugging
@@ -21,10 +21,14 @@ export const createHeaders = (additionalHeaders = {}) => {
 
   // Only import getCookie on client-side
   if (typeof window !== "undefined") {
-    const { getCookie } = require("@/utils/cookies");
-    const token = getCookie("token");
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+    try {
+      const { getCookie } = require("@/utils/cookies");
+      const token = getCookie("token");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error getting auth token from cookies:', error);
     }
   }
 
@@ -65,8 +69,13 @@ export const clientFetch = async (endpoint, options = {}) => {
     }
     
     // Handle other error responses
-    const errorData = await response.json().catch(() => null);
-    const errorMessage = errorData?.message || `Error: ${response.statusText}`;
+    let errorMessage;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData?.message || `Error: ${response.statusText}`;
+    } catch (e) {
+      errorMessage = `Error: ${response.statusText}`;
+    }
     
     const error = new Error(errorMessage);
     error.status = response.status;
@@ -80,9 +89,14 @@ export const clientFetch = async (endpoint, options = {}) => {
 // Server-side fetch function
 export const serverFetch = async (endpoint, options = {}) => {
   // Import cookies dynamically for server-side use
-  const { cookies } = await import("next/headers");
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  let token = null;
+  try {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    token = cookieStore.get("token")?.value;
+  } catch (error) {
+    console.error('Error accessing cookies on server:', error);
+  }
 
   // Construct the complete URL to the backend API
   const url = constructUrl(endpoint);
@@ -104,15 +118,22 @@ export const serverFetch = async (endpoint, options = {}) => {
       cache: options.cache || "no-store",
     });
 
-    if (!response.ok) {
-      console.error(`Server-side API request failed: ${response.status} ${response.statusText}`);
-      const errorData = await response.json().catch(() => null);
-      throw new Error(
-        errorData?.message || `Server error: ${response.statusText}`
-      );
+    if (response.ok) {
+      return await handleResponse(response);
     }
 
-    return await handleResponse(response);
+    console.error(`Server-side API request failed: ${response.status} ${response.statusText}`);
+    
+    // Try to get error details from response
+    let errorMessage;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData?.message || `Server error: ${response.statusText}`;
+    } catch (e) {
+      errorMessage = `Server error: ${response.statusText}`;
+    }
+    
+    throw new Error(errorMessage);
   } catch (error) {
     console.error('Server-side API request error:', error);
     throw error;
@@ -145,6 +166,7 @@ async function handleResponse(response) {
     try {
       return await response.json();
     } catch (error) {
+      console.error('Error parsing JSON response:', error);
       return null;
     }
   }
@@ -184,9 +206,7 @@ const api = {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
     return fetchFunction(endpoint, { ...options, method: "DELETE" });
-  },
-  
-  baseUrl: BACKEND_URL
+  }
 };
 
 export default api;

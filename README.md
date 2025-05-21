@@ -145,13 +145,16 @@ The platform offers four distinct cognitive assessment tests:
 Create a `.env.local` file in the root directory with these variables:
 
 ```env
-# API Configuration
-NEXT_PUBLIC_API_URL=/api
-NEXT_SERVER_API_URL=http://backend:5164
+# Direct backend URLs for API access (no proxy)
+NEXT_PUBLIC_DIRECT_BACKEND_URL=https://iqtest-server-tkhl.onrender.com
+NEXT_SERVER_API_URL=https://iqtest-server-tkhl.onrender.com
 
-# Authentication (development only)
-NEXTAUTH_SECRET=your-development-secret
+# For local development with Docker
+# NEXT_PUBLIC_DIRECT_BACKEND_URL=http://localhost:5164
+# NEXT_SERVER_API_URL=http://backend:5164
 ```
+
+> **Note:** The application uses direct backend access without proxying API requests through Next.js.
 
 ## 📊 API Integration
 
