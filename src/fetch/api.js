@@ -144,10 +144,24 @@ export const serverFetch = async (endpoint, options = {}) => {
   }
 };
 
+// Helper function to normalize API paths (exported for backward compatibility)
+export const normalizeEndpoint = (endpoint) => {
+  // Ensure endpoint starts without a slash for consistent handling
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  
+  // If endpoint starts with 'api/', keep it as is
+  if (cleanEndpoint.startsWith('api/')) {
+    return cleanEndpoint;
+  }
+  
+  // Otherwise, return the endpoint as is
+  return cleanEndpoint;
+};
+
 // Constructs a complete URL to the backend API
 function constructUrl(endpoint) {
   // First, clean the endpoint by removing any leading slash
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const cleanEndpoint = normalizeEndpoint(endpoint);
   
   // Ensure the backend URL has a trailing slash
   const baseUrl = BACKEND_URL.endsWith('/') ? BACKEND_URL : `${BACKEND_URL}/`;
@@ -226,6 +240,9 @@ const api = {
     const fetchFunction = isServer ? serverFetch : clientFetch;
     return fetchFunction(endpoint, { ...options, method: "DELETE" });
   },
+  
+  // Export the normalizeEndpoint function for backward compatibility
+  normalizeEndpoint,
   
   // Add back the status functions for backwards compatibility
   addBackendStatusListener,
