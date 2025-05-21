@@ -259,7 +259,7 @@ export const clientFetch = async (endpoint, options = {}) => {
         event: 'api_timeout',
         endpoint,
         method: fetchOptions.method || 'GET',
-        timeout: `${timeoutDuration}ms`
+        timeout: `${isCriticalEndpoint ? '90000' : '30000'}ms`
       });
       
       // Try server wake-up for critical endpoints
