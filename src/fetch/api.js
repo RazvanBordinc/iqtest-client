@@ -100,9 +100,14 @@ export const clientFetch = async (endpoint, options = {}) => {
   }
 
   try {
-    // Add timeout to avoid hanging requests
+    // Add timeout to avoid hanging requests - extended for cold start scenarios
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for deployed environment
+    
+    // Use longer timeout for auth endpoints that might trigger cold start
+    const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('/test/');
+    const timeoutDuration = isAuthEndpoint ? 65000 : 15000; // 65 seconds for auth/test, 15 for others
+    
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
     
     fetchOptions.signal = controller.signal;
     

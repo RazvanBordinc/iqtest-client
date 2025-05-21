@@ -11,11 +11,14 @@ import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
 import CountrySelect from "@/components/shared/CountrySelect";
 import AgeSelector from "@/components/begin/AgeSelector";
+import ServerWakeUpScreen from "@/components/shared/ServerWakeUpScreen";
+import { isServerAwake } from "@/utils/serverWakeup";
 
 export default function AuthPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [showServerWakeUp, setShowServerWakeUp] = useState(false);
 
   // Flow state
   const [step, setStep] = useState("username"); // "username", "details", "password", "login"
@@ -49,6 +52,24 @@ export default function AuthPage() {
     checkAuth();
   }, [router]);
 
+  // Handle server wake-up
+  const handleServerWakeUpComplete = (result) => {
+    setShowServerWakeUp(false);
+    if (!result.success) {
+      console.log('Server wake-up failed, continuing in offline mode');
+    }
+  };
+
+  // Check if server needs wake-up before critical operations
+  const checkServerBeforeOperation = async () => {
+    const serverIsAwake = await isServerAwake();
+    if (!serverIsAwake) {
+      setShowServerWakeUp(true);
+      return false; // Server needs wake-up
+    }
+    return true; // Server is ready
+  };
+
   // Handle username check
   const handleUsernameCheck = async () => {
     if (!username.trim()) {
@@ -62,7 +83,15 @@ export default function AuthPage() {
     setUsernameError("");
 
     setIsLoading(true);
+    
     try {
+      // Check if server is awake before making the request
+      const serverReady = await checkServerBeforeOperation();
+      if (!serverReady) {
+        setIsLoading(false);
+        return; // Server wake-up screen will be shown
+      }
+
       // Try multiple approaches for username check to find one that works
       console.log('Starting comprehensive username check for:', username);
       const data = await checkUsernameTryAllApproaches(username);
@@ -95,6 +124,15 @@ export default function AuthPage() {
       }
     } catch (error) {
       console.error("Username check error:", error);
+      
+      // Check if this is a timeout error that indicates cold start
+      if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
+        console.log('Timeout detected, triggering server wake-up');
+        setIsLoading(false);
+        setShowServerWakeUp(true);
+        return;
+      }
+      
       // Even if error occurs, continue to registration
       console.log('Error occurred, defaulting to registration form');
       setUserExists(false);
@@ -537,6 +575,14 @@ export default function AuthPage() {
             )}
           </AnimatePresence>
         </div>
+      )}
+      
+      {/* Server Wake-Up Screen */}
+      {showServerWakeUp && (
+        <ServerWakeUpScreen 
+          onComplete={handleServerWakeUpComplete}
+          showImmediately={true}
+        />
       )}
     </div>
   );
