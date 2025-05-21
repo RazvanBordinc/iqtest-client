@@ -52,6 +52,22 @@ export const clientFetch = async (endpoint, options = {}) => {
     mode: 'cors', // Enable CORS for cross-origin requests
   };
 
+  // Process request body if present for .NET model binding (additional safety check)
+  if (fetchOptions.body && typeof fetchOptions.body === 'string') {
+    try {
+      const bodyStr = fetchOptions.body;
+      // Only process if it's JSON
+      if (bodyStr.startsWith('{') || bodyStr.startsWith('[')) {
+        const parsedBody = JSON.parse(bodyStr);
+        const processedBody = prepareRequestBody(parsedBody);
+        fetchOptions.body = JSON.stringify(processedBody);
+      }
+    } catch (e) {
+      // If parsing fails, leave body as is
+      console.error('Error processing client-side request body:', e);
+    }
+  }
+
   try {
     // Add timeout to avoid hanging requests
     const controller = new AbortController();
@@ -161,6 +177,18 @@ export const serverFetch = async (endpoint, options = {}) => {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  // Process request body if present for .NET model binding
+  if (options.body && typeof options.body === 'string') {
+    try {
+      const parsedBody = JSON.parse(options.body);
+      const processedBody = prepareRequestBody(parsedBody);
+      options.body = JSON.stringify(processedBody);
+    } catch (e) {
+      // If JSON parsing fails, leave body as is
+      console.error('Error processing server-side request body:', e);
+    }
+  }
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -176,14 +204,23 @@ export const serverFetch = async (endpoint, options = {}) => {
     
     // Try to get error details from response
     let errorMessage;
+    let errorData;
     try {
-      const errorData = await response.json();
+      errorData = await response.json();
       errorMessage = errorData?.message || `Server error: ${response.statusText}`;
+      
+      // For 400 Bad Request errors, provide more detailed information
+      if (response.status === 400 && errorData.errors) {
+        console.warn('Bad Request details (server):', errorData);
+      }
     } catch (e) {
       errorMessage = `Server error: ${response.statusText}`;
     }
     
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    error.data = errorData;
+    throw error;
   } catch (error) {
     console.error('Server-side API request error:', error);
     throw error;
@@ -220,6 +257,32 @@ function constructUrl(endpoint) {
     // Need to add api/ prefix
     return `${baseUrl}api/${cleanEndpoint}`;
   }
+}
+
+// Prepare data for model binding in .NET
+function prepareRequestBody(body) {
+  // If body is null or undefined, return it as is
+  if (body == null) return body;
+  
+  // Log the original request body for debugging
+  console.log('Original request body:', JSON.stringify(body));
+  
+  // Simple types don't need processing
+  if (typeof body !== 'object' || Array.isArray(body)) return body;
+  
+  // For objects, check if it might be a DTO that needs proper casing for .NET model binding
+  const processedBody = {};
+  
+  // Keep original properties untouched
+  // The specific API functions should provide property names with correct casing
+  // This preserves any already-correctly-cased properties sent from the auth.js methods
+  for (const [key, value] of Object.entries(body)) {
+    processedBody[key] = value;
+  }
+  
+  // Log the processed request body for debugging
+  console.log('Processed request body:', JSON.stringify(processedBody));
+  return processedBody;
 }
 
 // Handle response parsing
@@ -264,20 +327,28 @@ const api = {
   post: (endpoint, body, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
+    
+    // Process the body for proper .NET model binding
+    const processedBody = prepareRequestBody(body);
+    
     return fetchFunction(endpoint, {
       ...options,
       method: "POST",
-      body: JSON.stringify(body),
+      body: JSON.stringify(processedBody),
     });
   },
 
   put: (endpoint, body, options = {}) => {
     const isServer = typeof window === "undefined";
     const fetchFunction = isServer ? serverFetch : clientFetch;
+    
+    // Process the body for proper .NET model binding
+    const processedBody = prepareRequestBody(body);
+    
     return fetchFunction(endpoint, {
       ...options,
       method: "PUT",
-      body: JSON.stringify(body),
+      body: JSON.stringify(processedBody),
     });
   },
 

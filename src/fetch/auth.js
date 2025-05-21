@@ -15,9 +15,12 @@ export const checkUsername = async (username) => {
     try {
       const endpoint = getEndpoint('/auth/check-username');
       
-      // Send the username in the request body following the DTO structure
-      // Remove the query parameter approach that was causing the 400 Bad Request
-      const response = await api.post(endpoint, { username });
+      // The API client now handles property casing automatically
+      console.log('Checking username:', username);
+      
+      // Send the username in the request body with proper casing for .NET
+      // Explicitly use "Username" with capital U to match C# model
+      const response = await api.post(endpoint, { Username: username });
       return response;
     } catch (error) {
       // If we've hit a rate limit (429), wait and retry
@@ -51,7 +54,17 @@ export const checkUsername = async (username) => {
 export const createUser = async (userData) => {
   try {
     const endpoint = getEndpoint('/auth/create-user');
-    const response = await api.post(endpoint, userData);
+    
+    // Format the user data with proper casing for .NET model binding
+    const formattedData = {
+      Username: userData.username,
+      Password: userData.password,
+      Country: userData.country,
+      Age: userData.age,
+      Email: userData.email || `${userData.username}@iqtest.local`
+    };
+    
+    const response = await api.post(endpoint, formattedData);
 
     // Store token and user data in cookies if available
     if (response.token) {
@@ -78,7 +91,14 @@ export const createUser = async (userData) => {
 export const loginWithPassword = async (credentials) => {
   try {
     const endpoint = getEndpoint('/auth/login-with-password');
-    const response = await api.post(endpoint, credentials);
+    
+    // Format the credentials with proper casing for .NET model binding
+    const formattedCredentials = {
+      Email: credentials.email,
+      Password: credentials.password
+    };
+    
+    const response = await api.post(endpoint, formattedCredentials);
 
     // Store token and user data in cookies
     if (response.token) {
@@ -110,7 +130,17 @@ export const loginWithPassword = async (credentials) => {
 export const register = async (userData) => {
   try {
     const endpoint = getEndpoint('/auth/register');
-    const response = await api.post(endpoint, userData);
+    
+    // Format the user data with proper casing for .NET model binding
+    const formattedData = {
+      Username: userData.username,
+      Password: userData.password,
+      Email: userData.email,
+      Country: userData.country,
+      Age: userData.age
+    };
+    
+    const response = await api.post(endpoint, formattedData);
 
     // Store token and user data in cookies if available
     if (response.token) {
@@ -132,7 +162,14 @@ export const register = async (userData) => {
 export const login = async (credentials) => {
   try {
     const endpoint = getEndpoint('/auth/login');
-    const response = await api.post(endpoint, credentials);
+    
+    // Format the credentials with proper casing for .NET model binding
+    const formattedCredentials = {
+      Email: credentials.email,
+      Password: credentials.password
+    };
+    
+    const response = await api.post(endpoint, formattedCredentials);
 
     // Store token and user data in cookies
     if (response.token) {
