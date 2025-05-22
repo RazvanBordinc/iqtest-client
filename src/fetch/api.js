@@ -104,8 +104,8 @@ export const clientFetch = async (endpoint, options = {}) => {
     const controller = new AbortController();
     
     // Use longer timeouts for cold start scenarios
-    const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('/test/');
-    const isCriticalEndpoint = isAuthEndpoint || endpoint.includes('/health') || endpoint.includes('/wake');
+    const isTestEndpoint = endpoint.includes('/test/');
+    const isCriticalEndpoint = isAuthEndpoint || isTestEndpoint || endpoint.includes('/health') || endpoint.includes('/wake');
     const timeoutDuration = isCriticalEndpoint ? 90000 : 30000; // 90s for critical, 30s for others
     
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
