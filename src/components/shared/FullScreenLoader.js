@@ -64,6 +64,10 @@ const FullScreenLoader = ({ isLoading, text = "Processing..." }) => {
                 {connections.map((connection, index) => {
                   const from = neurons[connection.from];
                   const to = neurons[connection.to];
+                  
+                  // Skip if neurons are not found
+                  if (!from || !to) return null;
+                  
                   return (
                     <motion.line
                       key={`connection-${index}`}

@@ -8,8 +8,6 @@ const getEndpoint = (path) => {
 };
 
 export const checkUsername = async (username) => {
-  // Debug information
-  console.log('Checking username:', username);
   
   // The server validation requires a username of at least 3 characters
   // Let's add this validation on the client side
@@ -25,13 +23,11 @@ export const checkUsername = async (username) => {
   // Use a single, simple approach that matches the backend model
   try {
     const endpoint = getEndpoint('/auth/check-username');
-    console.log('Making username check request to:', endpoint);
     
     const response = await api.post(endpoint, {
       Username: username
     });
     
-    console.log('Username check response:', response);
     return response;
   } catch (error) {
     console.error("Username check failed:", error);
@@ -51,16 +47,13 @@ export const createUser = async (userData) => {
       Age: userData.age
     };
     
-    console.log('Creating user with data:', JSON.stringify(formattedData));
     
     // Make the request
     const response = await api.post(endpoint, formattedData);
     
-    console.log('Create user API response received:', response);
     
     // Store token and user data in cookies if available
     const tokensSet = setAuthTokens(response);
-    console.log('Auth tokens set after user creation:', tokensSet);
     
     return response;
   } catch (error) {
@@ -79,16 +72,13 @@ export const loginWithPassword = async (credentials) => {
       Password: credentials.password
     };
     
-    console.log('Attempting login with credentials:', JSON.stringify(formattedCredentials));
     
     // Make the request
     const response = await api.post(endpoint, formattedCredentials);
     
-    console.log('Login API response received:', response);
     
     // Store token and user data in cookies using our helper
     const tokensSet = setAuthTokens(response);
-    console.log('Auth tokens set:', tokensSet);
     
     return response;
   } catch (error) {
@@ -150,7 +140,6 @@ export const setAuthTokens = (response) => {
             JSON.parse(atob(padded));
             
             // Valid JWT token, store it
-            console.log("Setting valid JWT token in cookies");
             setCookie("token", token, 1); // 1 day expiry
           } else {
             // Invalid payload

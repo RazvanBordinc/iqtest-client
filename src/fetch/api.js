@@ -55,7 +55,6 @@ export const createHeaders = (additionalHeaders = {}) => {
 export const clientFetch = async (endpoint, options = {}) => {
   // Construct the complete URL to the backend API
   const url = constructUrl(endpoint);
-  console.log('Client-side API request to URL:', url);
 
   const fetchOptions = {
     ...options,

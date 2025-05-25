@@ -202,7 +202,6 @@ export default function HomePage() {
         password: password 
       });
       
-      console.log("Login successful, response:", response);
       
       // Save username to localStorage for future visits
       localStorage.setItem("userData", JSON.stringify({ username }));
@@ -213,7 +212,6 @@ export default function HomePage() {
       
       // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
-        console.log("Redirecting to /tests");
         try {
           router.push("/tests");
         } catch (err) {
@@ -289,7 +287,6 @@ export default function HomePage() {
         age: age ? parseInt(age) : null 
       });
       
-      console.log("Account created successfully, response:", response);
       
       // Save user data to localStorage
       localStorage.setItem("userData", JSON.stringify({ 
@@ -304,7 +301,6 @@ export default function HomePage() {
       
       // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
-        console.log("Redirecting to /tests after account creation");
         try {
           router.push("/tests");
         } catch (err) {
