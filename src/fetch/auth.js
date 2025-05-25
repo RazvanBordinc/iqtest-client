@@ -56,8 +56,11 @@ export const createUser = async (userData) => {
     // Make the request
     const response = await api.post(endpoint, formattedData);
     
+    console.log('Create user API response received:', response);
+    
     // Store token and user data in cookies if available
-    setAuthTokens(response);
+    const tokensSet = setAuthTokens(response);
+    console.log('Auth tokens set after user creation:', tokensSet);
     
     return response;
   } catch (error) {
@@ -81,8 +84,11 @@ export const loginWithPassword = async (credentials) => {
     // Make the request
     const response = await api.post(endpoint, formattedCredentials);
     
+    console.log('Login API response received:', response);
+    
     // Store token and user data in cookies using our helper
-    setAuthTokens(response);
+    const tokensSet = setAuthTokens(response);
+    console.log('Auth tokens set:', tokensSet);
     
     return response;
   } catch (error) {

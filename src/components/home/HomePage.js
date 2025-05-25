@@ -66,6 +66,7 @@ export default function HomePage() {
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [lettersTyped, setLettersTyped] = useState([]);
   const [showIntro, setShowIntro] = useState(true);
+  const [successMessage, setSuccessMessage] = useState("");
   
   // Error states
   const [errors, setErrors] = useState({
@@ -199,13 +200,24 @@ export default function HomePage() {
         password: password 
       });
       
+      console.log("Login successful, response:", response);
+      
       // Save username to localStorage for future visits
       localStorage.setItem("userData", JSON.stringify({ username }));
       
-      // Give time for cookies to be set properly
+      // Show success message
+      setSuccessMessage("Login successful! Redirecting...");
+      setIsLoading(false);
+      
+      // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
-        router.push("/tests");
-      }, 100);
+        console.log("Redirecting to /tests");
+        router.push("/tests").catch(err => {
+          console.error("Router push failed:", err);
+          // Fallback to window.location
+          window.location.href = "/tests";
+        });
+      }, 1000);
     } catch (error) {
       console.error("Login error:", error);
       
@@ -273,6 +285,8 @@ export default function HomePage() {
         age: age ? parseInt(age) : null 
       });
       
+      console.log("Account created successfully, response:", response);
+      
       // Save user data to localStorage
       localStorage.setItem("userData", JSON.stringify({ 
         username, 
@@ -280,10 +294,19 @@ export default function HomePage() {
         country 
       }));
       
-      // Give time for cookies to be set properly
+      // Show success message
+      setSuccessMessage("Account created successfully! Redirecting...");
+      setIsLoading(false);
+      
+      // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
-        router.push("/tests");
-      }, 100);
+        console.log("Redirecting to /tests after account creation");
+        router.push("/tests").catch(err => {
+          console.error("Router push failed:", err);
+          // Fallback to window.location
+          window.location.href = "/tests";
+        });
+      }, 1000);
     } catch (error) {
       console.error("Account creation error:", error);
       
@@ -684,6 +707,16 @@ export default function HomePage() {
                 )}
 
                 <ErrorMessage error={errors.general} />
+                
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-green-600 dark:text-green-400 font-medium"
+                  >
+                    {successMessage}
+                  </motion.div>
+                )}
 
                 <div className="flex gap-3 pt-2">
                   <motion.button
@@ -798,6 +831,16 @@ export default function HomePage() {
                 </motion.div>
 
                 <ErrorMessage error={errors.general} />
+                
+                {successMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-green-600 dark:text-green-400 font-medium"
+                  >
+                    {successMessage}
+                  </motion.div>
+                )}
 
                 <div className="flex gap-3 pt-2">
                   <motion.button
