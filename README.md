@@ -6,6 +6,7 @@
   <img src="https://img.shields.io/badge/TailwindCSS-4.0-06B6D4?style=for-the-badge&logo=tailwindcss" alt="TailwindCSS"/>
   <img src="https://img.shields.io/badge/Framer_Motion-12-0055FF?style=for-the-badge&logo=framer" alt="Framer Motion"/>
   <img src="https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel" alt="Vercel"/>
+  
   ![IqTest Banner](./public/iqtest.png)
   <p>
     <strong>A modern, animated cognitive assessment platform built with cutting-edge React technologies</strong>
