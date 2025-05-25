@@ -612,6 +612,21 @@ export default function HomePage() {
                     : "This username is available. Create your password"
                   }
                 </p>
+                
+                {/* Free tier hosting warning */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+                >
+                  <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span>
+                      Using free tier hosting - first login may take up to 60 seconds while the server starts up
+                    </span>
+                  </p>
+                </motion.div>
               </motion.div>
 
               <motion.div 
@@ -821,6 +836,21 @@ export default function HomePage() {
                 <p className="text-gray-600 dark:text-gray-400">
                   Tell us a bit about yourself
                 </p>
+                
+                {/* Free tier hosting warning */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg"
+                >
+                  <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span>
+                      Account creation may take longer on first attempt due to free tier hosting
+                    </span>
+                  </p>
+                </motion.div>
               </motion.div>
 
               <motion.div 

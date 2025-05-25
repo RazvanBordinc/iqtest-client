@@ -17,14 +17,14 @@ import {
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
 import FullScreenLoader from "@/components/shared/FullScreenLoader";
+import TestSelectionLoadingAnimation from "./TestSelectionLoadingAnimation";
 import Header from "@/components/start/Header";
 import { TEST_TYPES } from "../constants/testTypes";
 import TestAvailability from "./TestAvailability";
 import { isAuthenticated, getCurrentUser } from "@/fetch/auth";
-import api from "@/fetch/api";
 
 // Enhanced test category card with hover effects
-const TestCategoryCard = ({ category, onSelect, index }) => {
+const TestCategoryCard = ({ category, onSelect, index, isDisabled }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   // Get icon based on category
@@ -61,12 +61,13 @@ const TestCategoryCard = ({ category, onSelect, index }) => {
 
   return (
     <motion.div
-      className="relative group cursor-pointer"
-      onHoverStart={() => setIsHovered(true)}
+      className={`relative group ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+      onHoverStart={() => !isDisabled && setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      onClick={() => onSelect(category)}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      onClick={() => !isDisabled && onSelect(category)}
+      whileHover={!isDisabled ? { scale: 1.02 } : {}}
+      whileTap={!isDisabled ? { scale: 0.98 } : {}}
+      animate={isDisabled ? { opacity: 0.6 } : { opacity: 1 }}
     >
       {/* Card background with gradient border */}
       <div className="absolute inset-0 bg-gradient-to-r rounded-2xl p-[2px]">
@@ -136,9 +137,10 @@ const TestCategoryCard = ({ category, onSelect, index }) => {
 
         {/* Action button */}
         <motion.button
-          className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${getGradient()} text-white font-medium flex items-center justify-center gap-2 overflow-hidden relative cursor-pointer`}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${getGradient()} text-white font-medium flex items-center justify-center gap-2 overflow-hidden relative ${isDisabled ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+          whileHover={!isDisabled ? { scale: 1.02 } : {}}
+          whileTap={!isDisabled ? { scale: 0.98 } : {}}
+          disabled={isDisabled}
         >
           <span>Start Test</span>
           <ArrowRight className="w-4 h-4" />
@@ -155,7 +157,7 @@ const TestCategoryCard = ({ category, onSelect, index }) => {
 
       {/* Hover glow effect */}
       <AnimatePresence>
-        {isHovered && (
+        {isHovered && !isDisabled && (
           <motion.div
             className={`absolute inset-0 bg-gradient-to-r ${getGradient()} rounded-2xl opacity-20 blur-xl`}
             initial={{ opacity: 0 }}
@@ -214,7 +216,6 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
     bestCategory: null,
     averageScore: 0,
   });
-  const [clearingCooldowns, setClearingCooldowns] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedTest, setSelectedTest] = useState(null);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -295,28 +296,17 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
     }, 800);
   };
 
-  // Clear all test cooldowns (for testing/development)
-  const handleClearCooldowns = async () => {
-    try {
-      setClearingCooldowns(true);
-      await api.post("/api/test/clear-cooldowns");
-      window.location.reload(); // Reload to refresh availability status
-    } catch (error) {
-      showError("Failed to clear cooldowns");
-    } finally {
-      setClearingCooldowns(false);
-    }
-  };
 
   // Show brief loading animation
   if (!authChecked || !isAnimationComplete) {
     return (
-      <>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black relative">
+        <BackgroundShapes />
         <Header />
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-black flex flex-col items-center justify-center">
-          <LoadingAnimation />
-        </div>
-      </>
+        <main className="relative z-10 flex flex-col items-center pt-8 pb-16 px-4 min-h-[calc(100vh-64px)]">
+          <TestSelectionLoadingAnimation />
+        </main>
+      </div>
     );
   }
 
@@ -401,21 +391,6 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
             )}
           </motion.div>
 
-          {/* Debug button for clearing cooldowns */}
-          <motion.div
-            className="flex justify-center mt-4 mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <button
-              onClick={handleClearCooldowns}
-              disabled={clearingCooldowns}
-              className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
-            >
-              {clearingCooldowns ? "Clearing..." : "Clear All Cooldowns (Dev)"}
-            </button>
-          </motion.div>
 
           {/* Test categories grid */}
           <motion.div
@@ -459,6 +434,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
                     category={category}
                     onSelect={handleCategorySelect}
                     index={index}
+                    isDisabled={isNavigating}
                   />
                 </TestAvailability>
               </motion.div>

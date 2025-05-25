@@ -9,7 +9,14 @@ const getEndpoint = (path) => {
 export const getTestTypeLeaderboard = async (testTypeId, page = 1, pageSize = 10) => {
   try {
     const endpoint = getEndpoint(`/leaderboard/test-type/${testTypeId}?page=${page}&pageSize=${pageSize}`);
-    return await api.get(endpoint);
+    // Add cache headers for leaderboard data (cache for 5 minutes)
+    return await api.get(endpoint, {
+      headers: {
+        'Cache-Control': 'max-age=300',
+      },
+      // Enable Next.js fetch caching
+      next: { revalidate: 300 } // 5 minutes
+    });
   } catch (error) {
     console.error(
       `Failed to fetch leaderboard for test type ${testTypeId}:`,
@@ -22,7 +29,14 @@ export const getTestTypeLeaderboard = async (testTypeId, page = 1, pageSize = 10
 export const getUserRanking = async () => {
   try {
     const endpoint = getEndpoint("/leaderboard/user-ranking");
-    return await api.get(endpoint);
+    // User ranking can be cached for a shorter time (2 minutes)
+    return await api.get(endpoint, {
+      headers: {
+        'Cache-Control': 'max-age=120',
+      },
+      // Enable Next.js fetch caching
+      next: { revalidate: 120 } // 2 minutes
+    });
   } catch (error) {
     console.error("Failed to fetch user ranking:", error);
     throw error;

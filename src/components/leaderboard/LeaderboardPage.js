@@ -10,6 +10,7 @@ import {
 } from "@/fetch/leaderboard";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
+import LeaderboardLoadingAnimation from "@/components/leaderboard/LeaderboardLoadingAnimation";
 import Header from "@/components/start/Header";
 import LeaderboardHeader from "@/components/leaderboard/LeaderboardHeader";
 import LeaderboardTabs from "@/components/leaderboard/LeaderboardTabs";
@@ -26,6 +27,7 @@ export default function LeaderboardPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [testStats, setTestStats] = useState(null);
+  const [cachedData, setCachedData] = useState({});
 
   // Tab options for the leaderboard
   const tabOptions = [
@@ -41,6 +43,26 @@ export default function LeaderboardPage() {
     if (!isAuthenticated()) {
       router.push("/");
       return;
+    }
+
+    // Check if we have cached data for this tab and page
+    const cacheKey = `${activeTab}-${currentPage}`;
+    if (cachedData[cacheKey]) {
+      const cachedEntry = cachedData[cacheKey];
+      const cacheAge = Date.now() - cachedEntry.timestamp;
+      
+      // Use cache if it's less than 5 minutes old
+      if (cacheAge < 5 * 60 * 1000) {
+        setLeaderboardData(cachedEntry.data.entries || []);
+        setTestStats({
+          testCompletedCount: cachedEntry.data.testCompletedCount,
+          totalUsers: cachedEntry.data.totalUsers,
+          currentPage: cachedEntry.data.currentPage,
+          pageSize: cachedEntry.data.pageSize
+        });
+        setIsLoading(false);
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -62,6 +84,16 @@ export default function LeaderboardPage() {
           currentPage: response.currentPage,
           pageSize: response.pageSize
         });
+        
+        // Save to cache
+        const cacheKey = `${activeTab}-${currentPage}`;
+        setCachedData(prev => ({
+          ...prev,
+          [cacheKey]: {
+            data: response,
+            timestamp: Date.now()
+          }
+        }));
       } else {
         console.error('Failed to fetch leaderboard:', leaderboardResponse.reason);
         setLeaderboardData([]);
@@ -79,7 +111,7 @@ export default function LeaderboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, currentPage, userData, router]);
+  }, [activeTab, currentPage, userData, router, cachedData]);
 
   // Check authentication on mount
   useEffect(() => {
@@ -109,11 +141,7 @@ export default function LeaderboardPage() {
   // Get content based on active tab
   const renderTabContent = () => {
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center py-8">
-          <LoadingAnimation />
-        </div>
-      );
+      return <LeaderboardLoadingAnimation />;
     }
 
     if (!leaderboardData || leaderboardData.length === 0) {
