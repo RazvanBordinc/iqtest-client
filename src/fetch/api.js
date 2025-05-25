@@ -67,6 +67,10 @@ export const clientFetch = async (endpoint, options = {}) => {
   // Special handling for auth endpoints
   const isAuthEndpoint = endpoint.includes('/auth/');
   
+  // Determine if this is a critical endpoint (moved outside try block)
+  const isTestEndpoint = endpoint.includes('/test/');
+  const isCriticalEndpoint = isAuthEndpoint || isTestEndpoint || endpoint.includes('/health') || endpoint.includes('/wake');
+  
   // Process request body if present for .NET model binding (additional safety check)
   if (fetchOptions.body && typeof fetchOptions.body === 'string') {
     try {
@@ -91,8 +95,6 @@ export const clientFetch = async (endpoint, options = {}) => {
     const controller = new AbortController();
     
     // Use longer timeouts for cold start scenarios
-    const isTestEndpoint = endpoint.includes('/test/');
-    const isCriticalEndpoint = isAuthEndpoint || isTestEndpoint || endpoint.includes('/health') || endpoint.includes('/wake');
     const timeoutDuration = isCriticalEndpoint ? 90000 : 30000; // 90s for critical, 30s for others
     
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
