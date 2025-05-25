@@ -24,7 +24,7 @@ import TestAvailability from "./TestAvailability";
 import { isAuthenticated, getCurrentUser } from "@/fetch/auth";
 
 // Enhanced test category card with hover effects
-const TestCategoryCard = ({ category, onSelect, index, isDisabled }) => {
+const TestCategoryCard = ({ category, onSelect, index, isDisabled, isSelecting = false }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   // Get icon based on category
@@ -61,13 +61,14 @@ const TestCategoryCard = ({ category, onSelect, index, isDisabled }) => {
 
   return (
     <motion.div
-      className={`relative group ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-      onHoverStart={() => !isDisabled && setIsHovered(true)}
+      className={`relative group ${isDisabled || isSelecting ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+      onHoverStart={() => !isDisabled && !isSelecting && setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      onClick={() => !isDisabled && onSelect(category)}
-      whileHover={!isDisabled ? { scale: 1.02 } : {}}
-      whileTap={!isDisabled ? { scale: 0.98 } : {}}
+      onClick={() => !isDisabled && !isSelecting && onSelect(category)}
+      whileHover={!isDisabled && !isSelecting ? { scale: 1.02 } : {}}
+      whileTap={!isDisabled && !isSelecting ? { scale: 0.98 } : {}}
       animate={isDisabled ? { opacity: 0.6 } : { opacity: 1 }}
+      style={{ pointerEvents: isSelecting ? "none" : "auto" }}
     >
       {/* Card background with gradient border */}
       <div className="absolute inset-0 bg-gradient-to-r rounded-2xl p-[2px]">
@@ -137,10 +138,10 @@ const TestCategoryCard = ({ category, onSelect, index, isDisabled }) => {
 
         {/* Action button */}
         <motion.button
-          className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${getGradient()} text-white font-medium flex items-center justify-center gap-2 overflow-hidden relative ${isDisabled ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
-          whileHover={!isDisabled ? { scale: 1.02 } : {}}
-          whileTap={!isDisabled ? { scale: 0.98 } : {}}
-          disabled={isDisabled}
+          className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${getGradient()} text-white font-medium flex items-center justify-center gap-2 overflow-hidden relative ${isDisabled || isSelecting ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+          whileHover={!isDisabled && !isSelecting ? { scale: 1.02 } : {}}
+          whileTap={!isDisabled && !isSelecting ? { scale: 0.98 } : {}}
+          disabled={isDisabled || isSelecting}
         >
           <span>Start Test</span>
           <ArrowRight className="w-4 h-4" />
@@ -154,6 +155,74 @@ const TestCategoryCard = ({ category, onSelect, index, isDisabled }) => {
           />
         </motion.button>
       </div>
+
+      {/* Loading overlay */}
+      {isSelecting && (
+        <motion.div 
+          className="absolute inset-0 bg-black/70 backdrop-blur-md rounded-2xl flex items-center justify-center z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.div 
+            className="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-2xl border border-gray-200 dark:border-gray-700"
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            {/* Animated spinner */}
+            <div className="relative mb-6">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                className={`w-16 h-16 border-4 border-transparent rounded-full mx-auto`}
+                style={{
+                  borderTopColor: `${category.id === "number-logic" ? "#3b82f6" : category.id === "word-logic" ? "#10b981" : category.id === "memory" ? "#f59e0b" : "#8b5cf6"}`
+                }}
+              />
+              {/* Inner spinner */}
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className={`absolute inset-2 border-2 border-transparent rounded-full`}
+                style={{
+                  borderRightColor: `${category.id === "number-logic" ? "#60a5fa" : category.id === "word-logic" ? "#34d399" : category.id === "memory" ? "#fbbf24" : "#a78bfa"}40`
+                }}
+              />
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Starting {category.title}
+            </h3>
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Preparing your test questions...
+            </p>
+            
+            {/* Progress dots */}
+            <motion.div className="flex justify-center space-x-2">
+              {[0, 1, 2, 3].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{ 
+                    scale: [1, 1.3, 1],
+                    opacity: [0.4, 1, 0.4]
+                  }}
+                  transition={{ 
+                    duration: 1.2, 
+                    repeat: Infinity,
+                    delay: i * 0.15
+                  }}
+                  className={`w-3 h-3 rounded-full`}
+                  style={{
+                    backgroundColor: `${category.id === "number-logic" ? "#3b82f6" : category.id === "word-logic" ? "#10b981" : category.id === "memory" ? "#f59e0b" : "#8b5cf6"}`
+                  }}
+                />
+              ))}
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Hover glow effect */}
       <AnimatePresence>
@@ -293,7 +362,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
     // Give time for the animation to show before navigating
     setTimeout(() => {
       router.push(`/tests/start?category=${category.id}`);
-    }, 800);
+    }, 1200);
   };
 
 
@@ -435,6 +504,7 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
                     onSelect={handleCategorySelect}
                     index={index}
                     isDisabled={isNavigating}
+                    isSelecting={isNavigating && selectedTest?.id === category.id}
                   />
                 </TestAvailability>
               </motion.div>

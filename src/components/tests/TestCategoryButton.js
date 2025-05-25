@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Clock, ListChecks, TrendingUp, Lock, CheckCircle, Star } from "lucide-react";
 import { checkTestAvailability } from "@/fetch/tests";
 
-export default function TestCategoryButton({ category, onSelect, isMobile, refreshKey = 0 }) {
+export default function TestCategoryButton({ category, onSelect, isMobile, refreshKey = 0, isSelecting = false }) {
   const [isHovered, setIsHovered] = useState(false);
   const [availability, setAvailability] = useState({ canTake: true, timeUntilNext: null });
   const [loading, setLoading] = useState(true);
@@ -77,12 +77,12 @@ export default function TestCategoryButton({ category, onSelect, isMobile, refre
     return (
       <motion.div
         className={`bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 relative overflow-hidden ${
-          availability.canTake ? "cursor-pointer" : "cursor-not-allowed"
+          availability.canTake && !isSelecting ? "cursor-pointer" : "cursor-not-allowed"
         }`}
         variants={itemVariants}
-        onClick={availability.canTake ? onSelect : undefined}
-        whileTap={availability.canTake ? { scale: 0.97 } : {}}
-        style={{ touchAction: "manipulation" }}
+        onClick={availability.canTake && !isSelecting ? onSelect : undefined}
+        whileTap={availability.canTake && !isSelecting ? { scale: 0.97 } : {}}
+        style={{ touchAction: "manipulation", pointerEvents: isSelecting ? "none" : "auto" }}
       >
         {!availability.canTake && (
           <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-10">
@@ -93,6 +93,49 @@ export default function TestCategoryButton({ category, onSelect, isMobile, refre
               <p className="text-lg font-bold text-red-500">{timeLeft}</p>
             </div>
           </div>
+        )}
+        
+        {/* Loading overlay for mobile */}
+        {isSelecting && (
+          <motion.div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center shadow-2xl"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto mb-3"
+              />
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                Starting Test...
+              </p>
+              <motion.div className="flex justify-center space-x-1 mt-3">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ 
+                      scale: [1, 1.2, 1],
+                      opacity: [0.3, 1, 0.3]
+                    }}
+                    transition={{ 
+                      duration: 1, 
+                      repeat: Infinity,
+                      delay: i * 0.2
+                    }}
+                    className="w-2 h-2 bg-purple-500 rounded-full"
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
         )}
         
         <div className="flex flex-col items-center">
@@ -143,12 +186,12 @@ export default function TestCategoryButton({ category, onSelect, isMobile, refre
   return (
     <motion.div
       className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 relative overflow-hidden h-full ${
-        availability.canTake ? "cursor-pointer" : "cursor-not-allowed"
+        availability.canTake && !isSelecting ? "cursor-pointer" : "cursor-not-allowed"
       }`}
       variants={itemVariants}
-      onHoverStart={() => availability.canTake && setIsHovered(true)}
+      onHoverStart={() => availability.canTake && !isSelecting && setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      whileHover={availability.canTake ? {
+      whileHover={availability.canTake && !isSelecting ? {
         y: -6,
         scale: 1.02,
         boxShadow:
@@ -156,8 +199,9 @@ export default function TestCategoryButton({ category, onSelect, isMobile, refre
         borderColor: "rgb(139, 92, 246)",
         transition: { duration: 0.3 },
       } : {}}
-      whileTap={availability.canTake ? { scale: 0.98 } : {}}
-      onClick={availability.canTake ? onSelect : undefined}
+      whileTap={availability.canTake && !isSelecting ? { scale: 0.98 } : {}}
+      onClick={availability.canTake && !isSelecting ? onSelect : undefined}
+      style={{ pointerEvents: isSelecting ? "none" : "auto" }}
     >
       {!availability.canTake && (
         <div className="absolute inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-20">
@@ -174,6 +218,65 @@ export default function TestCategoryButton({ category, onSelect, isMobile, refre
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">24 hour cooldown active</p>
           </motion.div>
         </div>
+      )}
+
+      {/* Loading overlay for desktop */}
+      {isSelecting && (
+        <motion.div 
+          className="absolute inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.div 
+            className="bg-white dark:bg-gray-900 rounded-2xl p-8 text-center shadow-2xl border border-gray-200 dark:border-gray-700"
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            {/* Animated spinner */}
+            <div className="relative mb-6">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full mx-auto"
+              />
+              {/* Inner spinner */}
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-2 border-2 border-transparent border-r-purple-400 rounded-full"
+              />
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Starting {category.title}
+            </h3>
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Preparing your test questions...
+            </p>
+            
+            {/* Progress dots */}
+            <motion.div className="flex justify-center space-x-2">
+              {[0, 1, 2, 3].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{ 
+                    scale: [1, 1.3, 1],
+                    opacity: [0.4, 1, 0.4]
+                  }}
+                  transition={{ 
+                    duration: 1.2, 
+                    repeat: Infinity,
+                    delay: i * 0.15
+                  }}
+                  className="w-3 h-3 bg-purple-500 rounded-full"
+                />
+              ))}
+            </motion.div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Background elements */}
