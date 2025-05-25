@@ -124,16 +124,22 @@ export const register = async (userData) => {
 // Helper function to safely set token
 export const setAuthTokens = (response) => {
   try {
-    if (response && response.token) {
+    // Handle both uppercase and lowercase property names
+    const token = response?.token || response?.Token;
+    const username = response?.username || response?.Username;
+    const country = response?.country || response?.Country;
+    const age = response?.age || response?.Age;
+    
+    if (response && token) {
       // Validate the token is in proper JWT format before setting
-      if (typeof response.token !== 'string') {
+      if (typeof token !== 'string') {
         console.error("Invalid token format: not a string");
         return false;
       }
-      else if (response.token.split('.').length === 3) {
+      else if (token.split('.').length === 3) {
         try {
           // Ensure it's valid base64 by testing decoding
-          const parts = response.token.split('.');
+          const parts = token.split('.');
           if (parts[1] && parts[1].trim() !== '') {
             // Proper token - try to decode it for further validation
             const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -145,7 +151,7 @@ export const setAuthTokens = (response) => {
             
             // Valid JWT token, store it
             console.log("Setting valid JWT token in cookies");
-            setCookie("token", response.token, 1); // 1 day expiry
+            setCookie("token", token, 1); // 1 day expiry
           } else {
             // Invalid payload
             throw new Error("Invalid token payload");
@@ -168,9 +174,9 @@ export const setAuthTokens = (response) => {
       
       // Set user data
       const userDataObj = {
-        username: response.username,
-        country: response.country,
-        age: response.age,
+        username: username,
+        country: country,
+        age: age,
       };
       setCookie("userData", JSON.stringify(userDataObj), 1);
       return true;

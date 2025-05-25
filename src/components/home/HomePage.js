@@ -12,6 +12,7 @@ import { useTheme } from "@/components/shared/ThemeProvider";
 import { checkUsername, createUser, loginWithPassword, isAuthenticated } from "@/fetch/auth";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingDots from "@/components/shared/LoadingDots";
+import { InlineLoadingAnimation } from "@/components/shared/LoadingSpinner";
 import ErrorMessage from "@/components/shared/ErrorMessage";
 import PasswordStrengthIndicator from "@/components/shared/PasswordStrengthIndicator";
 
@@ -212,11 +213,13 @@ export default function HomePage() {
       // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
         console.log("Redirecting to /tests");
-        router.push("/tests").catch(err => {
+        try {
+          router.push("/tests");
+        } catch (err) {
           console.error("Router push failed:", err);
           // Fallback to window.location
           window.location.href = "/tests";
-        });
+        }
       }, 1000);
     } catch (error) {
       console.error("Login error:", error);
@@ -301,11 +304,13 @@ export default function HomePage() {
       // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
         console.log("Redirecting to /tests after account creation");
-        router.push("/tests").catch(err => {
+        try {
+          router.push("/tests");
+        } catch (err) {
           console.error("Router push failed:", err);
           // Fallback to window.location
           window.location.href = "/tests";
-        });
+        }
       }, 1000);
     } catch (error) {
       console.error("Account creation error:", error);
@@ -569,16 +574,53 @@ export default function HomePage() {
               <ErrorMessage error={errors.username || errors.general} />
               
               {/* Loading state for username check */}
-              {isChecking && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 40 }}
-                  className="absolute left-1/2 transform -translate-x-1/2 text-center text-purple-600 dark:text-purple-400 mt-4"
-                >
-                  <p className="text-sm mb-2">Checking username...</p>
-                  <LoadingDots />
-                </motion.div>
-              )}
+              <AnimatePresence>
+                {isChecking && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 40 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute left-1/2 transform -translate-x-1/2 text-center mt-4"
+                  >
+                    <motion.div
+                      className="bg-white dark:bg-gray-800 rounded-lg px-6 py-3 shadow-lg border border-gray-200 dark:border-gray-700"
+                      animate={{
+                        boxShadow: [
+                          "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                          "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                        ]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <motion.div className="flex gap-1">
+                          {[0, 1, 2].map((i) => (
+                            <motion.div
+                              key={i}
+                              className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"
+                              animate={{
+                                y: ["0%", "-50%", "0%"],
+                                scale: [1, 1.2, 1]
+                              }}
+                              transition={{
+                                duration: 0.6,
+                                delay: i * 0.1,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                            />
+                          ))}
+                        </motion.div>
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Checking username availability
+                        </p>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         )}
@@ -735,13 +777,45 @@ export default function HomePage() {
                   </motion.button>
                   
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={!isLoading ? { scale: 1.02 } : {}}
+                    whileTap={!isLoading ? { scale: 0.98 } : {}}
                     onClick={authMode === "login" ? handleLogin : handlePasswordForSignup}
                     disabled={isLoading}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden"
+                    animate={isLoading ? {
+                      background: ["linear-gradient(to right, rgb(147 51 234), rgb(99 102 241))", 
+                                 "linear-gradient(to right, rgb(99 102 241), rgb(147 51 234))"]
+                    } : {}}
+                    transition={isLoading ? {
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear"
+                    } : {}}
                   >
-                    {isLoading ? <LoadingDots /> : (authMode === "login" ? "Sign In" : "Continue")}
+                    <AnimatePresence mode="wait">
+                      {isLoading ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-center"
+                        >
+                          <InlineLoadingAnimation />
+                        </motion.div>
+                      ) : (
+                        <motion.span
+                          key="text"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {authMode === "login" ? "Sign In" : "Continue"}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </motion.button>
                 </div>
 
@@ -853,13 +927,45 @@ export default function HomePage() {
                   </motion.button>
                   
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={!isLoading ? { scale: 1.02 } : {}}
+                    whileTap={!isLoading ? { scale: 0.98 } : {}}
                     onClick={handleCreateAccount}
                     disabled={isLoading || !country}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden"
+                    animate={isLoading ? {
+                      background: ["linear-gradient(to right, rgb(147 51 234), rgb(99 102 241))", 
+                                 "linear-gradient(to right, rgb(99 102 241), rgb(147 51 234))"]
+                    } : {}}
+                    transition={isLoading ? {
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear"
+                    } : {}}
                   >
-                    {isLoading ? <LoadingDots /> : "Create Account"}
+                    <AnimatePresence mode="wait">
+                      {isLoading ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex items-center justify-center"
+                        >
+                          <InlineLoadingAnimation />
+                        </motion.div>
+                      ) : (
+                        <motion.span
+                          key="text"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          Create Account
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </motion.button>
                 </div>
               </motion.div>
