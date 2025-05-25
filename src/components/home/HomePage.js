@@ -174,7 +174,8 @@ export default function HomePage() {
       setAuthMode(response.exists ? "login" : "signup");
       setStep("password");
     } catch (error) {
-      setErrors({ ...errors, general: "Failed to check username. Please try again." });
+      console.error("Username check error:", error);
+      setErrors({ ...errors, general: "Unable to check username. Please check your internet connection and try again." });
     } finally {
       setIsLoading(false);
       setIsChecking(false);
@@ -194,8 +195,8 @@ export default function HomePage() {
     
     try {
       const response = await loginWithPassword({ 
-        email: `${username}@iqtest.local`, 
-        password 
+        username: username, 
+        password: password 
       });
       
       // Save username to localStorage for future visits
@@ -206,7 +207,19 @@ export default function HomePage() {
         router.push("/tests");
       }, 100);
     } catch (error) {
-      setErrors({ ...errors, password: "Invalid password. Please try again." });
+      console.error("Login error:", error);
+      
+      let errorMessage = "Unable to sign in. ";
+      if (error.status === 400) {
+        errorMessage += "Invalid username or password.";
+      } else if (error.status === 0 || !navigator.onLine) {
+        errorMessage += "Please check your internet connection.";
+      } else {
+        errorMessage += "Please try again later.";
+      }
+      
+      setErrors({ ...errors, password: errorMessage });
+      
       // Animate the password field
       const passwordInput = document.querySelector('input[type="password"]');
       if (passwordInput) {
@@ -272,7 +285,18 @@ export default function HomePage() {
         router.push("/tests");
       }, 100);
     } catch (error) {
-      setErrors({ ...errors, general: error.message || "Failed to create account. Please try again." });
+      console.error("Account creation error:", error);
+      
+      let errorMessage = "Unable to create account. ";
+      if (error.status === 400 && error.message) {
+        errorMessage = error.message;
+      } else if (error.status === 0 || !navigator.onLine) {
+        errorMessage += "Please check your internet connection.";
+      } else {
+        errorMessage += "Please try again later.";
+      }
+      
+      setErrors({ ...errors, general: errorMessage });
     } finally {
       setIsLoading(false);
     }

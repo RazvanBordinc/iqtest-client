@@ -34,27 +34,14 @@ export const createHeaders = (additionalHeaders = {}) => {
       const token = getCookie("token");
       
       if (token) {
-        // Check if it's a dummy/fallback token
-        if (token.startsWith('dummy_')) {
-          // Use a special header for fallback tokens
-          headers["X-Fallback-Auth"] = "true";
-          headers["Authorization"] = `Bearer ${token}`;
-        } 
         // Check if it's a valid JWT format (3 parts separated by dots)
-        else if (token.split('.').length === 3) {
+        if (token.split('.').length === 3) {
           headers["Authorization"] = `Bearer ${token}`;
         } 
         // Invalid token format - don't set the header
         else {
           console.warn("Found invalid token format in cookie, not sending Authorization header");
         }
-      }
-      
-      // Add offline mode header if applicable
-      const isOffline = getCookie("offline_mode") === "true" || 
-                        localStorage.getItem("offline_mode") === "true";
-      if (isOffline) {
-        headers["X-Offline-Mode"] = "true";
       }
     } catch (error) {
       console.error('Error getting auth token from cookies:', error);
@@ -227,6 +214,14 @@ export const clientFetch = async (endpoint, options = {}) => {
               .join('; ');
             
             errorMessage = `Validation failed: ${validationErrors}`;
+            
+            // Log validation errors more cleanly
+            logger.exception(errorMessage, {
+              event: 'api_validation_error',
+              endpoint,
+              status: 400,
+              errors: errorData.errors
+            });
           }
         }
       } else {
@@ -236,15 +231,6 @@ export const clientFetch = async (endpoint, options = {}) => {
     } catch (e) {
       console.error('Error parsing response JSON:', e);
       errorMessage = responseText || `Error: ${response.statusText}`;
-    }
-    
-    // For specific auth endpoints, we might want to return a fallback response
-    if (isAuthEndpoint && endpoint.includes('check-username')) {
-      console.log('Returning fallback response for username check');
-      return { 
-        message: "Username check completed", 
-        exists: false
-      };
     }
     
     const error = new Error(errorMessage);
@@ -304,18 +290,6 @@ export const clientFetch = async (endpoint, options = {}) => {
         }
       }
       
-      // For specific auth endpoints, return a fallback response
-      if (isAuthEndpoint && endpoint.includes('check-username')) {
-        logger.info('Returning fallback response for username check after timeout', {
-          event: 'fallback_response',
-          endpoint,
-          reason: 'timeout'
-        });
-        return { 
-          message: "Username check completed", 
-          exists: false
-        };
-      }
       
       const timeoutError = new Error('Server is starting up. This may take up to 60 seconds on first visit.');
       timeoutError.status = 408; // Request Timeout
@@ -333,18 +307,6 @@ export const clientFetch = async (endpoint, options = {}) => {
         possibleCause: 'CORS or backend unavailable'
       });
       
-      // For specific auth endpoints, return a fallback response
-      if (isAuthEndpoint && endpoint.includes('check-username')) {
-        logger.info('Returning fallback response for username check after network error', {
-          event: 'fallback_response',
-          endpoint,
-          reason: 'network_error'
-        });
-        return { 
-          message: "Username check completed", 
-          exists: false
-        };
-      }
       
       const networkError = new Error('Network error. This might be due to CORS restrictions or the backend being unavailable.');
       networkError.status = 0;
@@ -359,14 +321,6 @@ export const clientFetch = async (endpoint, options = {}) => {
       method: fetchOptions.method || 'GET'
     });
     
-    // For specific auth endpoints, return a fallback response on error
-    if (isAuthEndpoint && endpoint.includes('check-username')) {
-      console.log('Returning fallback response for username check after error');
-      return { 
-        message: "Username check completed", 
-        exists: false
-      };
-    }
     
     throw error;
   }

@@ -35,12 +35,7 @@ export const checkUsername = async (username) => {
     return response;
   } catch (error) {
     console.error("Username check failed:", error);
-    
-    // Return a dummy response to continue the flow
-    return { 
-      message: "Username check completed", 
-      exists: false 
-    };
+    throw error;
   }
 };
 
@@ -67,24 +62,7 @@ export const createUser = async (userData) => {
     return response;
   } catch (error) {
     console.error("User creation failed:", error);
-    
-    // Create a fake response to let users continue in production
-    // This is not ideal but prevents blocking users completely
-    const fakeResponse = {
-      token: "dummy_token_" + Date.now(),
-      username: userData.username,
-      country: userData.country,
-      age: userData.age,
-      message: "Account created (offline mode)"
-    };
-    
-    // Store the dummy data using our helper
-    setAuthTokens(fakeResponse);
-    setCookie("offline_mode", "true", 1);
-    localStorage.setItem("offline_mode", "true");
-    
-    console.log("Returning fallback user data due to API error");
-    return fakeResponse;
+    throw error;
   }
 };
 
@@ -109,34 +87,7 @@ export const loginWithPassword = async (credentials) => {
     return response;
   } catch (error) {
     console.error("Login failed:", error);
-    
-    // Add more context to the error
-    if (error.status === 400 && error.message && error.message.includes("Invalid credentials")) {
-      // This could be either wrong password or non-existent user
-      error.isInvalidCredentials = true;
-      throw error;
-    }
-    
-    // If this is a non-specific login error for existing users, create a temporary session
-    // This is a fallback to allow users to continue using the app when the backend is unstable
-    console.log("Backend error during login, providing fallback session");
-    
-    // Create a fake login response
-    const fakeResponse = {
-      token: "dummy_login_token_" + Date.now(),
-      username: credentials.username,
-      country: "Unknown",
-      age: 30,
-      message: "Logged in (offline mode)"
-    };
-    
-    // Store temporary session data using our helper
-    setAuthTokens(fakeResponse);
-    setCookie("offline_mode", "true", 1);
-    localStorage.setItem("offline_mode", "true");
-    
-    console.log("Created fallback login session");
-    return fakeResponse;
+    throw error;
   }
 };
 
@@ -160,27 +111,6 @@ export const register = async (userData) => {
     return response;
   } catch (error) {
     console.error("Registration failed:", error);
-    
-    // For registration, we create a fallback too
-    if (error.status >= 500 || error.status === 0) {
-      // Server error or network error
-      const fakeResponse = {
-        token: "dummy_register_token_" + Date.now(),
-        username: userData.username,
-        country: userData.country,
-        age: userData.age,
-        message: "Account registered (offline mode)"
-      };
-      
-      // Store the dummy data
-      setAuthTokens(fakeResponse);
-      setCookie("offline_mode", "true", 1);
-      localStorage.setItem("offline_mode", "true");
-      
-      console.log("Created fallback registration due to server error");
-      return fakeResponse;
-    }
-    
     throw error;
   }
 };
@@ -191,11 +121,8 @@ export const setAuthTokens = (response) => {
     if (response && response.token) {
       // Validate the token is in proper JWT format before setting
       if (typeof response.token !== 'string') {
-        console.warn("Token is not a string, using offline mode");
-        const dummyToken = "dummy_token_" + Date.now();
-        setCookie("token", dummyToken, 1);
-        setCookie("offline_mode", "true", 1);
-        localStorage.setItem("offline_mode", "true");
+        console.error("Invalid token format: not a string");
+        return false;
       }
       else if (response.token.split('.').length === 3) {
         try {
@@ -218,26 +145,14 @@ export const setAuthTokens = (response) => {
             throw new Error("Invalid token payload");
           }
         } catch (error) {
-          // Invalid token format, switch to dummy token
-          console.warn("JWT token decode error:", error.message);
-          const dummyToken = "dummy_token_" + Date.now();
-          setCookie("token", dummyToken, 1);
-          setCookie("offline_mode", "true", 1);
-          localStorage.setItem("offline_mode", "true");
+          // Invalid token format
+          console.error("JWT token decode error:", error.message);
+          return false;
         }
-      } else if (response.token.startsWith('dummy_')) {
-        // It's already a dummy token for offline mode
-        console.log("Setting dummy token in cookies (offline mode)");
-        setCookie("token", response.token, 1);
-        setCookie("offline_mode", "true", 1);
-        localStorage.setItem("offline_mode", "true");
       } else {
-        // Unknown token format, create a new dummy token
-        console.warn("Invalid token format, using offline mode");
-        const dummyToken = "dummy_token_" + Date.now();
-        setCookie("token", dummyToken, 1);
-        setCookie("offline_mode", "true", 1);
-        localStorage.setItem("offline_mode", "true");
+        // Unknown token format
+        console.error("Invalid token format: expected JWT with 3 parts");
+        return false;
       }
       
       // Set refresh token if available
@@ -333,13 +248,7 @@ export const isAuthenticated = () => {
   }
   
   try {
-    // Check for offline/fallback tokens first to avoid unnecessary warnings
-    if (token.startsWith("dummy_token_") || token.startsWith("dummy_login_token_")) {
-      // This is an offline/fallback token, consider it valid
-      return true;
-    }
-    
-    // Now check if token is in JWT format with 3 parts
+    // Check if token is in JWT format with 3 parts
     if (!token.includes('.') || token.split('.').length !== 3) {
       // Only log warning for non-dummy tokens to prevent spam
       return false; 
@@ -371,17 +280,10 @@ export const isAuthenticated = () => {
     
     return true;
   } catch (error) {
-    // Invalid token format, consider it valid if in offline mode
-    console.warn("Token validation error:", error.message);
-    const isOffline = getCookie("offline_mode") === "true" || 
-                      localStorage.getItem("offline_mode") === "true";
+    // Invalid token format
+    console.error("Token validation error:", error.message);
     
-    if (isOffline || token.startsWith("dummy")) {
-      // In offline mode, consider any token valid
-      return true;
-    }
-    
-    // Otherwise, clear invalid tokens
+    // Clear invalid tokens
     removeCookie("token");
     removeCookie("userData");
     return false;
