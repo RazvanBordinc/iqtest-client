@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/TailwindCSS-4.0-06B6D4?style=for-the-badge&logo=tailwindcss" alt="TailwindCSS"/>
   <img src="https://img.shields.io/badge/Framer_Motion-12-0055FF?style=for-the-badge&logo=framer" alt="Framer Motion"/>
   <img src="https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel" alt="Vercel"/>
-  
+  ![IqTest Banner](./public/iqtest.png)
   <p>
     <strong>A modern, animated cognitive assessment platform built with cutting-edge React technologies</strong>
   </p>
@@ -24,6 +24,7 @@
 ## ✨ Features
 
 ### 🎯 Core Functionality
+
 - **4 Cognitive Test Types**: Numerical reasoning, verbal intelligence, memory & recall, comprehensive IQ
 - **Real-time Scoring**: Instant test results with detailed performance analysis
 - **Smart Availability System**: 24-hour cooldown periods with visual countdown timers
@@ -31,6 +32,7 @@
 - **User Profiles**: Track cognitive development and test history over time
 
 ### 🎨 User Experience
+
 - **Stunning Animations**: Framer Motion powered interactions and transitions
 - **Responsive Design**: Optimized for all devices from mobile to desktop
 - **Dark/Light Theme**: System-aware theme switching with smooth transitions
@@ -38,6 +40,7 @@
 - **Error Handling**: User-friendly error messages with recovery suggestions
 
 ### 🔐 Security & Performance
+
 - **JWT Authentication**: Secure token-based authentication with auto-refresh
 - **Server Wake-up**: Intelligent server status monitoring with wake-up animations
 - **Progressive Loading**: Optimized loading with React Suspense and streaming
@@ -45,6 +48,7 @@
 - **Caching Strategy**: Smart caching for improved performance
 
 ### 🚀 Advanced Features
+
 - **Test Selection Animations**: Interactive cards with hover effects and loading overlays
 - **Real-time Timers**: Precise countdown timers with visual progress indicators
 - **Animated Question Types**: Multiple choice, fill-in-gap, and memory pair questions
@@ -54,17 +58,20 @@
 ## 🛠 Tech Stack
 
 ### Core Framework
+
 - **[Next.js 15.3.1](https://nextjs.org/)** - React framework with App Router
 - **[React 19](https://react.dev/)** - Latest React with concurrent features
 - **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript (via JSDoc)
 - **[TailwindCSS 4](https://tailwindcss.com/)** - Utility-first CSS framework
 
 ### Animations & UI
+
 - **[Framer Motion 12](https://www.framer.com/motion/)** - Production-ready motion library
 - **[Lucide React](https://lucide.dev/)** - Beautiful & consistent icon library
 - **[next-themes](https://github.com/pacocoursey/next-themes)** - Perfect theme switching
 
 ### Development & Deployment
+
 - **[ESLint](https://eslint.org/)** - Code quality and consistency
 - **[Vercel](https://vercel.com/)** - Zero-config deployment platform
 - **[PostCSS](https://postcss.org/)** - CSS processing and optimization
@@ -72,6 +79,7 @@
 ### Key Frontend Features
 
 #### Next.js 15 Advantages
+
 - **Turbo Pack**: Ultra-fast bundling and hot reloading
 - **App Router**: File-system based routing with layouts
 - **Server Components**: Reduced JavaScript bundle size
@@ -79,6 +87,7 @@
 - **Edge Runtime**: Global performance optimization
 
 #### React 19 Features
+
 - **Concurrent Features**: Improved user experience with interruption handling
 - **Automatic Batching**: Optimized state updates
 - **Suspense**: Better loading state management
@@ -139,6 +148,7 @@ npm run type-check
 ```
 
 The application will be available at:
+
 - **Development**: http://localhost:3000
 - **Production Build**: http://localhost:3000 (after `npm run build && npm run start`)
 
@@ -272,43 +282,48 @@ iqtest/                                    # Frontend root directory
 ### Framer Motion Animations
 
 #### Loading States
+
 - **Full-Screen Loader**: Neural network animation with orbiting particles
 - **Test Selection**: Card hover effects with loading overlays
 - **Server Wake-up**: Rocket animation with progress indicators
 - **Skeleton Loading**: Pulsing placeholder content
 
 #### Interactive Elements
+
 - **Button Animations**: Hover states with scale and color transitions
 - **Page Transitions**: Smooth slide and fade animations
 - **Modal Animations**: Scale and backdrop blur effects
 - **Progress Indicators**: Animated progress bars and timers
 
 #### Test Experience
+
 - **Question Transitions**: Slide animations between questions
 - **Answer Feedback**: Immediate visual feedback for selections
 - **Timer Animations**: Smooth countdown with color transitions
 - **Results Reveal**: Staggered score animations
 
 ### Theme System
+
 ```javascript
 // Dark/Light theme with system preference detection
 const themes = {
   light: {
-    background: 'from-gray-50 to-white',
-    text: 'text-gray-900',
-    card: 'bg-white border-gray-200'
+    background: "from-gray-50 to-white",
+    text: "text-gray-900",
+    card: "bg-white border-gray-200",
   },
   dark: {
-    background: 'from-gray-950 to-black',
-    text: 'text-white',
-    card: 'bg-gray-900 border-gray-700'
-  }
-}
+    background: "from-gray-950 to-black",
+    text: "text-white",
+    card: "bg-gray-900 border-gray-700",
+  },
+};
 ```
 
 ## 🔐 Authentication Flow
 
 ### Security Implementation
+
 1. **JWT Tokens**: 15-minute access tokens with refresh mechanism
 2. **HTTP-only Cookies**: Secure token storage
 3. **Auto-redirect**: Seamless authentication flow
@@ -316,6 +331,7 @@ const themes = {
 5. **Token Refresh**: Silent background token renewal
 
 ### User Experience Flow
+
 ```
 Landing Page → Auth Page → Test Selection → Test Execution → Results → Leaderboard
      ↓              ↓              ↓               ↓           ↓         ↓
@@ -325,19 +341,21 @@ Landing Page → Auth Page → Test Selection → Test Execution → Results →
 
 ## 🧪 Test Types & Features
 
-| Test Type | Questions | Duration | Difficulty | Features |
-|-----------|-----------|----------|------------|----------|
-| **Numerical** | 20 | 25 min | ⭐⭐⭐ | Math, Logic, Patterns |
-| **Verbal** | 20 | 30 min | ⭐⭐⭐ | Language, Comprehension |
-| **Memory** | 15 | 22 min | ⭐⭐⭐ | Pattern, Recall, Matching |
-| **Mixed** | 16 | 45 min | ⭐⭐⭐⭐⭐ | All Categories Combined |
+| Test Type     | Questions | Duration | Difficulty | Features                  |
+| ------------- | --------- | -------- | ---------- | ------------------------- |
+| **Numerical** | 20        | 25 min   | ⭐⭐⭐     | Math, Logic, Patterns     |
+| **Verbal**    | 20        | 30 min   | ⭐⭐⭐     | Language, Comprehension   |
+| **Memory**    | 15        | 22 min   | ⭐⭐⭐     | Pattern, Recall, Matching |
+| **Mixed**     | 16        | 45 min   | ⭐⭐⭐⭐⭐ | All Categories Combined   |
 
 ### Question Types
+
 - **Multiple Choice**: Standard A/B/C/D format with radio buttons
 - **Fill-in-Gap**: Text input with validation
 - **Memory Pairs**: Interactive card matching with flip animations
 
 ### Test Features
+
 - **24-hour Cooldowns**: Prevents test farming with visual timers
 - **Progress Tracking**: Real-time progress bars and question counters
 - **Auto-save**: Answers saved automatically during test
@@ -348,6 +366,7 @@ Landing Page → Auth Page → Test Selection → Test Execution → Results →
 ### Environment Variables
 
 Create `.env.local` file:
+
 ```bash
 # Backend API URLs
 NEXT_PUBLIC_DIRECT_BACKEND_URL=https://iqtest-server-tkhl.onrender.com
@@ -364,23 +383,24 @@ NEXT_SERVER_API_URL=https://iqtest-server-tkhl.onrender.com
 ### Next.js Configuration
 
 **next.config.mjs**:
+
 ```javascript
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ["lucide-react"],
   },
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'iqtest-server-tkhl.onrender.com',
+        protocol: "https",
+        hostname: "iqtest-server-tkhl.onrender.com",
       },
     ],
   },
   // Enable edge runtime for better performance
-  runtime: 'edge',
-}
+  runtime: "edge",
+};
 
 export default nextConfig;
 ```
@@ -388,29 +408,28 @@ export default nextConfig;
 ### Tailwind Configuration
 
 **tailwind.config.mjs**:
+
 ```javascript
-import { fontFamily } from "tailwindcss/defaultTheme"
+import { fontFamily } from "tailwindcss/defaultTheme";
 
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["class"],
-  content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
       },
       animation: {
-        'fade-in': 'fadeIn 0.5s ease-in-out',
-        'slide-up': 'slideUp 0.3s ease-out',
-        'pulse-slow': 'pulse 3s infinite',
-      }
+        "fade-in": "fadeIn 0.5s ease-in-out",
+        "slide-up": "slideUp 0.3s ease-out",
+        "pulse-slow": "pulse 3s infinite",
+      },
     },
   },
   plugins: [],
-}
+};
 ```
 
 ## 🚢 Deployment
@@ -420,6 +439,7 @@ export default {
 The application is optimized for **Vercel** deployment:
 
 #### Automatic Deployment
+
 ```bash
 # Connect GitHub repository to Vercel
 # Automatic deployments on push to main branch
@@ -430,6 +450,7 @@ vercel --prod
 ```
 
 #### Build Configuration
+
 ```json
 {
   "buildCommand": "npm run build",
@@ -441,13 +462,16 @@ vercel --prod
 ```
 
 #### Environment Variables
+
 Set in Vercel dashboard:
+
 - `NEXT_PUBLIC_DIRECT_BACKEND_URL`
 - `NEXT_SERVER_API_URL`
 
 ### Docker Deployment
 
 **Dockerfile**:
+
 ```dockerfile
 FROM node:20-alpine AS base
 WORKDIR /app
@@ -483,19 +507,22 @@ CMD ["npm", "start"]
 ## 📊 Performance Metrics
 
 ### Lighthouse Scores (Target)
+
 - **Performance**: 95+
 - **Accessibility**: 100
 - **Best Practices**: 100
 - **SEO**: 95+
 
 ### Core Web Vitals
+
 - **LCP**: < 2.5s (Largest Contentful Paint)
-- **FID**: < 100ms (First Input Delay)  
+- **FID**: < 100ms (First Input Delay)
 - **CLS**: < 0.1 (Cumulative Layout Shift)
 
 ## 🧪 Testing
 
 ### Development Testing
+
 ```bash
 # Run development server
 npm run dev
@@ -510,6 +537,7 @@ npm run lint:fix
 ```
 
 ### Browser Testing
+
 - **Chrome DevTools**: Performance profiling
 - **Lighthouse**: Performance auditing
 - **React DevTools**: Component debugging
@@ -518,12 +546,14 @@ npm run lint:fix
 ## 🔍 Browser Support
 
 ### Supported Browsers
+
 - **Chrome/Edge**: Latest 2 versions
-- **Firefox**: Latest 2 versions  
+- **Firefox**: Latest 2 versions
 - **Safari**: Latest 2 versions
 - **Mobile Safari/Chrome**: Latest versions
 
 ### Polyfills Included
+
 - **CSS Grid**: Automatic fallbacks
 - **Flexbox**: Cross-browser compatibility
 - **ES6+ Features**: Via Next.js transpilation
@@ -531,6 +561,7 @@ npm run lint:fix
 ## 📱 Progressive Web App (PWA)
 
 ### PWA Features
+
 - **Web App Manifest**: Install prompt on mobile
 - **Service Worker**: Offline capability (basic)
 - **Responsive Design**: Works on all screen sizes
