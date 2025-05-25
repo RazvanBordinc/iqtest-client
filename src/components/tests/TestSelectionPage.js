@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingAnimation from "@/components/shared/LoadingAnimation";
+import FullScreenLoader from "@/components/shared/FullScreenLoader";
 import Header from "@/components/start/Header";
 import { TEST_TYPES } from "../constants/testTypes";
 import TestAvailability from "./TestAvailability";
@@ -61,9 +62,6 @@ const TestCategoryCard = ({ category, onSelect, index }) => {
   return (
     <motion.div
       className="relative group cursor-pointer"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.5 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onSelect(category)}
@@ -218,6 +216,8 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
   });
   const [clearingCooldowns, setClearingCooldowns] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedTest, setSelectedTest] = useState(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Refresh when page gains focus or after navigation
   useEffect(() => {
@@ -286,8 +286,13 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
 
   // Handle category selection
   const handleCategorySelect = (category) => {
-    // Redirect to test start page with selected category
-    router.push(`/tests/start?category=${category.id}`);
+    setSelectedTest(category);
+    setIsNavigating(true);
+    
+    // Give time for the animation to show before navigating
+    setTimeout(() => {
+      router.push(`/tests/start?category=${category.id}`);
+    }, 800);
   };
 
   // Clear all test cooldowns (for testing/development)
@@ -415,18 +420,48 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
           {/* Test categories grid */}
           <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.15,
+                  delayChildren: 0.3
+                }
+              }
+            }}
           >
             {initialTests.map((category, index) => (
-              <TestAvailability key={category.id} testTypeId={category.id}>
-                <TestCategoryCard
-                  category={category}
-                  onSelect={handleCategorySelect}
-                  index={index}
-                />
-              </TestAvailability>
+              <motion.div
+                key={category.id}
+                variants={{
+                  hidden: { 
+                    opacity: 0, 
+                    y: 30,
+                    scale: 0.9
+                  },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                      type: "spring",
+                      stiffness: 100,
+                      damping: 15
+                    }
+                  }
+                }}
+              >
+                <TestAvailability testTypeId={category.id}>
+                  <TestCategoryCard
+                    category={category}
+                    onSelect={handleCategorySelect}
+                    index={index}
+                  />
+                </TestAvailability>
+              </motion.div>
             ))}
           </motion.div>
 
@@ -461,6 +496,12 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
           </motion.div>
         </motion.div>
       </main>
+      
+      {/* Full screen loader when selecting a test */}
+      <FullScreenLoader 
+        isLoading={isNavigating} 
+        text={selectedTest ? `Preparing ${selectedTest.title}...` : "Loading test..."}
+      />
     </div>
   );
 }
