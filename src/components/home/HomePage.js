@@ -13,6 +13,7 @@ import { checkUsername, createUser, loginWithPassword, isAuthenticated } from "@
 import { showError } from "@/components/shared/ErrorModal";
 import LoadingDots from "@/components/shared/LoadingDots";
 import { InlineLoadingAnimation } from "@/components/shared/LoadingSpinner";
+import FullScreenLoader from "@/components/shared/FullScreenLoader";
 import ErrorMessage from "@/components/shared/ErrorMessage";
 import PasswordStrengthIndicator from "@/components/shared/PasswordStrengthIndicator";
 
@@ -572,55 +573,6 @@ export default function HomePage() {
               
               {/* Error message */}
               <ErrorMessage error={errors.username || errors.general} />
-              
-              {/* Loading state for username check */}
-              <AnimatePresence>
-                {isChecking && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 40 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="absolute left-1/2 transform -translate-x-1/2 text-center mt-4"
-                  >
-                    <motion.div
-                      className="bg-white dark:bg-gray-800 rounded-lg px-6 py-3 shadow-lg border border-gray-200 dark:border-gray-700"
-                      animate={{
-                        boxShadow: [
-                          "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                          "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                          "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
-                        ]
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <motion.div className="flex gap-1">
-                          {[0, 1, 2].map((i) => (
-                            <motion.div
-                              key={i}
-                              className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"
-                              animate={{
-                                y: ["0%", "-50%", "0%"],
-                                scale: [1, 1.2, 1]
-                              }}
-                              transition={{
-                                duration: 0.6,
-                                delay: i * 0.1,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                              }}
-                            />
-                          ))}
-                        </motion.div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Checking username availability
-                        </p>
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </motion.div>
         )}
@@ -988,6 +940,23 @@ export default function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Full screen loader for username checking */}
+      <FullScreenLoader 
+        isLoading={isChecking} 
+        text="Checking username availability"
+      />
+      
+      {/* Full screen loader for authentication */}
+      <FullScreenLoader 
+        isLoading={isLoading && (step === "password" || step === "details")} 
+        text={
+          step === "password" && authMode === "login" ? "Signing you in..." :
+          step === "password" && authMode === "signup" ? "Verifying password..." :
+          step === "details" ? "Creating your account..." :
+          "Processing..."
+        }
+      />
     </motion.div>
   );
 }
