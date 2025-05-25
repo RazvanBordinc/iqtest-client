@@ -1,178 +1,95 @@
-// src/utils/serverWakeup.js
 import logger from '@/utils/logger';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com';
 
-// Wake up the server and return status
-export const wakeUpServer = async (onProgress = null, options = {}) => {
-  const startTime = Date.now();
-  const maxAttempts = options.maxAttempts || 15; // Try for up to 75 seconds
-  const useHealthEndpoint = options.useHealthEndpoint !== false; // Default to true
-  let attempt = 0;
-  
-  logger.info('Starting server wake-up process', {
-    event: 'server_wake_start',
-    backend: BACKEND_URL,
-    maxAttempts,
-    useHealthEndpoint
-  });
-
-  while (attempt < maxAttempts) {
-    attempt++;
-    const attemptStart = Date.now();
+export async function isServerAwake() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/health`, {
+      method: 'GET',
+      credentials: 'omit', // Don't include credentials for health checks
+      mode: 'cors'
+    });
     
-    try {
-      // Update progress
-      if (onProgress) {
-        onProgress({
-          attempt,
-          maxAttempts,
-          message: attempt === 1 ? 'Connecting to server...' : `Waking up server... (${attempt}/${maxAttempts})`,
-          percentage: (attempt / maxAttempts) * 100
-        });
-      }
+    return response.ok;
+  } catch (error) {
+    logger.warn('Server health check failed', {
+      event: 'server_health_check_failed',
+      error: error.message
+    });
+    return false;
+  }
+}
 
-      // Try to wake up the server with multiple endpoints
-      const controller = new AbortController();
-      const timeoutMs = Math.min(5000 + (attempt * 1000), 10000); // 5-10 second timeout, increasing
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+export async function wakeUpServer() {
+  const maxAttempts = 5;
+  const baseDelay = 2000; // Start with 2 seconds
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const startTime = performance.now();
       
-      // Try health endpoint first, then wake endpoint
-      const endpoint = useHealthEndpoint && attempt <= 3 
-        ? `${BACKEND_URL}/api/health` 
-        : `${BACKEND_URL}/api/health/wake`;
-      
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Wake-Request': 'true',
-          'Cache-Control': 'no-cache'
-        },
-        mode: 'cors',
-        credentials: 'include',
-        signal: controller.signal
+      logger.info('Attempting server wake-up', {
+        event: 'server_wake_attempt',
+        attempt,
+        maxAttempts
       });
       
-      clearTimeout(timeoutId);
+      const response = await fetch(`${BACKEND_URL}/api/health/wake`, {
+        method: 'GET',
+        credentials: 'omit',
+        mode: 'cors',
+        signal: AbortSignal.timeout(15000) // 15 second timeout per attempt
+      });
+      
+      const duration = performance.now() - startTime;
       
       if (response.ok) {
-        const data = await response.json();
-        const totalTime = Date.now() - startTime;
-        
         logger.info('Server wake-up successful', {
           event: 'server_wake_success',
           attempt,
-          totalTime: `${totalTime}ms`,
-          isColdStart: data.IsColdStart
+          duration: `${Math.round(duration)}ms`
         });
         
-        if (onProgress) {
-          onProgress({
-            attempt,
-            maxAttempts,
-            message: data.IsColdStart ? 'Server awakened successfully!' : 'Server was already active!',
-            percentage: 100,
-            success: true
-          });
-        }
-        
-        return {
-          success: true,
-          attempts: attempt,
-          totalTime,
-          isColdStart: data.IsColdStart,
-          message: data.Message
+        return { 
+          success: true, 
+          attempt, 
+          duration: Math.round(duration),
+          message: 'Server is awake and ready'
         };
+      } else {
+        logger.warn('Server wake-up attempt failed', {
+          event: 'server_wake_attempt_failed',
+          attempt,
+          status: response.status,
+          attemptTime: `${Math.round(duration)}ms`
+        });
       }
     } catch (error) {
-      const attemptTime = Date.now() - attemptStart;
+      const duration = performance.now ? performance.now() - performance.now() : 0;
       
       logger.warn('Server wake-up attempt failed', {
         event: 'server_wake_attempt_failed',
         attempt,
-        attemptTime: `${attemptTime}ms`,
-        error: error.message
+        error: error.message,
+        attemptTime: `${Math.round(duration)}ms`
       });
-      
-      // Wait before next attempt (progressive backoff)
-      if (attempt < maxAttempts) {
-        const delay = Math.min(2000 + (attempt * 500), 5000); // 2-5 second delay, increasing
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+    }
+    
+    // Wait before next attempt (exponential backoff)
+    if (attempt < maxAttempts) {
+      const delay = baseDelay * Math.pow(1.5, attempt - 1);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-
-  // All attempts failed
-  const totalTime = Date.now() - startTime;
   
   logger.error('Server wake-up failed after all attempts', {
     event: 'server_wake_failed',
-    totalAttempts: maxAttempts,
-    totalTime: `${totalTime}ms`
+    maxAttempts
   });
   
-  if (onProgress) {
-    onProgress({
-      attempt: maxAttempts,
-      maxAttempts,
-      message: 'Server wake-up failed. Using offline mode.',
-      percentage: 100,
-      success: false
-    });
-  }
-  
-  return {
-    success: false,
+  return { 
+    success: false, 
     attempts: maxAttempts,
-    totalTime,
-    message: 'Server wake-up failed after all attempts'
+    message: 'Unable to wake server after multiple attempts'
   };
-};
-
-// Quick server availability check
-export const isServerAwake = async () => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-    
-    const response = await fetch(`${BACKEND_URL}/api/health/ping`, {
-      method: 'GET',
-      mode: 'cors',
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch (error) {
-    return false;
-  }
-};
-
-// Get server status information
-export const getServerStatus = async () => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
-    const response = await fetch(`${BACKEND_URL}/api/health`, {
-      method: 'GET',
-      mode: 'cors',
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        available: true,
-        ...data
-      };
-    }
-    
-    return { available: false };
-  } catch (error) {
-    return { available: false, error: error.message };
-  }
-};
+}

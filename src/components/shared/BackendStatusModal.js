@@ -1,121 +1,46 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, CloudCog, Server, Clock } from 'lucide-react';
-import api from '@/fetch/api';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useServerWakeUp } from "@/hooks/useServerWakeUp";
+import logger from "@/utils/logger";
 
 export default function BackendStatusModal() {
+  const { isServerReady, isChecking, triggerWakeUp } = useServerWakeUp();
   const [showModal, setShowModal] = useState(false);
-  const [timerInSeconds, setTimerInSeconds] = useState(60);
-  const [estimatedTimeLeft, setEstimatedTimeLeft] = useState(60);
-  const [checkingStatus, setCheckingStatus] = useState(false);
-  const [offlineMode, setOfflineMode] = useState(false);
-  const [checkFailures, setCheckFailures] = useState(0);
-  
-  // Check backend status directly on mount
-  useEffect(() => {
-    let timerInterval = null;
-    let checkInterval = null;
-    
-    const checkBackendStatus = async () => {
-      setCheckingStatus(true);
-      
-      try {
-        // Directly check backend health endpoint
-        const response = await fetch(`${api.baseUrl}/api/health`, { 
-          method: 'GET',
-          cache: 'no-store',
-          mode: 'cors',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (response.ok) {
-          // Backend is active, hide modal
-          setShowModal(false);
-          setOfflineMode(false);
-          setCheckFailures(0);
-          clearInterval(timerInterval);
-          clearInterval(checkInterval);
-        } else {
-          // Backend returned error status, show modal
-          setShowModal(true);
-          setCheckFailures(prev => prev + 1);
-          
-          // If we've been checking for a while with no success, enable offline mode
-          if (checkFailures > 10) { // After ~50 seconds of failures
-            setOfflineMode(true);
-          }
-        }
-      } catch (error) {
-        // Connection error, backend might be starting up
-        console.warn('Backend connection error:', error);
-        setShowModal(true);
-        setCheckFailures(prev => prev + 1);
-        
-        // If we've been checking for a while with no success, enable offline mode
-        if (checkFailures > 10) { // After ~50 seconds of failures
-          setOfflineMode(true);
-        }
-      } finally {
-        setCheckingStatus(false);
-      }
-    };
+  const [hasShownWarning, setHasShownWarning] = useState(false);
 
-    // Set up status listener (Using the compatibility adapter)
-    const unsubscribe = api.addBackendStatusListener(({ isActive }) => {
-      // With direct access, isActive should always be true
-      // But we'll do a real check to make sure
-      if (!isActive) {
-        checkBackendStatus();
-      }
+  useEffect(() => {
+    // Show modal if server is not ready and we haven't shown warning yet
+    if (!isServerReady && !hasShownWarning && !isChecking) {
+      setShowModal(true);
+      setHasShownWarning(true);
+      
+      logger.info('Showing backend status modal', {
+        event: 'backend_status_modal_shown',
+        serverReady: isServerReady
+      });
+    }
+  }, [isServerReady, hasShownWarning, isChecking]);
+
+  const handleWakeUp = async () => {
+    logger.info('User triggered manual server wake-up', {
+      event: 'manual_server_wake_triggered'
     });
     
-    // Initial check
-    checkBackendStatus();
-    
-    // Set up regular checks if the modal is shown
-    if (showModal) {
-      // Start countdown timer
-      setTimerInSeconds(60);
-      timerInterval = setInterval(() => {
-        setTimerInSeconds(prev => {
-          if (prev <= 1) {
-            // When timer reaches 0, check status again
-            checkBackendStatus();
-            return 60; // Reset timer
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-      // Also check status periodically
-      checkInterval = setInterval(() => {
-        checkBackendStatus();
-      }, 5000); // Check every 5 seconds
+    const success = await triggerWakeUp();
+    if (success) {
+      setShowModal(false);
     }
-    
-    return () => {
-      unsubscribe();
-      if (timerInterval) clearInterval(timerInterval);
-      if (checkInterval) clearInterval(checkInterval);
-    };
-  }, [checkFailures]);
-  
-  // Update estimated time based on timer
-  useEffect(() => {
-    setEstimatedTimeLeft(timerInSeconds);
-  }, [timerInSeconds]);
-  
-  // Handle continue in offline mode
-  const handleContinueOffline = () => {
-    setShowModal(false);
-    // Store a flag that we're in offline mode
-    localStorage.setItem('offline_mode', 'true');
-    // Set a cookie for server-side awareness
-    document.cookie = 'offline_mode=true; path=/; max-age=3600';
   };
-  
+
+  const handleContinue = () => {
+    logger.info('User chose to continue without server wake-up', {
+      event: 'continue_without_wake'
+    });
+    setShowModal(false);
+  };
+
   return (
     <AnimatePresence>
       {showModal && (
@@ -123,81 +48,65 @@ export default function BackendStatusModal() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="w-full max-w-md p-6 mx-4 bg-white rounded-xl shadow-xl dark:bg-gray-800"
+            className="bg-white dark:bg-gray-900 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-700"
           >
-            <div className="text-center">
-              <motion.div 
-                className="mx-auto flex justify-center mb-4 text-purple-600 dark:text-purple-500"
-                animate={{ rotateY: [0, 360] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            {/* Warning Icon */}
+            <motion.div
+              animate={{ 
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="mx-auto mb-4 w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center"
+            >
+              <span className="text-amber-600 dark:text-amber-400 text-2xl">⚠️</span>
+            </motion.div>
+
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+              Server Status
+            </h2>
+            
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
+              The server appears to be sleeping. This is normal for free hosting. 
+              You can wake it up now or continue - it will start automatically when needed.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleContinue}
+                className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
-                <CloudCog className="h-16 w-16" />
-              </motion.div>
+                Continue
+              </button>
               
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {offlineMode ? 'Backend Service Unavailable' : 'Backend Service Starting'}
-              </h2>
-              
-              <p className="mb-6 text-gray-600 dark:text-gray-300">
-                {offlineMode 
-                  ? 'The backend service on Render appears to be unreachable. You can continue in offline mode with limited functionality.' 
-                  : 'The backend service is spinning up on Render. This may take up to 60 seconds due to free tier limitations.'}
-              </p>
-              
-              {!offlineMode && (
-                <>
-                  <div className="flex items-center justify-center space-x-2 mb-4">
-                    <Server className="h-5 w-5 text-amber-500" />
-                    <span className="text-amber-600 dark:text-amber-400 font-medium">
-                      {checkingStatus ? 'Checking status...' : `Estimated time: ~${estimatedTimeLeft} seconds`}
-                    </span>
-                  </div>
-                  
-                  {/* Progress bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6 dark:bg-gray-700">
-                    <motion.div 
-                      className="bg-purple-600 h-2.5 rounded-full dark:bg-purple-500"
-                      style={{ width: `${100 - (timerInSeconds / 60 * 100)}%` }}
-                    />
-                  </div>
-                  
-                  {/* Loading spinner */}
-                  <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                    className="flex justify-center mb-4"
-                  >
-                    <Loader2 className="h-8 w-8 text-purple-600 dark:text-purple-500" />
-                  </motion.div>
-                  
-                  <div className="flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Checking every 5 seconds</span>
-                  </div>
-                </>
-              )}
-              
-              {offlineMode && (
-                <div className="mt-6">
-                  <button
-                    onClick={handleContinueOffline}
-                    className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    Continue in Offline Mode
-                  </button>
-                  <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                    In offline mode, you can explore the app with sample data and limited functionality.
-                    Your progress will not be saved to the backend.
-                  </p>
-                </div>
-              )}
+              <motion.button
+                onClick={handleWakeUp}
+                disabled={isChecking}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                  isChecking
+                    ? 'bg-gray-400 cursor-not-allowed text-white'
+                    : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white'
+                }`}
+              >
+                {isChecking ? 'Waking...' : 'Wake Server'}
+              </motion.button>
             </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-3">
+              First-time startup may take up to 60 seconds
+            </p>
           </motion.div>
         </motion.div>
       )}

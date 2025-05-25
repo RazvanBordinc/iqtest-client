@@ -56,10 +56,13 @@ export const clientFetch = async (endpoint, options = {}) => {
   // Construct the complete URL to the backend API
   const url = constructUrl(endpoint);
 
+  // For health/wake endpoints, don't include credentials to avoid CORS issues
+  const isHealthEndpoint = endpoint.includes('/health') || endpoint.includes('/wake');
+  
   const fetchOptions = {
     ...options,
     headers: createHeaders(options.headers),
-    credentials: "include", // Include cookies
+    credentials: isHealthEndpoint ? "omit" : "include", // Omit credentials for health checks
     mode: 'cors', // Enable CORS for cross-origin requests
   };
 
@@ -108,7 +111,6 @@ export const clientFetch = async (endpoint, options = {}) => {
       headers: { 
         // Only log non-sensitive headers
         ...(fetchOptions.headers?.['Content-Type'] && { 'Content-Type': fetchOptions.headers['Content-Type'] }),
-        ...(fetchOptions.headers?.['X-Offline-Mode'] && { 'X-Offline-Mode': fetchOptions.headers['X-Offline-Mode'] }),
       },
       // Don't log body for privacy
       hasBody: !!fetchOptions.body,
@@ -249,7 +251,7 @@ export const clientFetch = async (endpoint, options = {}) => {
         timeout: `${isCriticalEndpoint ? '90000' : '30000'}ms`
       });
       
-      // Try server wake-up for critical endpoints
+      // Try server wake-up for critical endpoints that timeout
       if (isCriticalEndpoint && !endpoint.includes('/wake')) {
         try {
           logger.info('Attempting server wake-up after timeout', {
@@ -290,7 +292,6 @@ export const clientFetch = async (endpoint, options = {}) => {
           });
         }
       }
-      
       
       const timeoutError = new Error('Server is starting up. This may take up to 60 seconds on first visit.');
       timeoutError.status = 408; // Request Timeout

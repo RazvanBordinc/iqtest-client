@@ -3,15 +3,19 @@ import React, { useState, useEffect } from "react";
 import { Finger_Paint } from "next/font/google";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, User, Lock, Calendar, Users, AlertCircle, Brain } from "lucide-react";
+import { Eye, EyeOff, User, Lock, Clock, Users } from "lucide-react";
 
 import InputRectangle from "@/components/begin/InputRectangle";
 import CountrySelect from "@/components/shared/CountrySelect";
 import AgeSelector from "@/components/begin/AgeSelector";
 import { useTheme } from "@/components/shared/ThemeProvider";
-import { checkUsername, createUser, loginWithPassword, isAuthenticated } from "@/fetch/auth";
-import { showError } from "@/components/shared/ErrorModal";
-import LoadingDots from "@/components/shared/LoadingDots";
+import {
+  checkUsername,
+  createUser,
+  loginWithPassword,
+  isAuthenticated,
+} from "@/fetch/auth";
+
 import { InlineLoadingAnimation } from "@/components/shared/LoadingSpinner";
 import FullScreenLoader from "@/components/shared/FullScreenLoader";
 import ErrorMessage from "@/components/shared/ErrorMessage";
@@ -27,20 +31,20 @@ const fingerPaint = Finger_Paint({
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -40 }
+  exit: { opacity: 0, y: -40 },
 };
 
 const slideVariants = {
   initial: { opacity: 0, x: 100 },
   animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -100 }
+  exit: { opacity: 0, x: -100 },
 };
 
 const shakeAnimation = {
   shake: {
     x: [-10, 10, -10, 10, 0],
-    transition: { duration: 0.5 }
-  }
+    transition: { duration: 0.5 },
+  },
 };
 
 export default function HomePage() {
@@ -51,14 +55,14 @@ export default function HomePage() {
   const [step, setStep] = useState("username"); // username, password, details
   const [authMode, setAuthMode] = useState(null); // login or signup
   const [userExists, setUserExists] = useState(false);
-  
+
   // Form data
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [age, setAge] = useState(25);
   const [country, setCountry] = useState("");
-  
+
   // UI states
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -69,7 +73,7 @@ export default function HomePage() {
   const [lettersTyped, setLettersTyped] = useState([]);
   const [showIntro, setShowIntro] = useState(true);
   const [successMessage, setSuccessMessage] = useState("");
-  
+
   // Error states
   const [errors, setErrors] = useState({
     username: "",
@@ -77,24 +81,24 @@ export default function HomePage() {
     confirmPassword: "",
     age: "",
     country: "",
-    general: ""
+    general: "",
   });
-  
+
   // Validation states
   const [touched, setTouched] = useState({
     password: false,
-    confirmPassword: false
+    confirmPassword: false,
   });
 
   // Check if user is already authenticated
   useEffect(() => {
     if (mounted && !hasCheckedAuth) {
       setHasCheckedAuth(true);
-      
+
       if (isAuthenticated()) {
         // Skip intro for authenticated users
         setShowIntro(false);
-        
+
         // Save current username in localStorage if available
         const userData = JSON.parse(localStorage.getItem("userData") || "{}");
         if (userData.username) {
@@ -117,11 +121,10 @@ export default function HomePage() {
       const timer = setTimeout(() => {
         setShowIntro(false);
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [mounted, showIntro]);
-
 
   // Validate password
   const validatePassword = (pwd) => {
@@ -142,15 +145,18 @@ export default function HomePage() {
     const newText = e.target.value;
     setUsername(newText);
     setErrors({ ...errors, username: "" });
-    
+
     // Add letter animation
     if (newText.length > username.length) {
       const newLetter = newText[newText.length - 1];
-      setLettersTyped(prev => [...prev, {
-        id: Date.now(),
-        letter: newLetter,
-        position: newText.length - 1
-      }]);
+      setLettersTyped((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          letter: newLetter,
+          position: newText.length - 1,
+        },
+      ]);
     }
   };
 
@@ -160,25 +166,32 @@ export default function HomePage() {
       setErrors({ ...errors, username: "Username is required" });
       return;
     }
-    
+
     if (username.length < 3) {
-      setErrors({ ...errors, username: "Username must be at least 3 characters" });
+      setErrors({
+        ...errors,
+        username: "Username must be at least 3 characters",
+      });
       return;
     }
 
     setIsLoading(true);
     setIsChecking(true);
     setErrors({ ...errors, username: "", general: "" });
-    
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 800)); // Minimum loading time for better UX
+      await new Promise((resolve) => setTimeout(resolve, 800)); // Minimum loading time for better UX
       const response = await checkUsername(username);
       setUserExists(response.exists);
       setAuthMode(response.exists ? "login" : "signup");
       setStep("password");
     } catch (error) {
       console.error("Username check error:", error);
-      setErrors({ ...errors, general: "Unable to check username. Please check your internet connection and try again." });
+      setErrors({
+        ...errors,
+        general:
+          "Unable to check username. Please check your internet connection and try again.",
+      });
     } finally {
       setIsLoading(false);
       setIsChecking(false);
@@ -195,21 +208,20 @@ export default function HomePage() {
 
     setIsLoading(true);
     setErrors({ ...errors, password: "", general: "" });
-    
+
     try {
-      const response = await loginWithPassword({ 
-        username: username, 
-        password: password 
+      const response = await loginWithPassword({
+        username: username,
+        password: password,
       });
-      
-      
+
       // Save username to localStorage for future visits
       localStorage.setItem("userData", JSON.stringify({ username }));
-      
+
       // Show success message
       setSuccessMessage("Login successful! Redirecting...");
       setIsLoading(false);
-      
+
       // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
         try {
@@ -222,7 +234,7 @@ export default function HomePage() {
       }, 1000);
     } catch (error) {
       console.error("Login error:", error);
-      
+
       let errorMessage = "Unable to sign in. ";
       if (error.status === 400) {
         errorMessage += "Invalid username or password.";
@@ -231,14 +243,14 @@ export default function HomePage() {
       } else {
         errorMessage += "Please try again later.";
       }
-      
+
       setErrors({ ...errors, password: errorMessage });
-      
+
       // Animate the password field
       const passwordInput = document.querySelector('input[type="password"]');
       if (passwordInput) {
-        passwordInput.classList.add('animate-shake');
-        setTimeout(() => passwordInput.classList.remove('animate-shake'), 500);
+        passwordInput.classList.add("animate-shake");
+        setTimeout(() => passwordInput.classList.remove("animate-shake"), 500);
       }
     } finally {
       setIsLoading(false);
@@ -249,12 +261,12 @@ export default function HomePage() {
   const handlePasswordForSignup = () => {
     const passwordError = validatePassword(password);
     const confirmError = validateConfirmPassword(password, confirmPassword);
-    
+
     if (passwordError || confirmError) {
       setErrors({
         ...errors,
         password: passwordError,
-        confirmPassword: confirmError
+        confirmPassword: confirmError,
       });
       return;
     }
@@ -268,9 +280,9 @@ export default function HomePage() {
     const newErrors = {
       ...errors,
       country: !country ? "Please select your country" : "",
-      age: age && (age < 1 || age > 120) ? "Please enter a valid age" : ""
+      age: age && (age < 1 || age > 120) ? "Please enter a valid age" : "",
     };
-    
+
     if (newErrors.country || newErrors.age) {
       setErrors(newErrors);
       return;
@@ -278,27 +290,29 @@ export default function HomePage() {
 
     setIsLoading(true);
     setErrors({ ...errors, general: "" });
-    
+
     try {
-      const response = await createUser({ 
-        username, 
+      const response = await createUser({
+        username,
         password,
-        country, 
-        age: age ? parseInt(age) : null 
+        country,
+        age: age ? parseInt(age) : null,
       });
-      
-      
+
       // Save user data to localStorage
-      localStorage.setItem("userData", JSON.stringify({ 
-        username, 
-        age, 
-        country 
-      }));
-      
+      localStorage.setItem(
+        "userData",
+        JSON.stringify({
+          username,
+          age,
+          country,
+        })
+      );
+
       // Show success message
       setSuccessMessage("Account created successfully! Redirecting...");
       setIsLoading(false);
-      
+
       // Give time for cookies to be set properly and user to see message
       setTimeout(() => {
         try {
@@ -311,7 +325,7 @@ export default function HomePage() {
       }, 1000);
     } catch (error) {
       console.error("Account creation error:", error);
-      
+
       let errorMessage = "Unable to create account. ";
       if (error.status === 400 && error.message) {
         errorMessage = error.message;
@@ -320,7 +334,7 @@ export default function HomePage() {
       } else {
         errorMessage += "Please try again later.";
       }
-      
+
       setErrors({ ...errors, general: errorMessage });
     } finally {
       setIsLoading(false);
@@ -369,7 +383,7 @@ export default function HomePage() {
                 }}
                 transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
               />
-              
+
               {/* Triangles */}
               <motion.div
                 className="absolute top-1/3 right-1/4 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[35px] border-b-blue-500/50"
@@ -387,7 +401,7 @@ export default function HomePage() {
                 }}
                 transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
               />
-              
+
               {/* Circles */}
               <motion.div
                 className="absolute top-1/2 left-10 w-20 h-20 bg-purple-500/10 border-2 border-purple-500/40 rounded-full"
@@ -405,7 +419,7 @@ export default function HomePage() {
                 }}
                 transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
               />
-              
+
               {/* Additional shapes for variety */}
               <motion.div
                 className="absolute bottom-40 left-1/2 w-18 h-18 border-2 border-amber-500/40 rounded-lg"
@@ -431,7 +445,7 @@ export default function HomePage() {
                 }}
                 transition={{ duration: 3, repeat: 0, ease: "easeInOut" }}
               />
-              
+
               {/* Center content */}
               <motion.div
                 className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-10"
@@ -448,14 +462,14 @@ export default function HomePage() {
                 >
                   <motion.h1
                     className="text-7xl font-bold bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent mb-4"
-                    animate={{ 
+                    animate={{
                       scale: [1, 1.05, 1],
                     }}
                     transition={{ duration: 2, repeat: 0 }}
                   >
                     IQ Test
                   </motion.h1>
-                  
+
                   {/* Decorative elements around text */}
                   <motion.div
                     className="absolute -top-4 -left-4 w-2 h-2 bg-amber-500 rounded-full"
@@ -474,7 +488,7 @@ export default function HomePage() {
                     transition={{ duration: 1.5, repeat: 0, delay: 0.7 }}
                   />
                 </motion.div>
-                
+
                 <motion.p
                   className="text-xl text-gray-600 dark:text-gray-400 mt-4"
                   initial={{ opacity: 0, y: 20 }}
@@ -483,7 +497,7 @@ export default function HomePage() {
                 >
                   Discover your potential
                 </motion.p>
-                
+
                 {/* Progress indicator */}
                 <motion.div
                   className="mt-8 w-32 h-1 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto overflow-hidden"
@@ -499,7 +513,7 @@ export default function HomePage() {
                   />
                 </motion.div>
               </motion.div>
-              
+
               {/* Rotating orbit */}
               <motion.div
                 className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96"
@@ -532,29 +546,29 @@ export default function HomePage() {
                   <motion.div
                     key={item.id}
                     className="absolute text-4xl font-bold text-purple-500/50"
-                    initial={{ 
-                      x: 0, 
-                      y: 0, 
+                    initial={{
+                      x: 0,
+                      y: 0,
                       scale: 2,
-                      opacity: 0 
+                      opacity: 0,
                     }}
-                    animate={{ 
-                      x: (Math.random() - 0.5) * 200, 
+                    animate={{
+                      x: (Math.random() - 0.5) * 200,
                       y: -(Math.random() * 100 + 50),
                       scale: 1,
                       opacity: [0, 1, 0],
-                      rotate: (Math.random() - 0.5) * 45
+                      rotate: (Math.random() - 0.5) * 45,
                     }}
-                    transition={{ 
+                    transition={{
                       duration: 2,
-                      ease: "easeOut"
+                      ease: "easeOut",
                     }}
                   >
                     {item.letter}
                   </motion.div>
                 ))}
               </AnimatePresence>
-              
+
               <InputRectangle
                 width={400}
                 height={80}
@@ -566,7 +580,7 @@ export default function HomePage() {
                 isLoading={isLoading}
                 error={errors.username}
               />
-              
+
               {/* Error message */}
               <ErrorMessage error={errors.username || errors.general} />
             </div>
@@ -584,11 +598,11 @@ export default function HomePage() {
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="flex items-center justify-center h-full px-4"
           >
-            <motion.div 
+            <motion.div
               className="w-full max-w-md space-y-6"
               variants={fadeInUp}
             >
-              <motion.div 
+              <motion.div
                 className="text-center mb-8"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -602,17 +616,18 @@ export default function HomePage() {
                 >
                   <User className="w-10 h-10 text-white" />
                 </motion.div>
-                
+
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  {authMode === "login" ? `Welcome back, ${username}!` : `Nice to meet you, ${username}!`}
+                  {authMode === "login"
+                    ? `Welcome back, ${username}!`
+                    : `Nice to meet you, ${username}!`}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
-                  {authMode === "login" 
-                    ? "Enter your password to continue" 
-                    : "This username is available. Create your password"
-                  }
+                  {authMode === "login"
+                    ? "Enter your password to continue"
+                    : "This username is available. Create your password"}
                 </p>
-                
+
                 {/* Free tier hosting warning */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -623,13 +638,14 @@ export default function HomePage() {
                   <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
                     <Clock className="w-4 h-4 flex-shrink-0" />
                     <span>
-                      Using free tier hosting - first login may take up to 60 seconds while the server starts up
+                      Using free tier hosting - first login may take up to 60
+                      seconds while the server starts up
                     </span>
                   </p>
                 </motion.div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 className="space-y-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -648,12 +664,26 @@ export default function HomePage() {
                       }}
                       onBlur={() => {
                         if (authMode === "signup") {
-                          setErrors({ ...errors, password: validatePassword(password) });
+                          setErrors({
+                            ...errors,
+                            password: validatePassword(password),
+                          });
                         }
                       }}
-                      onKeyPress={(e) => e.key === "Enter" && (authMode === "login" ? handleLogin() : null)}
-                      placeholder={authMode === "login" ? "Enter your password" : "Create a password (8+ characters)"}
-                      className={`w-full pl-10 pr-12 py-3 border ${errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all`}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" &&
+                        (authMode === "login" ? handleLogin() : null)
+                      }
+                      placeholder={
+                        authMode === "login"
+                          ? "Enter your password"
+                          : "Create a password (8+ characters)"
+                      }
+                      className={`w-full pl-10 pr-12 py-3 border ${
+                        errors.password
+                          ? "border-red-500"
+                          : "border-gray-300 dark:border-gray-600"
+                      } rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all`}
                       autoFocus
                       animate={errors.password ? "shake" : ""}
                       variants={shakeAnimation}
@@ -668,8 +698,8 @@ export default function HomePage() {
                   </div>
                   <ErrorMessage error={errors.password} />
                   {authMode === "signup" && (
-                    <PasswordStrengthIndicator 
-                      password={password} 
+                    <PasswordStrengthIndicator
+                      password={password}
                       show={touched.password && !errors.password}
                     />
                   )}
@@ -677,7 +707,7 @@ export default function HomePage() {
 
                 {authMode === "signup" && (
                   <div>
-                    <motion.div 
+                    <motion.div
                       className="relative"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
@@ -693,18 +723,36 @@ export default function HomePage() {
                           setTouched({ ...touched, confirmPassword: true });
                         }}
                         onBlur={() => {
-                          setErrors({ ...errors, confirmPassword: validateConfirmPassword(password, confirmPassword) });
+                          setErrors({
+                            ...errors,
+                            confirmPassword: validateConfirmPassword(
+                              password,
+                              confirmPassword
+                            ),
+                          });
                         }}
-                        onKeyPress={(e) => e.key === "Enter" && handlePasswordForSignup()}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handlePasswordForSignup()
+                        }
                         placeholder="Confirm your password"
-                        className={`w-full pl-10 pr-12 py-3 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all`}
+                        className={`w-full pl-10 pr-12 py-3 border ${
+                          errors.confirmPassword
+                            ? "border-red-500"
+                            : "border-gray-300 dark:border-gray-600"
+                        } rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all`}
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                       >
-                        {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        {showConfirmPassword ? (
+                          <EyeOff size={20} />
+                        ) : (
+                          <Eye size={20} />
+                        )}
                       </button>
                     </motion.div>
                     <ErrorMessage error={errors.confirmPassword} />
@@ -712,7 +760,7 @@ export default function HomePage() {
                 )}
 
                 <ErrorMessage error={errors.general} />
-                
+
                 {successMessage && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -738,22 +786,36 @@ export default function HomePage() {
                   >
                     Back
                   </motion.button>
-                  
+
                   <motion.button
                     whileHover={!isLoading ? { scale: 1.02 } : {}}
                     whileTap={!isLoading ? { scale: 0.98 } : {}}
-                    onClick={authMode === "login" ? handleLogin : handlePasswordForSignup}
+                    onClick={
+                      authMode === "login"
+                        ? handleLogin
+                        : handlePasswordForSignup
+                    }
                     disabled={isLoading}
                     className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden"
-                    animate={isLoading ? {
-                      background: ["linear-gradient(to right, rgb(147 51 234), rgb(99 102 241))", 
-                                 "linear-gradient(to right, rgb(99 102 241), rgb(147 51 234))"]
-                    } : {}}
-                    transition={isLoading ? {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "linear"
-                    } : {}}
+                    animate={
+                      isLoading
+                        ? {
+                            background: [
+                              "linear-gradient(to right, rgb(147 51 234), rgb(99 102 241))",
+                              "linear-gradient(to right, rgb(99 102 241), rgb(147 51 234))",
+                            ],
+                          }
+                        : {}
+                    }
+                    transition={
+                      isLoading
+                        ? {
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }
+                        : {}
+                    }
                   >
                     <AnimatePresence mode="wait">
                       {isLoading ? (
@@ -815,7 +877,7 @@ export default function HomePage() {
             className="flex items-center justify-center h-full px-4"
           >
             <motion.div className="w-full max-w-md space-y-6">
-              <motion.div 
+              <motion.div
                 className="text-center mb-8"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -829,14 +891,14 @@ export default function HomePage() {
                 >
                   <Users className="w-10 h-10 text-white" />
                 </motion.div>
-                
+
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                   Almost there, {username}!
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400">
                   Tell us a bit about yourself
                 </p>
-                
+
                 {/* Free tier hosting warning */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -847,13 +909,14 @@ export default function HomePage() {
                   <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
                     <Clock className="w-4 h-4 flex-shrink-0" />
                     <span>
-                      Account creation may take longer on first attempt due to free tier hosting
+                      Account creation may take longer on first attempt due to
+                      free tier hosting
                     </span>
                   </p>
                 </motion.div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 className="space-y-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -867,7 +930,11 @@ export default function HomePage() {
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
                     Select your country
                   </p>
-                  <CountrySelect value={country} onChange={setCountry} error={errors.country} />
+                  <CountrySelect
+                    value={country}
+                    onChange={setCountry}
+                    error={errors.country}
+                  />
                 </motion.div>
 
                 <motion.div
@@ -883,7 +950,7 @@ export default function HomePage() {
                 </motion.div>
 
                 <ErrorMessage error={errors.general} />
-                
+
                 {successMessage && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -903,22 +970,32 @@ export default function HomePage() {
                   >
                     Back
                   </motion.button>
-                  
+
                   <motion.button
                     whileHover={!isLoading ? { scale: 1.02 } : {}}
                     whileTap={!isLoading ? { scale: 0.98 } : {}}
                     onClick={handleCreateAccount}
                     disabled={isLoading || !country}
                     className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-medium rounded-lg transition-all disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden"
-                    animate={isLoading ? {
-                      background: ["linear-gradient(to right, rgb(147 51 234), rgb(99 102 241))", 
-                                 "linear-gradient(to right, rgb(99 102 241), rgb(147 51 234))"]
-                    } : {}}
-                    transition={isLoading ? {
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "linear"
-                    } : {}}
+                    animate={
+                      isLoading
+                        ? {
+                            background: [
+                              "linear-gradient(to right, rgb(147 51 234), rgb(99 102 241))",
+                              "linear-gradient(to right, rgb(99 102 241), rgb(147 51 234))",
+                            ],
+                          }
+                        : {}
+                    }
+                    transition={
+                      isLoading
+                        ? {
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }
+                        : {}
+                    }
                   >
                     <AnimatePresence mode="wait">
                       {isLoading ? (
@@ -966,21 +1043,24 @@ export default function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Full screen loader for username checking */}
-      <FullScreenLoader 
-        isLoading={isChecking} 
+      <FullScreenLoader
+        isLoading={isChecking}
         text="Checking username availability"
       />
-      
+
       {/* Full screen loader for authentication */}
-      <FullScreenLoader 
-        isLoading={isLoading && (step === "password" || step === "details")} 
+      <FullScreenLoader
+        isLoading={isLoading && (step === "password" || step === "details")}
         text={
-          step === "password" && authMode === "login" ? "Signing you in..." :
-          step === "password" && authMode === "signup" ? "Verifying password..." :
-          step === "details" ? "Creating your account..." :
-          "Processing..."
+          step === "password" && authMode === "login"
+            ? "Signing you in..."
+            : step === "password" && authMode === "signup"
+            ? "Verifying password..."
+            : step === "details"
+            ? "Creating your account..."
+            : "Processing..."
         }
       />
     </motion.div>

@@ -312,30 +312,8 @@ export async function createUserMultiFormat(userData) {
     console.error("Approach #6 exception:", error);
   }
   
-  // If all approaches fail, create an offline user
-  console.log("All user creation approaches failed, creating offline user");
-  
-  const offlineUser = {
-    token: "dummy_token_" + Date.now(),
-    username: userData.username,
-    country: userData.country,
-    age: userData.age,
-    message: "User created in offline mode"
-  };
-  
-  // Set cookies for offline user
-  document.cookie = `token=${offlineUser.token};path=/;max-age=${86400};`;
-  document.cookie = `offline_mode=true;path=/;max-age=${86400};`;
-  
-  const userDataObj = {
-    username: offlineUser.username,
-    country: offlineUser.country,
-    age: offlineUser.age
-  };
-  
-  document.cookie = `userData=${JSON.stringify(userDataObj)};path=/;max-age=${86400};`;
-  
-  return offlineUser;
+  // If all approaches fail, throw error
+  throw new Error("Unable to create account. Please check your connection and try again.");
 }
 
 export default createUserMultiFormat;

@@ -4,7 +4,6 @@ import ErrorModal from "@/components/shared/ErrorModal";
 import ConditionalFooter from "@/components/shared/ConditionalFooter";
 import CookieConsent from "@/components/shared/CookieConsent";
 import BackendStatusModal from "@/components/shared/BackendStatusModal";
-import OfflineIndicator from "@/components/shared/OfflineIndicator";
 import Favicon from "@/components/shared/Favicon";
 import "./globals.css";
 

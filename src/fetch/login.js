@@ -9,17 +9,17 @@ export async function loginMultiFormat(credentials) {
   const primaryUrl = `${backendUrl}${baseEndpoint}/login-with-password`;
   const fallbackUrl = `${backendUrl}${baseEndpoint}/login`;
   
-  console.log(`Starting login for ${credentials.email} with multiple approaches`);
+  console.log(`Starting login for ${credentials.username} with multiple approaches`);
   
   // Ensure all required fields are present
   const formattedCredentials = {
-    Email: credentials.email,
+    Username: credentials.username,
     Password: credentials.password
   };
   
   // Lowercase version for testing
   const lowercaseCredentials = {
-    email: credentials.email,
+    username: credentials.username,
     password: credentials.password
   };
   
@@ -167,7 +167,7 @@ export async function loginMultiFormat(credentials) {
     const formData = new URLSearchParams();
     
     // Add credentials to form data
-    formData.append('Email', credentials.email);
+    formData.append('Username', credentials.username);
     formData.append('Password', credentials.password);
     
     const response = await fetch(primaryUrl, {
@@ -443,36 +443,8 @@ export async function loginMultiFormat(credentials) {
     }
   }
 
-  // If all approaches fail and we haven't thrown an invalid credentials error,
-  // create an offline session to ensure the user isn't blocked completely
-  console.log("All login approaches failed, creating offline user");
-  
-  // Extract username from email (assuming format: username@iqtest.local)
-  const username = credentials.email.split('@')[0];
-  
-  const offlineUser = {
-    token: "dummy_token_" + Date.now(),
-    username: username,
-    email: credentials.email,
-    country: "Unknown",
-    age: 30,
-    message: "Logged in (offline mode)"
-  };
-  
-  // Set cookies for offline user
-  document.cookie = `token=${offlineUser.token};path=/;max-age=${86400};`;
-  document.cookie = `offline_mode=true;path=/;max-age=${86400};`;
-  
-  const userDataObj = {
-    username: offlineUser.username,
-    email: offlineUser.email,
-    country: offlineUser.country,
-    age: offlineUser.age
-  };
-  
-  document.cookie = `userData=${JSON.stringify(userDataObj)};path=/;max-age=${86400};`;
-  
-  return offlineUser;
+  // If all approaches fail, throw error
+  throw new Error("Unable to login. Please check your connection and try again.");
 }
 
 export default loginMultiFormat;

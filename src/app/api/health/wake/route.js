@@ -1,9 +1,10 @@
 export async function GET() {
   try {
-    // Simple health check endpoint
+    // Wake endpoint that also performs a health check
     return Response.json({ 
-      status: 'healthy', 
-      timestamp: new Date().toISOString() 
+      status: 'awake', 
+      timestamp: new Date().toISOString(),
+      message: 'Server is awake and ready'
     });
   } catch (error) {
     return Response.json(

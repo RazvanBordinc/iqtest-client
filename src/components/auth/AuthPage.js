@@ -12,10 +12,11 @@ import LoadingAnimation from "@/components/shared/LoadingAnimation";
 import CountrySelect from "@/components/shared/CountrySelect";
 import AgeSelector from "@/components/begin/AgeSelector";
 import ServerWakeUpScreen from "@/components/shared/ServerWakeUpScreen";
-import { isServerAwake } from "@/utils/serverWakeup";
+import { useServerWakeUp } from "@/hooks/useServerWakeUp";
 
 export default function AuthPage() {
   const router = useRouter();
+  const { triggerWakeUp, isServerReady } = useServerWakeUp();
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [showServerWakeUp, setShowServerWakeUp] = useState(false);
@@ -55,20 +56,21 @@ export default function AuthPage() {
   // Handle server wake-up
   const handleServerWakeUpComplete = (result) => {
     setShowServerWakeUp(false);
-    if (!result.success) {
-      console.log('Server wake-up failed, continuing in offline mode');
-    }
+    // Continue with the operation after wake-up
   };
 
   // Check if server needs wake-up before critical operations
   const checkServerBeforeOperation = async () => {
-    const serverIsAwake = await isServerAwake();
-    if (!serverIsAwake) {
-      setShowServerWakeUp(true);
-      return false; // Server needs wake-up
+    if (!isServerReady) {
+      const success = await triggerWakeUp();
+      if (!success) {
+        setShowServerWakeUp(true);
+        return false; // Server needs wake-up
+      }
     }
     return true; // Server is ready
   };
+
 
   // Handle username check
   const handleUsernameCheck = async () => {
@@ -215,28 +217,15 @@ export default function AuthPage() {
             setPasswordError("Login failed. Either the password is incorrect or you need to create an account.");
             setStep("details");
           } else {
-            // Other error - attempt offline login
-            console.log("Creating offline session due to backend error");
-            
-            // Create fake session data
-            localStorage.setItem("offline_mode", "true");
-            localStorage.setItem("username", username);
-            // No longer storing email in localStorage
-            
-            // Redirect user
-            router.push("/tests");
+            // Other error
+            showError("Unable to complete login. Please check your connection and try again.");
           }
         }
       }
     } catch (error) {
       console.error("Password submission error:", error);
       
-      // Create offline session as last resort
-      localStorage.setItem("offline_mode", "true");
-      localStorage.setItem("username", username);
-      // No longer storing email in localStorage
-      
-      router.push("/tests");
+      showError("Unable to complete registration. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -265,16 +254,8 @@ export default function AuthPage() {
         return;
       }
       
-      // For other errors (connectivity, backend issues), fallback to offline
-      console.log("Creating offline session due to login error");
-      
-      // Create fake session data
-      localStorage.setItem("offline_mode", "true");
-      localStorage.setItem("username", username);
-      // No longer storing email in localStorage
-      
-      // Redirect user
-      router.push("/tests");
+      // For other errors (connectivity, backend issues)
+      showError("Unable to complete login. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
