@@ -498,7 +498,10 @@ export default function TestSelectionPage({ initialTests = TEST_TYPES }) {
                   }
                 }}
               >
-                <TestAvailability testTypeId={category.id}>
+                <TestAvailability 
+                  testTypeId={category.id}
+                  isSelecting={isNavigating && selectedTest?.id === category.id}
+                >
                   <TestCategoryCard
                     category={category}
                     onSelect={handleCategorySelect}

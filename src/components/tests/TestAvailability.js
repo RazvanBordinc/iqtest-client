@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Clock, CheckCircle, Loader2 } from "lucide-react";
 import { checkTestAvailability } from "@/fetch/tests";
 
-const TestAvailability = ({ testTypeId, children }) => {
+const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
   const [isAvailable, setIsAvailable] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,16 +18,33 @@ const TestAvailability = ({ testTypeId, children }) => {
 
   const checkAvailability = async () => {
     try {
+      // Add a minimum loading time to prevent flash
+      const startTime = Date.now();
       const availability = await checkTestAvailability(testTypeId);
+      
       setIsAvailable(availability.canTake);
       if (!availability.canTake && availability.timeUntilNext) {
         setTimeRemaining(availability.timeUntilNext);
       }
+      
+      // Ensure minimum loading time of 800ms for better UX
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 800 - elapsedTime);
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
+      
     } catch (error) {
       console.error("Error checking test availability:", error);
       setIsAvailable(true); // Allow test in case of error
-    } finally {
-      setLoading(false);
+      
+      // Still respect minimum loading time even on error
+      const remainingTime = 800;
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   };
 
@@ -43,12 +60,14 @@ const TestAvailability = ({ testTypeId, children }) => {
     return `${minutes}m`;
   };
 
-  if (loading) {
+  // Show loading skeleton only for availability check, not for test selection
+  // (test selection has its own fancy loading overlay in TestCategoryCard)
+  if (loading && !isSelecting) {
     return (
       <div className="relative">
         {children}
         <motion.div 
-          className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center"
+          className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
