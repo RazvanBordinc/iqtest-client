@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import { ServerWakeUpProvider } from "@/components/shared/ServerWakeUpProvider";
 import ErrorModal from "@/components/shared/ErrorModal";
 import ConditionalFooter from "@/components/shared/ConditionalFooter";
 import CookieConsent from "@/components/shared/CookieConsent";
@@ -83,14 +84,16 @@ export default function RootLayout({ children }) {
       </head>
       <body className="overflow-x-hidden">
         <ThemeProvider>
-          <Favicon />
-          <div className="min-h-screen overflow-x-hidden flex flex-col">
-            <main className="flex-grow">{children}</main>
-            <ConditionalFooter />
-          </div>
-          <ErrorModal />
-          <CookieConsent />
-          <BackendStatusModal />
+          <ServerWakeUpProvider>
+            <Favicon />
+            <div className="min-h-screen overflow-x-hidden flex flex-col">
+              <main className="flex-grow">{children}</main>
+              <ConditionalFooter />
+            </div>
+            <ErrorModal />
+            <CookieConsent />
+            <BackendStatusModal />
+          </ServerWakeUpProvider>
         </ThemeProvider>
       </body>
     </html>
