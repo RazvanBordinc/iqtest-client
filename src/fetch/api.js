@@ -96,8 +96,8 @@ export const clientFetch = async (endpoint, options = {}) => {
     // Enhanced timeout handling for Render free tier cold starts
     const controller = new AbortController();
     
-    // Use longer timeouts for cold start scenarios
-    const timeoutDuration = isCriticalEndpoint ? 90000 : 30000; // 90s for critical, 30s for others
+    // Reduced timeouts for better UX
+    const timeoutDuration = isCriticalEndpoint ? 15000 : 10000; // 15s for critical, 10s for others
     
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
     
@@ -455,9 +455,9 @@ export const normalizeEndpoint = (endpoint) => {
 // Retry wrapper for API calls with exponential backoff
 export const withRetry = async (fn, options = {}) => {
   const {
-    maxRetries = 3,
-    baseDelay = 1000,
-    maxDelay = 10000,
+    maxRetries = 2,
+    baseDelay = 500,
+    maxDelay = 2000,
     retryCondition = (error) => error.isServerSleep || error.status === 408 || error.status === 503
   } = options;
 

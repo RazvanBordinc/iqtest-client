@@ -5,28 +5,40 @@ import { motion } from "framer-motion";
 import { Clock, ListChecks, TrendingUp, Lock, CheckCircle, Star } from "lucide-react";
 import { checkTestAvailability } from "@/fetch/tests";
 
-export default function TestCategoryButton({ category, onSelect, isMobile, refreshKey = 0, isSelecting = false }) {
+export default function TestCategoryButton({ category, onSelect, isMobile, refreshKey = 0, isSelecting = false, availability: propAvailability, loading: propLoading }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [availability, setAvailability] = useState({ canTake: true, timeUntilNext: null });
-  const [loading, setLoading] = useState(true);
+  const [availability, setAvailability] = useState(propAvailability || { canTake: true, timeUntilNext: null });
+  const [loading, setLoading] = useState(propLoading !== undefined ? propLoading : true);
   const [timeLeft, setTimeLeft] = useState("");
 
-  // Check test availability on mount or when refreshKey changes
+  // Update availability when prop changes
   useEffect(() => {
-    async function checkAvailability() {
-      try {
-        setLoading(true);
-        const result = await checkTestAvailability(category.id);
-        setAvailability(result);
-      } catch (error) {
-        console.error("Error checking test availability:", error);
-      } finally {
-        setLoading(false);
-      }
+    if (propAvailability) {
+      setAvailability(propAvailability);
     }
-    
-    checkAvailability();
-  }, [category.id, refreshKey]);
+    if (propLoading !== undefined) {
+      setLoading(propLoading);
+    }
+  }, [propAvailability, propLoading]);
+
+  // Check test availability on mount only if not provided as prop
+  useEffect(() => {
+    if (!propAvailability) {
+      async function checkAvailability() {
+        try {
+          setLoading(true);
+          const result = await checkTestAvailability(category.id);
+          setAvailability(result);
+        } catch (error) {
+          console.error("Error checking test availability:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+      
+      checkAvailability();
+    }
+  }, [category.id, refreshKey, propAvailability]);
   
   // Update timer display
   useEffect(() => {

@@ -18,33 +18,18 @@ const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
 
   const checkAvailability = async () => {
     try {
-      // Add a minimum loading time to prevent flash
-      const startTime = Date.now();
       const availability = await checkTestAvailability(testTypeId);
       
       setIsAvailable(availability.canTake);
       if (!availability.canTake && availability.timeUntilNext) {
         setTimeRemaining(availability.timeUntilNext);
       }
-      
-      // Ensure minimum loading time of 800ms for better UX
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(0, 800 - elapsedTime);
-      
-      setTimeout(() => {
-        setLoading(false);
-      }, remainingTime);
+      setLoading(false);
       
     } catch (error) {
       console.error("Error checking test availability:", error);
       setIsAvailable(true); // Allow test in case of error
-      
-      // Still respect minimum loading time even on error
-      const remainingTime = 800;
-      
-      setTimeout(() => {
-        setLoading(false);
-      }, remainingTime);
+      setLoading(false);
     }
   };
 

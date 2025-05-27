@@ -97,6 +97,35 @@ export const checkTestAvailability = async (testTypeId) => {
   }
 };
 
+// Check batch test availability for multiple test types
+export const checkBatchTestAvailability = async (testTypeIds) => {
+  try {
+    const endpoint = getEndpoint(`/test/availability/batch`);
+    return await api.post(endpoint, testTypeIds);
+  } catch (error) {
+    // For timeouts and connection errors, provide fallback responses
+    if (error.message?.includes('timeout') || 
+        error.message?.includes('fetch') || 
+        error.message?.includes('network') ||
+        error.status === 0) {
+      console.warn(`Batch test availability check failed, using fallback`);
+      const fallbackResults = {};
+      testTypeIds.forEach(id => {
+        fallbackResults[id] = {
+          canTake: true,
+          timeUntilNext: 0,
+          message: "Test available (backend unavailable)",
+          isFallback: true
+        };
+      });
+      return fallbackResults;
+    }
+    
+    // For other errors, let the component handle it
+    throw error;
+  }
+};
+
 // For backward compatibility - if you need these functions elsewhere
 export const getTestTypes = getAvailableTests;
 export const fetchTestById = getTestById;
