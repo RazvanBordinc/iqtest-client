@@ -38,7 +38,7 @@ export async function wakeUpServer() {
         method: 'GET',
         credentials: 'omit',
         mode: 'cors',
-        signal: AbortSignal.timeout(15000) // 15 second timeout per attempt
+        signal: AbortSignal.timeout(60000) // 60 second timeout per attempt for Render cold starts
       });
       
       const duration = performance.now() - startTime;

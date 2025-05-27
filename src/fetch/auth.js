@@ -37,6 +37,14 @@ export const checkUsername = async (username) => {
 
 export const createUser = async (userData) => {
   try {
+    // Pre-warm the server if it might be sleeping
+    try {
+      await api.get('health/wake', { retry: false });
+    } catch (wakeError) {
+      // Ignore wake errors and proceed with registration
+      console.log('Server wake attempt completed');
+    }
+    
     const endpoint = getEndpoint('/auth/create-user');
     
     // Format the user data with proper casing for .NET model binding
@@ -64,6 +72,14 @@ export const createUser = async (userData) => {
 
 export const loginWithPassword = async (credentials) => {
   try {
+    // Pre-warm the server if it might be sleeping
+    try {
+      await api.get('health/wake', { retry: false });
+    } catch (wakeError) {
+      // Ignore wake errors and proceed with login
+      console.log('Server wake attempt completed');
+    }
+    
     const endpoint = getEndpoint('/auth/login-with-password');
     
     // Format the credentials with proper casing for .NET model binding

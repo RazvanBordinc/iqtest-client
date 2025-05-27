@@ -67,11 +67,11 @@ export const clientFetch = async (endpoint, options = {}) => {
   };
 
   // Special handling for auth endpoints
-  const isAuthEndpoint = endpoint.includes('/auth/');
+  const isAuthEndpoint = endpoint.includes('/auth/') || endpoint.includes('auth/');
   
   // Determine if this is a critical endpoint (moved outside try block)
-  const isTestEndpoint = endpoint.includes('/test/');
-  const isCriticalEndpoint = isAuthEndpoint || isTestEndpoint || endpoint.includes('/health') || endpoint.includes('/wake');
+  const isTestEndpoint = endpoint.includes('/test/') || endpoint.includes('test/');
+  const isCriticalEndpoint = isAuthEndpoint || isTestEndpoint || endpoint.includes('/health') || endpoint.includes('health') || endpoint.includes('/wake') || endpoint.includes('wake');
   
   // Process request body if present for .NET model binding (additional safety check)
   if (fetchOptions.body && typeof fetchOptions.body === 'string') {
@@ -96,8 +96,8 @@ export const clientFetch = async (endpoint, options = {}) => {
     // Enhanced timeout handling for Render free tier cold starts
     const controller = new AbortController();
     
-    // Reduced timeouts for better UX
-    const timeoutDuration = isCriticalEndpoint ? 15000 : 10000; // 15s for critical, 10s for others
+    // Increased timeouts for Render free tier (can take up to 60s to wake)
+    const timeoutDuration = isCriticalEndpoint ? 60000 : 30000; // 60s for critical, 30s for others
     
     const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
     
@@ -248,7 +248,7 @@ export const clientFetch = async (endpoint, options = {}) => {
         event: 'api_timeout',
         endpoint,
         method: fetchOptions.method || 'GET',
-        timeout: `${isCriticalEndpoint ? '90000' : '30000'}ms`
+        timeout: `${timeoutDuration}ms`
       });
       
       // Try server wake-up for critical endpoints that timeout
@@ -271,7 +271,7 @@ export const clientFetch = async (endpoint, options = {}) => {
             });
             
             const retryController = new AbortController();
-            const retryTimeoutId = setTimeout(() => retryController.abort(), 30000);
+            const retryTimeoutId = setTimeout(() => retryController.abort(), 60000); // 60s for retry
             
             const retryResponse = await fetch(url, {
               ...fetchOptions,
@@ -455,10 +455,10 @@ export const normalizeEndpoint = (endpoint) => {
 // Retry wrapper for API calls with exponential backoff
 export const withRetry = async (fn, options = {}) => {
   const {
-    maxRetries = 2,
-    baseDelay = 500,
-    maxDelay = 2000,
-    retryCondition = (error) => error.isServerSleep || error.status === 408 || error.status === 503
+    maxRetries = 3,
+    baseDelay = 1000,
+    maxDelay = 5000,
+    retryCondition = (error) => error.isServerSleep || error.status === 408 || error.status === 503 || error.name === 'AbortError'
   } = options;
 
   let lastError;
