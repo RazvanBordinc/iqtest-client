@@ -73,14 +73,14 @@ const FullScreenLoader = ({ isLoading, text = "Processing..." }) => {
                       key={`connection-${index}`}
                       x1={from.x}
                       y1={from.y}
-                      x2={from.x}
-                      y2={from.y}
+                      x2={from.x || 0}
+                      y2={from.y || 0}
                       stroke="url(#gradient)"
                       strokeWidth="0.5"
                       opacity="0.3"
                       animate={{
-                        x2: to.x,
-                        y2: to.y,
+                        x2: to.x || 0,
+                        y2: to.y || 0,
                         opacity: [0.1, 0.6, 0.1],
                       }}
                       transition={{
