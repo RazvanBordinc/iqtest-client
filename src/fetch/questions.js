@@ -68,7 +68,7 @@ const getEndpoint = (path) => {
 
 export const getQuestionsByTestType = async (testTypeId) => {
   try {
-    const endpoint = getEndpoint(`/test/questions/${testTypeId}`);
+    const endpoint = getEndpoint(`/question/test/${testTypeId}`);
     const response = await api.get(endpoint);
     
     // Normalize the response data to ensure consistent property naming
