@@ -68,21 +68,43 @@ const getEndpoint = (path) => {
 
 export const getQuestionsByTestType = async (testTypeId) => {
   try {
+    console.warn(`FRONTEND: Fetching questions for test type: ${testTypeId}`);
     const endpoint = getEndpoint(`/question/test/${testTypeId}`);
+    console.warn(`FRONTEND: API endpoint: ${endpoint}`);
+    
     const response = await api.get(endpoint);
+    console.warn(`FRONTEND: Received ${response?.length || 0} questions from API for ${testTypeId}`);
+    
+    // Log first question from API
+    if (response && response.length > 0) {
+      const firstApiQuestion = response[0]?.text || response[0]?.Text;
+      console.warn(`FRONTEND API: First question from API: ${firstApiQuestion?.substring(0, 100)}`);
+    }
     
     // Normalize the response data to ensure consistent property naming
     const normalizedQuestions = normalizeQuestions(response);
+    console.warn(`FRONTEND: Normalized ${normalizedQuestions?.length || 0} questions for ${testTypeId}`);
+    
+    // Log first normalized question
+    if (normalizedQuestions && normalizedQuestions.length > 0) {
+      const firstNormalizedQuestion = normalizedQuestions[0]?.text;
+      console.warn(`FRONTEND NORMALIZED: First normalized question: ${firstNormalizedQuestion?.substring(0, 100)}`);
+    }
     
     // Validate the questions
     if (!validateQuestions(normalizedQuestions, testTypeId)) {
-      // If invalid or empty, return fallback questions
-      return normalizeQuestions(getFallbackQuestions(testTypeId));
+      console.warn(`FRONTEND: Questions validation failed for ${testTypeId}, using fallback questions`);
+      const fallbackQuestions = normalizeQuestions(getFallbackQuestions(testTypeId));
+      console.warn(`FRONTEND FALLBACK: Using ${fallbackQuestions?.length || 0} fallback questions for ${testTypeId}`);
+      return fallbackQuestions;
     }
     
+    console.warn(`FRONTEND SUCCESS: Returning ${normalizedQuestions?.length || 0} validated questions for ${testTypeId}`);
     return normalizedQuestions;
   } catch (error) {
-    // Return fallback questions on error
-    return normalizeQuestions(getFallbackQuestions(testTypeId));
+    console.error(`FRONTEND ERROR: Failed to fetch questions for ${testTypeId}:`, error);
+    const fallbackQuestions = normalizeQuestions(getFallbackQuestions(testTypeId));
+    console.warn(`FRONTEND ERROR FALLBACK: Using ${fallbackQuestions?.length || 0} fallback questions for ${testTypeId}`);
+    return fallbackQuestions;
   }
 };
