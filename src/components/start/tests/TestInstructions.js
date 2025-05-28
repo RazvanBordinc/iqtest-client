@@ -96,17 +96,17 @@ export default function TestInstructions({ category, onStart }) {
               stroke="currentColor"
               className="w-8 h-8 text-white"
             >
-              <rect x="4" y="2" width="16" height="20" rx="2" />
-              <line x1="8" x2="16" y1="6" y2="6" />
-              <line x1="8" x2="8" y1="10" y2="10" />
-              <line x1="12" x2="12" y1="10" y2="10" />
-              <line x1="16" x2="16" y1="10" y2="10" />
-              <line x1="8" x2="8" y1="14" y2="14" />
-              <line x1="12" x2="12" y1="14" y2="14" />
-              <line x1="16" x2="16" y1="14" y2="14" />
-              <line x1="8" x2="8" y1="18" y2="18" />
-              <line x1="12" x2="12" y1="18" y2="18" />
-              <line x1="16" x2="16" y1="18" y2="18" />
+              <rect x="4" y="2" width="16" height="20" rx="2" strokeWidth="2" />
+              <line x1="8" x2="16" y1="6" y2="6" strokeWidth="2" />
+              <circle cx="8" cy="10" r="1" fill="currentColor" />
+              <circle cx="12" cy="10" r="1" fill="currentColor" />
+              <circle cx="16" cy="10" r="1" fill="currentColor" />
+              <circle cx="8" cy="14" r="1" fill="currentColor" />
+              <circle cx="12" cy="14" r="1" fill="currentColor" />
+              <circle cx="16" cy="14" r="1" fill="currentColor" />
+              <circle cx="8" cy="18" r="1" fill="currentColor" />
+              <circle cx="12" cy="18" r="1" fill="currentColor" />
+              <circle cx="16" cy="18" r="1" fill="currentColor" />
             </svg>
           </div>
         );
