@@ -18,20 +18,13 @@ const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
 
   const checkAvailability = async () => {
     try {
-      console.log(`[TestAvailability] Checking availability for test: ${testTypeId}`);
-      const startTime = performance.now();
-      
       const availability = await checkTestAvailability(testTypeId);
-      
-      const duration = performance.now() - startTime;
-      console.log(`[TestAvailability] Response received for ${testTypeId} in ${duration}ms:`, availability);
       
       // Check if we have the expected response structure
       if (availability && typeof availability === 'object') {
         // Handle both canTake and canTakeTest property names
         const canTake = availability.canTake !== undefined ? availability.canTake : availability.canTakeTest;
         
-        console.log(`[TestAvailability] Test ${testTypeId} canTake: ${canTake}`);
         setIsAvailable(canTake);
         
         if (!canTake && availability.timeUntilNext) {
@@ -40,13 +33,12 @@ const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
           setTimeRemaining(timeInSeconds);
         }
       } else {
-        console.warn(`[TestAvailability] Unexpected response format for ${testTypeId}:`, availability);
         setIsAvailable(true); // Default to available
       }
       setLoading(false);
       
     } catch (error) {
-      console.error(`[TestAvailability] Error checking test availability for ${testTypeId}:`, error);
+      console.error("Error checking test availability:", error);
       setIsAvailable(true); // Allow test in case of error
       setLoading(false);
     }
