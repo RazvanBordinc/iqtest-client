@@ -247,6 +247,12 @@ iqtest/                                    # Frontend root directory
 │   │       ├── TestScoreDisplay.js       # Score visualization
 │   │       ├── TestSelectionPage.js      # Main test selection
 │   │       └── TestStartPage.js          # Test start screen
+│   │   └── 📁 start/tests/               # Test-specific components
+│   │       ├── TestInstructions.js       # Pre-test instructions
+│   │       ├── MemoryTest.js             # Memory test component
+│   │       ├── MixedTest.js              # Mixed test component
+│   │       ├── NumericalTest.js          # Numerical test component
+│   │       └── VerbalTest.js             # Verbal test component
 │   ├── 📁 fetch/                          # API client layer
 │   │   ├── api.js                        # Base API configuration
 │   │   ├── auth.js                       # Authentication API
@@ -377,6 +383,10 @@ NEXT_SERVER_API_URL=https://iqtest-server-project.onrender.com
 # NEXT_PUBLIC_DIRECT_BACKEND_URL=http://localhost:5164
 # NEXT_SERVER_API_URL=http://localhost:5164
 
+# For Docker development
+# NEXT_PUBLIC_DIRECT_BACKEND_URL=http://backend:5164
+# NEXT_SERVER_API_URL=http://backend:5164
+
 # Optional: Analytics and monitoring
 # NEXT_PUBLIC_ANALYTICS_ID=your-analytics-id
 ```
@@ -395,7 +405,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "iqtest-server-tkhl.onrender.com",
+        hostname: "iqtest-server-project.onrender.com",
       },
     ],
   },
