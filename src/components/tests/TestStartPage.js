@@ -42,7 +42,7 @@ export default function TestStartPage({
   // Check authentication
   useEffect(() => {
     if (!isAuthenticated()) {
-      router.push("/auth");
+      router.push("/");
     }
   }, [router]);
 

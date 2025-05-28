@@ -47,11 +47,11 @@ export function middleware(request) {
     return NextResponse.redirect(testsUrl);
   }
 
-  // Check if logged in user is trying to access login page (handle old /auth route)
-  if (token && pathname.startsWith("/auth")) {
-    // Redirect to tests
-    const testsUrl = new URL("/tests", request.url);
-    return NextResponse.redirect(testsUrl);
+  // Handle legacy /auth route redirects
+  if (pathname.startsWith("/auth")) {
+    // Redirect old auth URLs to homepage
+    const homeUrl = new URL("/", request.url);
+    return NextResponse.redirect(homeUrl);
   }
 
   return NextResponse.next();
@@ -62,7 +62,7 @@ export const config = {
     "/", 
     "/tests/:path*", 
     "/leaderboard/:path*", 
-    "/auth", 
+    "/auth/:path*",  // Handle legacy auth routes
     "/start/:path*",
     "/api/:path*"  // Add API routes to the matcher
   ],

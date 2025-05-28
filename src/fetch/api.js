@@ -158,16 +158,15 @@ export const clientFetch = async (endpoint, options = {}) => {
     
     // Handle authentication errors
     if (response.status === 401) {
-      // Redirect to auth page for auth errors
+      // Redirect to homepage for auth errors
       if (typeof window !== 'undefined' && 
-          window.location.pathname !== "/" && 
-          window.location.pathname !== "/auth") {
-        logger.info('Authentication required, redirecting to auth page', {
+          window.location.pathname !== "/") {
+        logger.info('Authentication required, redirecting to homepage', {
           event: 'auth_redirect',
           from: window.location.pathname,
           status: 401
         });
-        window.location.href = "/auth";
+        window.location.href = "/";
       }
       throw new Error("Authentication required");
     }
