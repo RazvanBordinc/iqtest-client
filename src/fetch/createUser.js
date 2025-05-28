@@ -4,7 +4,7 @@
  */
 
 export async function createUserMultiFormat(userData) {
-  const backendUrl = 'https://iqtest-server-tkhl.onrender.com';
+  const backendUrl = 'https://iqtest-server-project.onrender.com';
   const baseEndpoint = '/api/auth';
   const primaryUrl = `${backendUrl}${baseEndpoint}/create-user`;
   const fallbackUrl = `${backendUrl}${baseEndpoint}/register`;

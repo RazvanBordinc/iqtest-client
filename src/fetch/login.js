@@ -4,7 +4,7 @@
  */
 
 export async function loginMultiFormat(credentials) {
-  const backendUrl = 'https://iqtest-server-tkhl.onrender.com';
+  const backendUrl = 'https://iqtest-server-project.onrender.com';
   const baseEndpoint = '/api/auth';
   const primaryUrl = `${backendUrl}${baseEndpoint}/login-with-password`;
   const fallbackUrl = `${backendUrl}${baseEndpoint}/login`;

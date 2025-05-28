@@ -4,7 +4,7 @@
  */
 
 export async function checkUsernameTryAllApproaches(username) {
-  const backendUrl = 'https://iqtest-server-tkhl.onrender.com';
+  const backendUrl = 'https://iqtest-server-project.onrender.com';
   const endpoint = '/api/auth/check-username';
   const url = `${backendUrl}${endpoint}`;
   

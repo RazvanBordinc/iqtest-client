@@ -4,17 +4,17 @@ const nextConfig = {
     // For server-side: default to Docker service for local dev, or API URL for prod
     NEXT_SERVER_API_URL: process.env.NEXT_SERVER_API_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? (process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com')
+        ? (process.env.BACKEND_API_URL || 'https://iqtest-server-project.onrender.com')
         : 'http://backend:5164'),
     
     // Direct backend URL for client-side direct access
-    NEXT_PUBLIC_DIRECT_BACKEND_URL: process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com',
+    NEXT_PUBLIC_DIRECT_BACKEND_URL: process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-project.onrender.com',
     
     // Add deployment info for debugging
     NEXT_PUBLIC_DEPLOYMENT_INFO: JSON.stringify({
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
-      backend: process.env.BACKEND_API_URL || 'https://iqtest-server-tkhl.onrender.com',
+      backend: process.env.BACKEND_API_URL || 'https://iqtest-server-project.onrender.com',
       frontend: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
     })
   },

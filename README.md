@@ -370,8 +370,8 @@ Create `.env.local` file:
 
 ```bash
 # Backend API URLs
-NEXT_PUBLIC_DIRECT_BACKEND_URL=https://iqtest-server-tkhl.onrender.com
-NEXT_SERVER_API_URL=https://iqtest-server-tkhl.onrender.com
+NEXT_PUBLIC_DIRECT_BACKEND_URL=https://iqtest-server-project.onrender.com
+NEXT_SERVER_API_URL=https://iqtest-server-project.onrender.com
 
 # For local development
 # NEXT_PUBLIC_DIRECT_BACKEND_URL=http://localhost:5164
