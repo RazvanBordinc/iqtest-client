@@ -2,13 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { Lock, Clock, CheckCircle, Loader2, Wrench } from "lucide-react";
 import { checkTestAvailability } from "@/fetch/tests";
 
 const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
   const [isAvailable, setIsAvailable] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Check if this is the numerical test
+  const isUnderMaintenance = testTypeId === "number-logic";
 
   useEffect(() => {
     checkAvailability();
@@ -58,7 +61,7 @@ const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
 
   // Show loading skeleton only for availability check, not for test selection
   // (test selection has its own fancy loading overlay in TestCategoryCard)
-  if (loading && !isSelecting) {
+  if (loading && !isSelecting && !isUnderMaintenance) {
     return (
       <div className="relative">
         {children}
@@ -73,6 +76,55 @@ const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
           >
             <Loader2 className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Show maintenance overlay for numerical test
+  if (isUnderMaintenance) {
+    return (
+      <div className="relative">
+        {/* Apply blur filter to the children content */}
+        <div className="filter blur-[2px] pointer-events-none">
+          {children}
+        </div>
+        {/* Overlay with maintenance indicator */}
+        <motion.div 
+          className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl flex items-center justify-center cursor-not-allowed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.div 
+            className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
+          >
+            <motion.div
+              animate={{ 
+                rotate: [0, 45, 0, -45, 0],
+                scale: [1, 1.1, 1, 1.1, 1]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                delay: 0.3
+              }}
+            >
+              <Wrench className="w-10 h-10 text-orange-500 dark:text-orange-400 mx-auto mb-3" />
+            </motion.div>
+            <p className="text-base font-semibold text-gray-700 dark:text-gray-300">Under Maintenance</p>
+            <motion.p 
+              className="text-sm text-gray-500 dark:text-gray-400 mt-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              We're improving this test
+            </motion.p>
           </motion.div>
         </motion.div>
       </div>
