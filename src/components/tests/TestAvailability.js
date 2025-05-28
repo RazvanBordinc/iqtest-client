@@ -123,7 +123,7 @@ const TestAvailability = ({ testTypeId, children, isSelecting = false }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              We're improving this test
+              We&apos;re improving this test
             </motion.p>
           </motion.div>
         </motion.div>
