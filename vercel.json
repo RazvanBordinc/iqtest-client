@@ -64,12 +64,12 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://iqtest-server-tkhl.onrender.com/:path*"
+      "destination": "https://iqtest-server-project.onrender.com/api/:path*"
     }
   ],
   "env": {
     "NEXT_PUBLIC_API_URL": "/api",
-    "NEXT_PUBLIC_DIRECT_BACKEND_URL": "https://iqtest-server-tkhl.onrender.com",
-    "NEXT_SERVER_API_URL": "https://iqtest-server-tkhl.onrender.com"
+    "NEXT_PUBLIC_DIRECT_BACKEND_URL": "https://iqtest-server-project.onrender.com",
+    "NEXT_SERVER_API_URL": "https://iqtest-server-project.onrender.com"
   }
 }

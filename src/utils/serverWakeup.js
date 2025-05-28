@@ -1,6 +1,6 @@
 import logger from '@/utils/logger';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com';
+const BACKEND_URL = process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-project.onrender.com';
 
 export async function isServerAwake() {
   try {

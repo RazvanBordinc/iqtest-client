@@ -7,7 +7,7 @@ const BACKEND_URL = typeof window === "undefined"
   // Server side - use server environment variable
   ? (process.env.NEXT_SERVER_API_URL || 'http://backend:5164')
   // Client side - use client environment variable with fallback
-  : (process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-tkhl.onrender.com');
+  : (process.env.NEXT_PUBLIC_DIRECT_BACKEND_URL || 'https://iqtest-server-project.onrender.com');
 
 // Log configuration for debugging
 logger.info('Backend configuration initialized', {
